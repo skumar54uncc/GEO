@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+.env
+.env.local
+data/*.db
+data/*.json
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+*.tsbuildinfo
+*.log
+.DS_Store
+.venv
+.pytest_cache
+src/uncc_energy_ai_visibility.egg-info
+**/__pycache__

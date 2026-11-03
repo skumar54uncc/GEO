@@ -14,6 +14,8 @@ export type LedgerEntry = {
   promptId?: string | null;
   scanId?: string | null;
   drawId?: string | null;
+  /** Actual USD from the provider's response. Undefined: units times the account's unit price. Null: unknown. */
+  usd?: number | null;
   at?: Date;
 };
 
@@ -42,7 +44,14 @@ export async function checkBudget(
   db: Db,
   orgId: string,
   provider: string,
-  planned: { units: number; uncachedUnits?: number },
+  planned: {
+    units: number;
+    uncachedUnits?: number;
+    /** USD estimate when the provider prices per call rather than per fixed unit. */
+    usd?: number | null;
+    /** Checks the provider's per scan USD cap against what this scan already spent. */
+    scanId?: string | null;
+  },
 ): Promise<BudgetCheck> {
   const account = await getProviderAccount(db, orgId, provider);
   if (!account) return { allowed: false, reason: `No provider account configured for ${provider}.` };
@@ -59,13 +68,26 @@ export async function checkBudget(
       reason: `Estimate up to ${uncached} uncached units exceeds remaining balance of ${account.creditsRemaining}.`,
     };
   }
-  const usd = unitsToUsd(uncached, account.creditUnitUsd);
+  const usd = planned.usd !== undefined && planned.usd !== null ? planned.usd : unitsToUsd(uncached, account.creditUnitUsd);
+  if (usd !== null && planned.scanId && account.perScanCapUsd !== null) {
+    const [row] = await db
+      .select({ spent: sql<string>`coalesce(sum(${costLedger.usd}), 0)` })
+      .from(costLedger)
+      .where(and(eq(costLedger.orgId, orgId), eq(costLedger.provider, provider), eq(costLedger.scanId, planned.scanId)));
+    const scanSpent = Number(row?.spent ?? 0);
+    if (scanSpent + usd > Number(account.perScanCapUsd)) {
+      return {
+        allowed: false,
+        reason: `Estimate $${usd.toFixed(4)} would exceed the per-scan cap ($${scanSpent.toFixed(4)} of $${Number(account.perScanCapUsd).toFixed(2)} spent in this scan).`,
+      };
+    }
+  }
   if (usd !== null && account.monthlyBudgetUsd !== null) {
     const spent = Number(account.spentUsdMonth);
     if (spent + usd > Number(account.monthlyBudgetUsd)) {
       return {
         allowed: false,
-        reason: `Estimate $${usd.toFixed(2)} would exceed the monthly budget ($${spent.toFixed(2)} of $${Number(account.monthlyBudgetUsd).toFixed(2)} spent).`,
+        reason: `Estimate $${usd.toFixed(4)} would exceed the monthly budget ($${spent.toFixed(2)} of $${Number(account.monthlyBudgetUsd).toFixed(2)} spent).`,
       };
     }
   }
@@ -74,7 +96,7 @@ export async function checkBudget(
 
 export async function recordCall(db: Db, entry: LedgerEntry): Promise<void> {
   const account = await getProviderAccount(db, entry.orgId, entry.provider);
-  const usd = unitsToUsd(entry.units, account?.creditUnitUsd);
+  const usd = entry.usd !== undefined ? entry.usd : unitsToUsd(entry.units, account?.creditUnitUsd);
   await db.insert(costLedger).values({
     orgId: entry.orgId,
     provider: entry.provider,

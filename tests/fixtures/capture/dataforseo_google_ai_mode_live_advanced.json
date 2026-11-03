@@ -1,0 +1,749 @@
+{
+  "_source": {
+    "url": "https://docs.dataforseo.com/v3/serp-google-ai_mode-live-advanced/",
+    "fetched": "2026-11-03",
+    "note": "Documented example response copied verbatim from the provider docs. Not a live capture. One edit: the docs example had unescaped quotes inside a code block 'text' string (invalid JSON); those quotes were escaped."
+  },
+  "response": {
+    "version": "0.1.20260223",
+    "status_code": 20000,
+    "status_message": "Ok.",
+    "time": "12.8697 sec.",
+    "cost": 0.004,
+    "tasks_count": 1,
+    "tasks_error": 0,
+    "tasks": [
+      {
+        "id": "02241638-1535-0139-0000-f0c53c397c88",
+        "status_code": 20000,
+        "status_message": "Ok.",
+        "time": "11.3557 sec.",
+        "cost": 0.004,
+        "result_count": 1,
+        "path": [
+          "v3",
+          "serp",
+          "google",
+          "ai_mode",
+          "live",
+          "advanced"
+        ],
+        "data": {
+          "api": "serp",
+          "function": "live",
+          "se": "google",
+          "se_type": "ai_mode",
+          "language_name": "English",
+          "location_name": "London,England,United Kingdom",
+          "keyword": "iphone 16 price comparison",
+          "device": "desktop",
+          "os": "windows"
+        },
+        "result": [
+          {
+            "keyword": "iphone 16 price comparison",
+            "type": "ai_mode",
+            "se_domain": "google.com",
+            "location_code": 1006886,
+            "language_code": "en",
+            "check_url": "https://www.google.com/search?q=iphone%2016%20price%20comparison&hl=en&gl=GB&udm=50&uule=w+CAIQIFISCXXeIa8LoNhHEZkq1d1aOpZS",
+            "datetime": "2026-02-24 14:38:25 +00:00",
+            "spell": null,
+            "refinement_chips": null,
+            "item_types": [
+              "ai_overview"
+            ],
+            "se_results_count": 0,
+            "items_count": 1,
+            "items": [
+              {
+                "type": "ai_overview",
+                "rank_group": 1,
+                "rank_absolute": 1,
+                "page": 1,
+                "position": "left",
+                "xpath": "/html[1]/body[1]/div[2]/div[1]/div[9]/div[1]/div[2]/div[1]/section[1]/div[1]/div[1]/div[3]/div[1]/div[6]/div[1]/div[1]/div[1]/div[3]",
+                "markdown": "The iPhone 16 series starts at **£599 / $599** for the [iPhone 16e](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAD) and ranges up to **£1,599 / $1,599** for the top-tier [iPhone 16 Pro Max](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462492849692868,imageDocid:17679513203478999390,gpcid:5947667959674427990,headlineOfferDocid:17383852530810184723,catalogid:10702330202256481728,productDocid:7883580942214823167,rds:CSS_PC_5947667959674427990%7CPC_5947667959674427990%7CPROD_CSS_PC_5947667959674427990%7CPROD_PC_5947667959674427990&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAF) with 1TB of storage . While Apple's official pricing is fixed, third-party retailers like [Argos](https://www.argos.co.uk/product/7332520?&utm_custom6=LIA&utm_source=google&utm_medium=free_listing&utm_campaign=merchant_center&deeplink=true) and [Currys](https://www.currys.co.uk/products/apple-iphone-16e-128-gb-black-10276701.html) often offer discounts of up to 9% on specific models.[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[4]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[5]](https://www.whistleout.com.au/MobilePhones/News/iPhone-16-price-cut#:~:text=Apple%20is%20already%20charging%20the%20new%20prices,iPhone%2016%2C%20which%20still%20starts%20at%20$999.)nnUK Price Comparison by Model (SIM-Free)nnRetail prices in the UK vary slightly between the official Apple Store and major electronics retailers.nn[![Apple iPhone 16e](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:16)nApple iPhone 16e £499.00 & more prices Argos & more 4.6 (8.5k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:12776322387042703964,gpcid:14126173308846421367,headlineOfferDocid:2765031151775529718,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIBhAC) nn- **Argos/Currys** : £499 (currently discounted from £549).n- **Apple Store** : £599.nn[![Apple iPhone 16](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:17)nApple iPhone 16 £649.00 £699.00 & more prices Currys & more 4.7 (26.6k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460833570787340,imageDocid:13931664520510243125,gpcid:1465601687215425854,headlineOfferDocid:3959967330461980312,catalogid:14710581654902521012,productDocid:1337961092622867211,rds:CSS_PC_1465601687215425854%7CPC_1465601687215425854%7CPROD_CSS_PC_1465601687215425854%7CPROD_PC_1465601687215425854&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIBhAN) nn- **Argos/Mobiles.co.uk** : £649.n- **Apple Store/Tesco** : £699.nn[![Apple iPhone 16 Plus](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:18)nApple iPhone 16 Plus £749.00 £799.00 & more prices Currys & more 4.7 (8.7k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462819791058017,imageDocid:11820892857456011017,gpcid:8897179128216049295,headlineOfferDocid:1132731325589855711,catalogid:10946276701947621633,productDocid:2037843367107876121,rds:CSS_PC_8897179128216049295%7CPC_8897179128216049295%7CPROD_CSS_PC_8897179128216049295%7CPROD_PC_8897179128216049295&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIBhAY) nn- **Argos/Currys** : £749.n- **Apple Store** : £799.nn[![Apple iPhone 16 Pro](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:19)nApple iPhone 16 Pro £949.00 & more prices We Buy Any Mobile & more 4.5 (21.2k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462796115543865,imageDocid:13551843893921557809,gpcid:10943350843658421229,headlineOfferDocid:2136782112117178687,catalogid:6127149605808509243,productDocid:7014898487207829112,rds:CSS_PC_10943350843658421229%7CPC_10943350843658421229%7CPROD_CSS_PC_10943350843658421229%7CPROD_PC_10943350843658421229&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIBhAk) nn- **idealo.co.uk** : Starting from £849.n- **MoneySuperMarket** : Official starting price is £799.nn[![Apple iPhone 16 Pro Max Titanium](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:20)nApple iPhone 16 Pro Max Titanium £1,199.00 & more prices Tesco & more 4.4 (21.7k)+ more](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462492849692868,imageDocid:17679513203478999390,gpcid:5947667959674427990,headlineOfferDocid:17383852530810184723,catalogid:10702330202256481728,productDocid:7883580942214823167,rds:CSS_PC_5947667959674427990%7CPC_5947667959674427990%7CPROD_CSS_PC_5947667959674427990%7CPROD_PC_5947667959674427990&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIBhAv) nn- **Tesco** : £1,199.n- **PriceSpy** : Spotted at £1,119 at certain retailers.[[1]](https://www.moneysupermarket.com/mobile-phones/apple/iphone-16-pro-deals/#:~:text=with%20iOS%2018-,Availability%20and%20price,899%20and%20%C2%A31%2C199%20respectively.)[[2]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[4]](https://www.google.com/search?q=product&prds=pvt:hg,productid:3452562929003363618,catalogid:13039969681672175437,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[5]](https://www.idealo.co.uk/compare/204771161/apple-iphone-16-128gb-black.html)[[6]](https://www.google.com/search?q=product&prds=pvt:hg,productid:1337961092622867211,catalogid:14710581654902521012,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[7]](https://www.google.com/search?q=product&prds=pvt:hg,productid:14054578951609781599,catalogid:4060211885099315058,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[8]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[9]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[10]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[11]](https://www.idealo.co.uk/compare/204736911/apple-iphone-16-pro.html)[[12]](https://pricespy.co.uk/s/apple-iphone-16/#:~:text=45%25,Max%205G%208GB%20RAM%20512GB)[[13]](https://www.uswitch.com/mobiles/iphone-16-pro-max-deals/#:~:text=If%20buying%20new%2C%20the%20iPhone%2016%20Pro,starts%20at%20%C2%A31%2C199%20for%20the%20256GB%20model.)nnUSA Price Comparison by Model (Starting Prices)nnUS pricing follows a consistent structure across the lineup based on base storage capacity.[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29)nn| Model[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://discussions.apple.com/thread/255995250#:~:text=The%20cheapest%20iPhone%2016e%20costs%20$599%20USD.%20It%20has%20128%20GB%20of%20storage.)[[3]](https://pricespy.co.uk/s/apple-iphone-16/#:~:text=45%25,Max%205G%208GB%20RAM%20512GB)[[4]](https://www.billboard.com/culture/product-recommendations/t-mobile-iphone-16e-free-deal-shop-online-1236108114/#:~:text=Starting%20at%20$599%20for%20the%20125GB%20model%2C,of%20prices%2C%20storage%20options%20and%20wireless%20providers.)[[5]](https://www.cnet.com/tech/mobile/iphone-17e-release-date-price-specs-features-rumors/#:~:text=While%20there%20isn't%20much%20regarding%20the%20pricing,128GB%2C%20with%20the%20latter%20starting%20at%20$699.) | 128GB | 256GB | 512GB | 1TB |n|---|---|---|---|---|n| **iPhone 16e** | $599 | $699 | $899 | N/A |n| **iPhone 16** | $799 | $899 | $1,099 | N/A |n| **iPhone 16 Plus** | $899 | $999 | $1,119 | N/A |n| **iPhone 16 Pro** | $999 | $1,099 | $1,299 | $1,499 |n| **iPhone 16 Pro Max** | N/A | $1,199 | $1,399 | $1,599 |nnUser Sentiment & PerformancennExpert and user reviews highlight several key strengths across the new lineup.[[1]](https://www.aliexpress.com/i/1005008933620970.html#:~:text=Experts%20in%20the%20tech%20industry%20have%20also,the%20overall%20build%20quality%20as%20key%20strengths.)[[2]](https://www.plug.tech/products/iphone-16#:~:text=Reviewers%20praised%20the%20iPhone%2016%20for%20its,device's%20superior%20camera%2C%20audio%2C%20and%20display%20quality.)nn[![Apple iPhone 16](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:21)nApple iPhone 16 £699.00 & more prices Apple & more 4.7 (26.6k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460833570787340,imageDocid:7217864709735610474,gpcid:1465601687215425854,headlineOfferDocid:13836102873727228679,catalogid:14710581654902521012,productDocid:1337961092622867211,rds:CSS_PC_1465601687215425854%7CPC_1465601687215425854%7CPROD_CSS_PC_1465601687215425854%7CPROD_PC_1465601687215425854&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAC) Users on major retail sites highly rate its **attractive design** and **ease of use** , noting that the setup process is straightforward when moving from older devices.nn[![Apple iPhone 16 Plus](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:22)nApple iPhone 16 Plus £799.00 & more prices Apple & more 4.7 (8.7k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462819791058017,imageDocid:16228087196740110850,gpcid:8897179128216049295,headlineOfferDocid:6614134710706234734,catalogid:10946276701947621633,productDocid:2037843367107876121,rds:CSS_PC_8897179128216049295%7CPC_8897179128216049295%7CPROD_CSS_PC_8897179128216049295%7CPROD_PC_8897179128216049295&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAM) Praised for its **large, clear display** and **quality camera** performance.nn[![Apple iPhone 16e](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:23)nApple iPhone 16e £599.00 & more prices Apple & more 4.6 (8.5k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAX) Frequently cited for having **superb battery life** , making it a high-value option for the price.[[1]](https://www.google.com/search?q=product&prds=pvt:hg,productid:1337961092622867211,catalogid:14710581654902521012,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[2]](https://www.google.com/search?q=product&prds=pvt:hg,productid:14054578951609781599,catalogid:4060211885099315058,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[4]](https://www.google.com/search?q=product&prds=pvt:hg,productid:16340024321523860367,catalogid:15304842670567493919,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[5]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[6]](https://www.google.com/search?q=product&prds=pvt:hg,productid:12547667000936348459,catalogid:5238129818833767529,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[7]](https://www.backmarket.co.uk/en-gb/p/iphone-16e-128-gb-black-unlocked/4c1b6278-709b-4680-a6cc-25a2bf00b7c7)[[8]](https://www.amazon.co.uk/Apple-iPhone-16e-128GB-Intelligence/dp/B0DXQV1DQF#:~:text=Other%20Apple%20IPhone%2016e%20is%20amazing%20for,the%20price%20due%20to%20several%20key%20factors:)[[9]](https://medium.com/macoclock/iphone-17-buyers-guide-2026-buy-these-skip-the-air-56359e45c9b5#:~:text=iPhone%2016e%20If%20you%20can%20spend%20%E2%82%AC720%2C,roughly%20half%20the%20price%20of%20a%20Pro.)nnAre you looking for the best **contract deal** or a **SIM-free** purchase for a specific model?",
+                "items": [
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": null,
+                    "text": "The iPhone 16 series starts at £599 / $599 for the iPhone 16e and ranges up to £1,599 / $1,599 for the top-tier iPhone 16 Pro Max with 1TB of storage. While Apple's official pricing is fixed, third-party retailers like Argos and Currys often offer discounts of up to 9% on specific models. CNET +3",
+                    "markdown": "The iPhone 16 series starts at **£599 / $599** for the [iPhone 16e](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAD) and ranges up to **£1,599 / $1,599** for the top-tier [iPhone 16 Pro Max](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462492849692868,imageDocid:17679513203478999390,gpcid:5947667959674427990,headlineOfferDocid:17383852530810184723,catalogid:10702330202256481728,productDocid:7883580942214823167,rds:CSS_PC_5947667959674427990%7CPC_5947667959674427990%7CPROD_CSS_PC_5947667959674427990%7CPROD_PC_5947667959674427990&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAF) with 1TB of storage . While Apple's official pricing is fixed, third-party retailers like [Argos](https://www.argos.co.uk/product/7332520?&utm_custom6=LIA&utm_source=google&utm_medium=free_listing&utm_campaign=merchant_center&deeplink=true) and [Currys](https://www.currys.co.uk/products/apple-iphone-16e-128-gb-black-10276701.html) often offer discounts of up to 9% on specific models.[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[4]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[5]](https://www.whistleout.com.au/MobilePhones/News/iPhone-16-price-cut#:~:text=Apple%20is%20already%20charging%20the%20new%20prices,iPhone%2016%2C%20which%20still%20starts%20at%20$999.)",
+                    "links": [
+                      {
+                        "type": "link_element",
+                        "title": "iPhone 16e",
+                        "description": null,
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAD",
+                        "domain": "www.google.com"
+                      },
+                      {
+                        "type": "link_element",
+                        "title": "iPhone 16 Pro Max",
+                        "description": null,
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462492849692868,imageDocid:17679513203478999390,gpcid:5947667959674427990,headlineOfferDocid:17383852530810184723,catalogid:10702330202256481728,productDocid:7883580942214823167,rds:CSS_PC_5947667959674427990%7CPC_5947667959674427990%7CPROD_CSS_PC_5947667959674427990%7CPROD_PC_5947667959674427990&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQxa4PegQIAhAF",
+                        "domain": "www.google.com"
+                      },
+                      {
+                        "type": "link_element",
+                        "title": "Argos",
+                        "description": null,
+                        "url": "https://www.argos.co.uk/product/7332520?&utm_custom6=LIA&utm_source=google&utm_medium=free_listing&utm_campaign=merchant_center&deeplink=true",
+                        "domain": "www.argos.co.uk"
+                      },
+                      {
+                        "type": "link_element",
+                        "title": "Currys",
+                        "description": null,
+                        "url": "https://www.currys.co.uk/products/apple-iphone-16e-128-gb-black-10276701.html",
+                        "domain": "www.currys.co.uk"
+                      }
+                    ],
+                    "images": null,
+                    "references": [
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "CNET",
+                        "domain": "www.cnet.com",
+                        "url": "https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599",
+                        "title": "Save Yourself Big Bucks by Grabbing the iPhone 16 for Less ...",
+                        "text": "How much does the iPhone 16 cost and what are the specs? Prices differ depending on the amount of storage you buy, but here's the ..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "MacRumors",
+                        "domain": "www.macrumors.com",
+                        "url": "https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29",
+                        "title": "How Much Does Each iPhone 16 Model Cost? - MacRumors",
+                        "text": "How Much Does Each iPhone 16 Model Cost? * iPhone 16e. 128GB: $599 / £599. 256GB: $699 / £699. 512GB: $899 / £899. * iPhone 16. 12..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop",
+                        "title": "Apple iPhone 16e",
+                        "text": "Introducing the iPhone 16e, Apple's latest innovation that combines powerful performance with incredible value. Available in Black..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop",
+                        "title": "Apple iPhone 16 Plus",
+                        "text": "The first iPhone designed for Apple Intelligence. Personal, private, powerful iPhone 16 is built for Apple Intelligence, the perso..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "WhistleOut",
+                        "domain": "www.whistleout.com.au",
+                        "url": "https://www.whistleout.com.au/MobilePhones/News/iPhone-16-price-cut#:~:text=Apple%20is%20already%20charging%20the%20new%20prices,iPhone%2016%2C%20which%20still%20starts%20at%20$999.",
+                        "title": "The iPhone 16 just got a permanent price cut",
+                        "text": "Apple is already charging the new prices for its old iPhones, and we'd expect to see this rolled out to other retailers and telcos..."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": "UK Price Comparison by Model (SIM-Free)",
+                    "text": "Retail prices in the UK vary slightly between the official Apple Store and major electronics retailers.",
+                    "markdown": "Retail prices in the UK vary slightly between the official Apple Store and major electronics retailers.",
+                    "links": null,
+                    "images": null,
+                    "references": null
+                  },
+                  {
+                    "type": "ai_overview_shopping",
+                    "position": "left",
+                    "title": null,
+                    "markdown": "---nn[![Bose QuietComfort Ultra Headphones](https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:4)nBose QuietComfort Ultra Headphones | Argos& more | 4.6(4.5k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462770299523973,imageDocid:18084797911183592765,gpcid:5914059237801924898,headlineOfferDocid:11191504625331247878,catalogid:14286117472031528316,productDocid:7873575568165424103,rds:CSS_PC_5914059237801924898%7CPC_5914059237801924898%7CPROD_CSS_PC_5914059237801924898%7CPROD_PC_5914059237801924898&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QAQ) nnPremium over-ear headphones featuring world-class noise cancellation, custom tuning, up to 24 hours of battery life, and a collapsible folding design for travel comfort.nn---nn[![Bose QuietComfort Ultra Earbuds (2nd Gen)](https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:5)nBose QuietComfort Ultra Earbuds (2nd Gen) | John Lewis | 4.4(3.6k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460790701938448,imageDocid:14285479852416432721,gpcid:7844991865192354685,headlineOfferDocid:5208835562493837166,catalogid:17452493350315801047,productDocid:17119735218485423923,rds:CSS_PC_7844991865192354685%7CPC_7844991865192354685%7CPROD_CSS_PC_7844991865192354685%7CPROD_PC_7844991865192354685&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QDQ) nnFlagship true wireless in-ear buds offering customisable fit kits, Bluetooth Multipoint, IPX4 sweat resistance, and 6 hours of local playback (4 hours with Immersive Audio enabled).[[1]](https://www.bose.co.uk/p/earbuds/bose-quietcomfort-ultra-earbuds/QCUE-HEADPHONEIN.html)[[2]](https://recordingnow.com/blog/bose-quietcomfort-vs-quietcomfort-ultra/)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,pvo:29,productid:17119735218485423923,catalogid:17452493350315801047,gpcid:7844991865192354685,mid:576460790701938448&ibp=oshop)[[4]](https://www.amazon.co.uk/Bose-QuietComfort-Cancelling-World-Class-Cancellation-Black/dp/B0CD2FSRDD)[[5]](https://www.whathifi.com/reviews/bose-quietcomfort-ultra-earbuds)",
+                    "items": [
+                      {
+                        "type": "ai_overview_shopping_element",
+                        "product_id": "14286117472031528316",
+                        "data_docid": "7873575568165424103",
+                        "gid": "5914059237801924898",
+                        "title": "Bose QuietComfort Ultra Headphones",
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462770299523973,imageDocid:18084797911183592765,gpcid:5914059237801924898,headlineOfferDocid:11191504625331247878,catalogid:14286117472031528316,productDocid:7873575568165424103,rds:CSS_PC_5914059237801924898%7CPC_5914059237801924898%7CPROD_CSS_PC_5914059237801924898%7CPROD_PC_5914059237801924898&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QAQ&hl=en&gl=GB",
+                        "domain": "www.google.com",
+                        "rating": {
+                          "rating_type": "Max5",
+                          "value": 4.6,
+                          "votes_count": 4500,
+                          "rating_max": 5
+                        },
+                        "price": {
+                          "current": 134.99,
+                          "regular": null,
+                          "max_value": null,
+                          "currency": "GBP",
+                          "is_price_range": false,
+                          "displayed_price": "£134.99 & more prices"
+                        },
+                        "seller": "Argos",
+                        "snippet": "Argos & more",
+                        "marketplace": null,
+                        "marketplace_url": null,
+                        "image_url": "https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:1",
+                        "text": "Premium over-ear headphones featuring world-class noise cancellation, custom tuning, up to 24 hours of battery life, and a collapsible folding design for travel comfort. Premium over-ear headphones featuring world-class noise cancellation, custom tuning, up to 24 hours of battery life, and a collapsible folding design for travel comfort.",
+                        "markdown": "---nn[![Bose QuietComfort Ultra Headphones](https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:0)nBose QuietComfort Ultra Headphones | Argos& more | 4.6(4.5k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462770299523973,imageDocid:18084797911183592765,gpcid:5914059237801924898,headlineOfferDocid:11191504625331247878,catalogid:14286117472031528316,productDocid:7873575568165424103,rds:CSS_PC_5914059237801924898%7CPC_5914059237801924898%7CPROD_CSS_PC_5914059237801924898%7CPROD_PC_5914059237801924898&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QAQ) nnPremium over-ear headphones featuring world-class noise cancellation, custom tuning, up to 24 hours of battery life, and a collapsible folding design for travel comfort."
+                      },
+                      {
+                        "type": "ai_overview_shopping_element",
+                        "product_id": "17452493350315801047",
+                        "data_docid": "17119735218485423923",
+                        "gid": "7844991865192354685",
+                        "title": "Bose QuietComfort Ultra Earbuds (2nd Gen)",
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460790701938448,imageDocid:14285479852416432721,gpcid:7844991865192354685,headlineOfferDocid:5208835562493837166,catalogid:17452493350315801047,productDocid:17119735218485423923,rds:CSS_PC_7844991865192354685%7CPC_7844991865192354685%7CPROD_CSS_PC_7844991865192354685%7CPROD_PC_7844991865192354685&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QDQ&hl=en&gl=GB",
+                        "domain": "www.google.com",
+                        "rating": {
+                          "rating_type": "Max5",
+                          "value": 4.4,
+                          "votes_count": 3600,
+                          "rating_max": 5
+                        },
+                        "price": {
+                          "current": 229.95,
+                          "regular": null,
+                          "max_value": null,
+                          "currency": "GBP",
+                          "is_price_range": false,
+                          "displayed_price": "£229.95"
+                        },
+                        "seller": "John Lewis",
+                        "snippet": "John Lewis",
+                        "marketplace": null,
+                        "marketplace_url": null,
+                        "image_url": "https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:3",
+                        "text": "Flagship true wireless in-ear buds offering customisable fit kits, Bluetooth Multipoint, IPX4 sweat resistance, and 6 hours of local playback (4 hours with Immersive Audio enabled). Flagship true wireless in-ear buds offering customisable fit kits, Bluetooth Multipoint, IPX4 sweat resistance, and 6 hours of local playback (4 hours with Immersive Audio enabled).",
+                        "markdown": "---nn[![Bose QuietComfort Ultra Earbuds (2nd Gen)](https://api.dataforseo.com/cdn/i/10191028-1535-0139-0000-f03a2d296cdd:2)nBose QuietComfort Ultra Earbuds (2nd Gen) | John Lewis | 4.4(3.6k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460790701938448,imageDocid:14285479852416432721,gpcid:7844991865192354685,headlineOfferDocid:5208835562493837166,catalogid:17452493350315801047,productDocid:17119735218485423923,rds:CSS_PC_7844991865192354685%7CPC_7844991865192354685%7CPROD_CSS_PC_7844991865192354685%7CPROD_PC_7844991865192354685&q=product&sa=X&ved=2ahUKEwiDu9La78WXAxUt_7sIHaNlDD0QgLcPeggIAggBCA8QDQ) nnFlagship true wireless in-ear buds offering customisable fit kits, Bluetooth Multipoint, IPX4 sweat resistance, and 6 hours of local playback (4 hours with Immersive Audio enabled).[[1]](https://google.com/goto?url=CAESkQEB6zswFdkfaEVFG2c8hzjURdYahbshndNSdPuU8CC4OSJS4E7jhZfiM2luEehiH9xhLn6sMrXCVHGZhvldbfkJkuVNCDOTIvDRtez0pTOdluvhcQodK96sWDDKWjAqbBWSbevMWdOKgEuTAE4DAaB8CIP7s4JjsP75rdSpwYrLGLS6vHQV_youLVDpZ3tZLOkJ)[[2]](https://google.com/goto?url=CAESgQEB6zswFUrGHuJMZabcXoNPgw9o8-LWgFN2c0f5tLOUgeewMG7mP7jdKRhT3uqj7sJC_C3nIQIyRtxYvPjNXtTkkXwR4Ggclm6EVEA6QSXiv5ZLDoqBaiV_yjIJ9jZWlFLBBLIbDSTsVNZ67ZsEWpBiElS9nNrSKqwROzMBg52MIoE)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,pvo:29,productid:17119735218485423923,catalogid:17452493350315801047,gpcid:7844991865192354685,mid:576460790701938448&ibp=oshop)[[4]](https://google.com/goto?url=CAESnQEB6zswFcsDBVCCYXJSdKDB_Ep-VWAUITH6hWwdDFy4CqOYCrV4vjO_4p3SBovAtafkvsnSMKeR4qF87uUfRGwYOvWIUr5d0uCySI_F5EMGmdYLwPzjJls2mfnwq_Q2gYrASF58Vv80Zvr-fq21ok7GO_zkEKzPk4OYJV-wjeoLoOHiJQw1lw0UzGdMO8Disl1ikyAsb_TV6J_2Qiuf)[[5]](https://google.com/goto?url=CAESewHrOzAVE9aUXwf4bN6Msh_iUdQ2W_Pkk-i1rQl5ChyFCv-TC60c9yC4v_7VCiLo10R0U2QF8VaUi8fDItsMytpphkQnS0tQPkjVW5DAgOoSmI4USNFdDLjJFAVVGlNgD64gHF7ejar2Jwcx5zqMH7wQ6jrrq4gbn5vfWA)"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": "USA Price Comparison by Model (Starting Prices)",
+                    "text": "US pricing follows a consistent structure across the lineup based on base storage capacity. CNET +1",
+                    "markdown": "US pricing follows a consistent structure across the lineup based on base storage capacity.[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29)",
+                    "links": null,
+                    "images": null,
+                    "references": [
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "CNET",
+                        "domain": "www.cnet.com",
+                        "url": "https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599",
+                        "title": "Save Yourself Big Bucks by Grabbing the iPhone 16 for Less ...",
+                        "text": "How much does the iPhone 16 cost and what are the specs? Prices differ depending on the amount of storage you buy, but here's the ..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "MacRumors",
+                        "domain": "www.macrumors.com",
+                        "url": "https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29",
+                        "title": "How Much Does Each iPhone 16 Model Cost? - MacRumors",
+                        "text": "How Much Does Each iPhone 16 Model Cost? * iPhone 16e. 128GB: $599 / £599. 256GB: $699 / £699. 512GB: $899 / £899. * iPhone 16. 12..."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_table_element",
+                    "position": "left",
+                    "markdown": "| Model[[1]](https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599)[[2]](https://discussions.apple.com/thread/255995250#:~:text=The%20cheapest%20iPhone%2016e%20costs%20$599%20USD.%20It%20has%20128%20GB%20of%20storage.)[[3]](https://pricespy.co.uk/s/apple-iphone-16/#:~:text=45%25,Max%205G%208GB%20RAM%20512GB)[[4]](https://www.billboard.com/culture/product-recommendations/t-mobile-iphone-16e-free-deal-shop-online-1236108114/#:~:text=Starting%20at%20$599%20for%20the%20125GB%20model%2C,of%20prices%2C%20storage%20options%20and%20wireless%20providers.)[[5]](https://www.cnet.com/tech/mobile/iphone-17e-release-date-price-specs-features-rumors/#:~:text=While%20there%20isn't%20much%20regarding%20the%20pricing,128GB%2C%20with%20the%20latter%20starting%20at%20$699.) | 128GB | 256GB | 512GB | 1TB |n|---|---|---|---|---|n| **iPhone 16e** | $599 | $699 | $899 | N/A |n| **iPhone 16** | $799 | $899 | $1,099 | N/A |n| **iPhone 16 Plus** | $899 | $999 | $1,119 | N/A |n| **iPhone 16 Pro** | $999 | $1,099 | $1,299 | $1,499 |n| **iPhone 16 Pro Max** | N/A | $1,199 | $1,399 | $1,599 |",
+                    "table": {
+                      "table_header": null,
+                      "table_content": [
+                        [
+                          "Model",
+                          "128GB",
+                          "256GB",
+                          "512GB",
+                          "1TB"
+                        ],
+                        [
+                          "iPhone 16e",
+                          "$599",
+                          "$699",
+                          "$899",
+                          "N/A"
+                        ],
+                        [
+                          "iPhone 16",
+                          "$799",
+                          "$899",
+                          "$1,099",
+                          "N/A"
+                        ],
+                        [
+                          "iPhone 16 Plus",
+                          "$899",
+                          "$999",
+                          "$1,119",
+                          "N/A"
+                        ],
+                        [
+                          "iPhone 16 Pro",
+                          "$999",
+                          "$1,099",
+                          "$1,299",
+                          "$1,499"
+                        ],
+                        [
+                          "iPhone 16 Pro Max",
+                          "N/A",
+                          "$1,199",
+                          "$1,399",
+                          "$1,599"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": "User Sentiment & Performance",
+                    "text": "Expert and user reviews highlight several key strengths across the new lineup.",
+                    "markdown": "Expert and user reviews highlight several key strengths across the new lineup.[[1]](https://www.aliexpress.com/i/1005008933620970.html#:~:text=Experts%20in%20the%20tech%20industry%20have%20also,the%20overall%20build%20quality%20as%20key%20strengths.)[[2]](https://www.plug.tech/products/iphone-16#:~:text=Reviewers%20praised%20the%20iPhone%2016%20for%20its,device's%20superior%20camera%2C%20audio%2C%20and%20display%20quality.)",
+                    "links": null,
+                    "images": null,
+                    "references": [
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "AliExpress",
+                        "domain": "www.aliexpress.com",
+                        "url": "https://www.aliexpress.com/i/1005008933620970.html#:~:text=Experts%20in%20the%20tech%20industry%20have%20also,the%20overall%20build%20quality%20as%20key%20strengths.",
+                        "title": "Apple 6.1 iPhone 16 Dual SIM Card Cellphone 5G Unlocked Super Retina XDR OLED Face ID A18 128/256/512GB ROM 8GB RAM Smartphone",
+                        "text": "Experts in the tech industry have also praised the iPhone 16 for its performance and features. According to a recent review by Tec..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Plug",
+                        "domain": "www.plug.tech",
+                        "url": "https://www.plug.tech/products/iphone-16#:~:text=Reviewers%20praised%20the%20iPhone%2016%20for%20its,device's%20superior%20camera%2C%20audio%2C%20and%20display%20quality.",
+                        "title": "iPhone 16 – Plug",
+                        "text": "Reviewers praised the iPhone 16 for its excellent condition, high battery health, and the convenience of pre-installed tempered gl..."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_shopping",
+                    "position": "left",
+                    "title": null,
+                    "markdown": "[![Apple iPhone 16](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:11)nApple iPhone 16 £699.00 & more prices Apple & more 4.7 (26.6k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460833570787340,imageDocid:7217864709735610474,gpcid:1465601687215425854,headlineOfferDocid:13836102873727228679,catalogid:14710581654902521012,productDocid:1337961092622867211,rds:CSS_PC_1465601687215425854%7CPC_1465601687215425854%7CPROD_CSS_PC_1465601687215425854%7CPROD_PC_1465601687215425854&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAC)",
+                    "items": [
+                      {
+                        "type": "ai_overview_shopping_element",
+                        "product_id": "14710581654902521012",
+                        "data_docid": "17363035694596624076",
+                        "gid": "35723601308729824",
+                        "title": "Apple iPhone 16",
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576460833570787340,imageDocid:7217864709735610474,gpcid:1465601687215425854,headlineOfferDocid:13836102873727228679,catalogid:14710581654902521012,productDocid:1337961092622867211,rds:CSS_PC_1465601687215425854%7CPC_1465601687215425854%7CPROD_CSS_PC_1465601687215425854%7CPROD_PC_1465601687215425854&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAC",
+                        "domain": "www.google.com",
+                        "rating": {
+                          "rating_type": "Max5",
+                          "value": 4.7,
+                          "votes_count": 26600,
+                          "rating_max": 5
+                        },
+                        "price": {
+                          "current": 699,
+                          "regular": null,
+                          "max_value": null,
+                          "currency": "GBP",
+                          "is_price_range": false,
+                          "displayed_price": "£699.00 & more prices"
+                        },
+                        "seller": "Apple",
+                        "snippet": null,
+                        "marketplace": null,
+                        "marketplace_url": null,
+                        "image_url": "https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:10"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": null,
+                    "text": "Users on major retail sites highly rate its attractive design and ease of use, noting that the setup process is straightforward when moving from older devices.",
+                    "markdown": "Users on major retail sites highly rate its **attractive design** and **ease of use** , noting that the setup process is straightforward when moving from older devices.",
+                    "links": null,
+                    "images": null,
+                    "references": null
+                  },
+                  {
+                    "type": "ai_overview_shopping",
+                    "position": "left",
+                    "title": null,
+                    "markdown": "[![Apple iPhone 16 Plus](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:13)nApple iPhone 16 Plus £799.00 & more prices Apple & more 4.7 (8.7k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462819791058017,imageDocid:16228087196740110850,gpcid:8897179128216049295,headlineOfferDocid:6614134710706234734,catalogid:10946276701947621633,productDocid:2037843367107876121,rds:CSS_PC_8897179128216049295%7CPC_8897179128216049295%7CPROD_CSS_PC_8897179128216049295%7CPROD_PC_8897179128216049295&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAM)",
+                    "items": [
+                      {
+                        "type": "ai_overview_shopping_element",
+                        "product_id": "10946276701947621633",
+                        "data_docid": "17363035694596624076",
+                        "gid": "35723601308729824",
+                        "title": "Apple iPhone 16 Plus",
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462819791058017,imageDocid:16228087196740110850,gpcid:8897179128216049295,headlineOfferDocid:6614134710706234734,catalogid:10946276701947621633,productDocid:2037843367107876121,rds:CSS_PC_8897179128216049295%7CPC_8897179128216049295%7CPROD_CSS_PC_8897179128216049295%7CPROD_PC_8897179128216049295&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAM",
+                        "domain": "www.google.com",
+                        "rating": {
+                          "rating_type": "Max5",
+                          "value": 4.7,
+                          "votes_count": 8700,
+                          "rating_max": 5
+                        },
+                        "price": {
+                          "current": 799,
+                          "regular": null,
+                          "max_value": null,
+                          "currency": "GBP",
+                          "is_price_range": false,
+                          "displayed_price": "£799.00 & more prices"
+                        },
+                        "seller": "Apple",
+                        "snippet": null,
+                        "marketplace": null,
+                        "marketplace_url": null,
+                        "image_url": "https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:12"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": null,
+                    "text": "Praised for its large, clear display and quality camera performance.",
+                    "markdown": "Praised for its **large, clear display** and **quality camera** performance.",
+                    "links": null,
+                    "images": null,
+                    "references": null
+                  },
+                  {
+                    "type": "ai_overview_shopping",
+                    "position": "left",
+                    "title": null,
+                    "markdown": "[![Apple iPhone 16e](https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:15)nApple iPhone 16e £599.00 & more prices Apple & more 4.6 (8.5k)](https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAX)",
+                    "items": [
+                      {
+                        "type": "ai_overview_shopping_element",
+                        "product_id": "6232195553081206070",
+                        "data_docid": "17363035694596624076",
+                        "gid": "35723601308729824",
+                        "title": "Apple iPhone 16e",
+                        "url": "https://www.google.com/search?ibp=oshop&prds=pvt:hg,pvo:29,mid:576462880781495626,imageDocid:7398186838865327481,gpcid:14126173308846421367,headlineOfferDocid:1127918481051440950,catalogid:6232195553081206070,productDocid:4339668247161124257,rds:CSS_PC_14126173308846421367%7CPC_14126173308846421367%7CPROD_CSS_PC_14126173308846421367%7CPROD_PC_14126173308846421367&q=product&sa=X&ved=2ahUKEwjh58G0rfKSAxVoPEQIHXzkGwgQgLcPegQIDBAX",
+                        "domain": "www.google.com",
+                        "rating": {
+                          "rating_type": "Max5",
+                          "value": 4.6,
+                          "votes_count": 8500,
+                          "rating_max": 5
+                        },
+                        "price": {
+                          "current": 599,
+                          "regular": null,
+                          "max_value": null,
+                          "currency": "GBP",
+                          "is_price_range": false,
+                          "displayed_price": "£599.00 & more prices"
+                        },
+                        "seller": "Apple",
+                        "snippet": null,
+                        "marketplace": null,
+                        "marketplace_url": null,
+                        "image_url": "https://api.dataforseo.com/cdn/i/02241638-1535-0139-0000-f0c53c397c88:14"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": null,
+                    "text": "Frequently cited for having superb battery life, making it a high-value option for the price.",
+                    "markdown": "Frequently cited for having **superb battery life** , making it a high-value option for the price.[[1]](https://www.google.com/search?q=product&prds=pvt:hg,productid:1337961092622867211,catalogid:14710581654902521012,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[2]](https://www.google.com/search?q=product&prds=pvt:hg,productid:14054578951609781599,catalogid:4060211885099315058,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop)[[3]](https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[4]](https://www.google.com/search?q=product&prds=pvt:hg,productid:16340024321523860367,catalogid:15304842670567493919,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop)[[5]](https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[6]](https://www.google.com/search?q=product&prds=pvt:hg,productid:12547667000936348459,catalogid:5238129818833767529,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop)[[7]](https://www.backmarket.co.uk/en-gb/p/iphone-16e-128-gb-black-unlocked/4c1b6278-709b-4680-a6cc-25a2bf00b7c7)[[8]](https://www.amazon.co.uk/Apple-iPhone-16e-128GB-Intelligence/dp/B0DXQV1DQF#:~:text=Other%20Apple%20IPhone%2016e%20is%20amazing%20for,the%20price%20due%20to%20several%20key%20factors:)[[9]](https://medium.com/macoclock/iphone-17-buyers-guide-2026-buy-these-skip-the-air-56359e45c9b5#:~:text=iPhone%2016e%20If%20you%20can%20spend%20%E2%82%AC720%2C,roughly%20half%20the%20price%20of%20a%20Pro.)",
+                    "links": null,
+                    "images": null,
+                    "references": [
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:1337961092622867211,catalogid:14710581654902521012,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop",
+                        "title": "Apple iPhone 16: User Reviews",
+                        "text": "The average rating is 4.7 out of 5 stars.n153 reviews support the following advantage: easy to set up. Users find the setup proces..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:14054578951609781599,catalogid:4060211885099315058,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop",
+                        "title": "Apple iPhone 16: User Reviews",
+                        "text": "The average rating is 4.7 out of 5 stars.n153 reviews support the following advantage: easy to set up. Users find the setup proces..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop",
+                        "title": "Apple iPhone 16 Plus: User Reviews",
+                        "text": "The average rating is 4.7 out of 5 stars.n128 reviews support the following advantage: large display. Users appreciate the large s..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:16340024321523860367,catalogid:15304842670567493919,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop",
+                        "title": "Apple iPhone 16 Plus: User Reviews",
+                        "text": "The average rating is 4.7 out of 5 stars.n128 reviews support the following advantage: large display. Users appreciate the large s..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop",
+                        "title": "Apple iPhone 16e: User Reviews",
+                        "text": "The average rating is 4.6 out of 5 stars.n406 reviews support the following advantage: long battery life. Users find the battery l..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Google",
+                        "domain": "www.google.com",
+                        "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:12547667000936348459,catalogid:5238129818833767529,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop",
+                        "title": "Apple iPhone 16e: User Reviews",
+                        "text": "The average rating is 4.6 out of 5 stars.n406 reviews support the following advantage: long battery life. Users find the battery l..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "www.backmarket.co.uk",
+                        "domain": "www.backmarket.co.uk",
+                        "url": "https://www.backmarket.co.uk/en-gb/p/iphone-16e-128-gb-black-unlocked/4c1b6278-709b-4680-a6cc-25a2bf00b7c7",
+                        "title": "iPhone 16e 128GB - Black - Unlocked",
+                        "text": "Robin D. Reviewed 01/02/2026, United Kingdom. I needed to buy a new iPhone but I didn't want to buy a new one and I decided to buy..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Amazon.co.uk",
+                        "domain": "www.amazon.co.uk",
+                        "url": "https://www.amazon.co.uk/Apple-iPhone-16e-128GB-Intelligence/dp/B0DXQV1DQF#:~:text=Other%20Apple%20IPhone%2016e%20is%20amazing%20for,the%20price%20due%20to%20several%20key%20factors:",
+                        "title": "Apple iPhone 16e 128GB: Built for Apple Intelligence, A18 Chip, Supersized Battery Life, 48MP Fusion Camera, 6.1-inch Super Retina XDR Display; White",
+                        "text": "Other Apple IPhone 16e is amazing for the price. The iPhone 16e is truly a wonderful phone and amazing for the price due to severa..."
+                      },
+                      {
+                        "type": "ai_overview_reference",
+                        "position": "left",
+                        "source": "Medium",
+                        "domain": "medium.com",
+                        "url": "https://medium.com/macoclock/iphone-17-buyers-guide-2026-buy-these-skip-the-air-56359e45c9b5#:~:text=iPhone%2016e%20If%20you%20can%20spend%20%E2%82%AC720%2C,roughly%20half%20the%20price%20of%20a%20Pro.",
+                        "title": "iPhone 17 Buyer’s Guide 2026 — Buy These, Skip the Air",
+                        "text": "iPhone 16e If you can spend €720, the entry model — iPhone 16e — is an excellent value. Apple cut three major features to hit that..."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_element",
+                    "position": "left",
+                    "title": "contract deal SIM-free",
+                    "text": null,
+                    "markdown": "Are you looking for the best **contract deal** or a **SIM-free** purchase for a specific model?",
+                    "links": null,
+                    "images": null,
+                    "references": null
+                  },
+                  {
+                    "type": "ai_overview_paid",
+                    "position": "left",
+                    "text": "To get an estimate based on your home's details, you can get a quote from these providers.",
+                    "markdown": "To get an estimate based on your home's details, you can get a quote from these providers.",
+                    "items": [
+                      {
+                        "type": "ai_overview_paid_element",
+                        "title": "Get a Free Quote Online - Get Your Fast, Free Quote",
+                        "url": "https://www.amica.com/",
+                        "domain": "www.amica.com",
+                        "ad_aclk": "DChsSEwifmI70xcWVAxU7bg8CHf0iOMoYACICCAIQABoCdGI",
+                        "website_name": "Amica Mutual Insurance",
+                        "breadcrumb": "https://www.amica.com",
+                        "snippet": "Rated One of 'America's Best Insurance Companies' of 2026 by Forbes. Get Your Quote Today!",
+                        "images": [
+                          {
+                            "type": "images_element",
+                            "alt": null,
+                            "url": null,
+                            "image_url": "https://api.dataforseo.com/cdn/i/07091500-8407-0066-0000-bd6cd37fd173:0"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ai_overview_paid_element",
+                        "title": "Progressive®️ Home Insurance - Quote Homeowners Online Today - Quick & Easy Online Quoting",
+                        "url": "https://www.progressive.com/",
+                        "domain": "www.progressive.com",
+                        "ad_aclk": "DChsSEwifmI70xcWVAxU7bg8CHf0iOMoYACICCAIQARoCdGI",
+                        "website_name": "Progressive",
+                        "breadcrumb": "https://www.progressive.com › home › insurance",
+                        "snippet": "Protect Your Home and Possessions at an Affordable Price. See How Much You Can Save Today!",
+                        "images": [
+                          {
+                            "type": "images_element",
+                            "alt": null,
+                            "url": null,
+                            "image_url": "https://api.dataforseo.com/cdn/i/07091500-8407-0066-0000-bd6cd37fd173:1"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ai_overview_code_block_element",
+                    "position": "left",
+                    "code_type": "json",
+                    "text": "{ \"title\" : \"The Hobbit\", \"author\" : \"J.R.R. Tolkien\", \"year\" : 1937 }"
+                  }
+                ],
+                "references": [
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "MoneySuperMarket",
+                    "domain": "www.moneysupermarket.com",
+                    "url": "https://www.moneysupermarket.com/mobile-phones/apple/iphone-16-pro-deals/#:~:text=with%20iOS%2018-,Availability%20and%20price,899%20and%20%C2%A31%2C199%20respectively.",
+                    "title": "Best iPhone 16 Pro Deals - February 2026 - MoneySuperMarket",
+                    "text": "Availability and price. The standard iPhone 16, iPhone 16 Plus and iPhone 16 Pro Max are priced from £799, £899 and £1,199 respect..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "idealo",
+                    "domain": "www.idealo.co.uk",
+                    "url": "https://www.idealo.co.uk/compare/204736911/apple-iphone-16-pro.html",
+                    "title": "Buy Apple iPhone 16 Pro from £849.00 (Today) - idealo",
+                    "text": "* 14 Variants from £849.00. Filter. Colour: Black. Gold. Grey. White. Internal Memory (GB): 128 GB. 256 GB. 512 GB. 1.000 GB. £849..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Idealo",
+                    "domain": "www.idealo.co.uk",
+                    "url": "https://www.idealo.co.uk/compare/204771161/apple-iphone-16-128gb-black.html",
+                    "title": "Apple iPhone 16 128GB Black - Idealo",
+                    "text": "Price comparison * Apple iPhone 16 128GB 5G UNLOCKED Smartphone NEW SEALED BOX. £598.99. £598.99 incl. delivery. Will usually deli..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "PriceSpy UK",
+                    "domain": "pricespy.co.uk",
+                    "url": "https://pricespy.co.uk/s/apple-iphone-16/#:~:text=45%25,Max%205G%208GB%20RAM%20512GB",
+                    "title": "Apple iphone 16 – Find the best price - PriceSpy UK",
+                    "text": "45% Apple iPhone 16e 8GB RAM 128GB. 8GB, 2025, 128GB, 5G (NR), iPhone 16, 6.1 inches. (4) £125.00. Apple iPhone 16 Pro Max 5G 8GB ..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "CNET",
+                    "domain": "www.cnet.com",
+                    "url": "https://www.cnet.com/deals/best-iphone-16-deals/#:~:text=iPhone%2016E:%20$599%20to%20$899,Pro%20Max:%20$1%2C199%20to%20$1%2C599",
+                    "title": "Save Yourself Big Bucks by Grabbing the iPhone 16 for Less ...",
+                    "text": "How much does the iPhone 16 cost and what are the specs? Prices differ depending on the amount of storage you buy, but here's the ..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "MacRumors",
+                    "domain": "www.macrumors.com",
+                    "url": "https://www.macrumors.com/2025/02/21/how-much-does-iphone-16-cost/#:~:text=Friday%20February%2021%2C%202025%205,16e%20%28Don't%20Buy%29",
+                    "title": "How Much Does Each iPhone 16 Model Cost? - MacRumors",
+                    "text": "How Much Does Each iPhone 16 Model Cost? * iPhone 16e. 128GB: $599 / £599. 256GB: $699 / £699. 512GB: $899 / £899. * iPhone 16. 12..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:2037843367107876121,catalogid:10946276701947621633,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop",
+                    "title": "Apple iPhone 16 Plus",
+                    "text": "The first iPhone designed for Apple Intelligence. Personal, private, powerful iPhone 16 is built for Apple Intelligence, the perso..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:4339668247161124257,catalogid:6232195553081206070,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop",
+                    "title": "Apple iPhone 16e",
+                    "text": "Introducing the iPhone 16e, Apple's latest innovation that combines powerful performance with incredible value. Available in Black..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:1337961092622867211,catalogid:14710581654902521012,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop",
+                    "title": "Apple iPhone 16",
+                    "text": "New Apple iPhone 16. Featuring Camera Control, giving you an easier way to quickly access camera tools and an all-new A18 chip tha..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:14054578951609781599,catalogid:4060211885099315058,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop",
+                    "title": "Apple iPhone 16",
+                    "text": "The Apple iPhone 16 128GB in Black is the next-generation iPhone with enhanced speed and design. Featuring Apple’s newest chipset,"
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:3452562929003363618,catalogid:13039969681672175437,gpcid:1465601687215425854,mid:576460833570787340&ibp=oshop",
+                    "title": "Apple iPhone 16",
+                    "text": "Discover the power of the Apple iPhone 16 128GB Blue, a high-performance smartphone that combines sophistication with cutting-edge..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:16340024321523860367,catalogid:15304842670567493919,gpcid:8897179128216049295,mid:576462819791058017&ibp=oshop",
+                    "title": "Apple iPhone 16 Plus: User Reviews",
+                    "text": "The average rating is 4.7 out of 5 stars.n128 reviews support the following advantage: large display. Users appreciate the large s..."
+                  },
+                  {
+                    "type": "ai_overview_reference",
+                    "position": "right",
+                    "source": "Google",
+                    "domain": "www.google.com",
+                    "url": "https://www.google.com/search?q=product&prds=pvt:hg,productid:12547667000936348459,catalogid:5238129818833767529,gpcid:14126173308846421367,mid:576462880781495626&ibp=oshop",
+                    "title": "Apple iPhone 16e: User Reviews",
+                    "text": "The average rating is 4.6 out of 5 stars.n406 reviews support the following advantage: long battery life. Users find the battery l..."
+                  }
+                ],
+                "rectangle": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "_source": {
+    "url": "https://docs.perplexity.ai/docs/agent-api/tools/web-search.md",
+    "fetched": "2026-11-03",
+    "note": "Documented response shape copied verbatim. The docs omit the 'model' field here. Not a live capture."
+  },
+  "response": {
+    "output": [
+      {
+        "type": "search_results",
+        "queries": [
+          "AI infrastructure announcements"
+        ],
+        "results": [
+          {
+            "id": 1,
+            "url": "https://example.com/news",
+            "title": "Example AI infrastructure announcement",
+            "snippet": "A short snippet from the search result.",
+            "date": "2026-05-01",
+            "last_updated": "2026-05-01",
+            "source": "web"
+          }
+        ]
+      },
+      {
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "The answer generated from the search results."
+          }
+        ]
+      }
+    ],
+    "usage": {
+      "input_tokens": 1200,
+      "output_tokens": 300,
+      "total_tokens": 1500,
+      "tool_calls_details": {
+        "search_web": {
+          "invocation": 1
+        }
+      }
+    }
+  }
+}

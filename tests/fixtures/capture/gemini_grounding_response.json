@@ -1,0 +1,98 @@
+{
+  "_source": {
+    "url": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/grounding/grounding-with-google-search",
+    "fetched": "2026-11-03",
+    "note": "Documented generateContent response with Grounding with Google Search, copied verbatim (Vertex AI docs; the Gemini Developer API returns the same candidates/groundingMetadata shape). Not a live capture."
+  },
+  "response": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "The weather in Chicago this weekend, will be partly cloudy. The temperature will be between 49°F (9°C) and 55°F (13°C) on Saturday and between 51°F (11°C) and 56°F (13°C) on Sunday. There is a slight chance of rain on both days.\n"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "groundingMetadata": {
+          "webSearchQueries": [
+            "weather in Chicago this weekend"
+          ],
+          "searchEntryPoint": {
+            "renderedContent": "..."
+          },
+          "groundingChunks": [
+            {
+              "web": {
+                "uri": "https://www.google.com/search?q=weather+in+Chicago,+IL",
+                "title": "Weather information for locality: Chicago, administrative_area: IL",
+                "domain": "google.com"
+              }
+            },
+            {
+              "web": {
+                "uri": "...",
+                "title": "weatherbug.com",
+                "domain": "weatherbug.com"
+              }
+            }
+          ],
+          "groundingSupports": [
+            {
+              "segment": {
+                "startIndex": 85,
+                "endIndex": 214,
+                "text": "The temperature will be between 49°F (9°C) and 55°F (13°C) on Saturday and between 51°F (11°C) and 56°F (13°C) on Sunday."
+              },
+              "groundingChunkIndices": [
+                0
+              ],
+              "confidenceScores": [
+                0.8662828
+              ]
+            },
+            {
+              "segment": {
+                "startIndex": 215,
+                "endIndex": 261,
+                "text": "There is a slight chance of rain on both days."
+              },
+              "groundingChunkIndices": [
+                1,
+                0
+              ],
+              "confidenceScores": [
+                0.62836814,
+                0.6488607
+              ]
+            }
+          ],
+          "retrievalMetadata": {}
+        }
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 10,
+      "candidatesTokenCount": 98,
+      "totalTokenCount": 108,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 10
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 98
+        }
+      ]
+    },
+    "modelVersion": "gemini-2.0-flash",
+    "createTime": "2025-05-19T14:42:55.000643Z",
+    "responseId": "b0MraIMFoqnf-Q-D66G4BQ"
+  }
+}

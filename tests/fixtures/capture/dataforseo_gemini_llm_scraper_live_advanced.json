@@ -1,0 +1,247 @@
+{
+  "_source": {
+    "url": "https://docs.dataforseo.com/v3/ai_optimization/gemini/llm_scraper/live/advanced/",
+    "fetched": "2026-11-03",
+    "note": "Documented example response copied verbatim from the provider docs. Not a live capture."
+  },
+  "response": {
+    "version": "0.1.20260218",
+    "status_code": 20000,
+    "status_message": "Ok.",
+    "time": "27.1013 sec.",
+    "cost": 0.004,
+    "tasks_count": 1,
+    "tasks_error": 0,
+    "tasks": [
+      {
+        "id": "02191522-1535-0629-0000-6d7325b7b32c",
+        "status_code": 20000,
+        "status_message": "Ok.",
+        "time": "27.0670 sec.",
+        "cost": 0.004,
+        "result_count": 1,
+        "path": [
+          "v3",
+          "ai_optimization",
+          "gemini",
+          "llm_scraper",
+          "live",
+          "advanced"
+        ],
+        "data": {
+          "api": "ai_optimization",
+          "function": "live",
+          "se": "gemini",
+          "language_code": "en",
+          "location_code": 2840,
+          "keyword": "albert einstein",
+          "device": "desktop",
+          "os": "windows"
+        },
+        "result": [
+          {
+            "keyword": "albert einstein",
+            "location_code": 2840,
+            "language_code": "en",
+            "model": "Fast",
+            "datetime": "2026-02-19 13:22:39 +00:00",
+            "markdown": "Albert Einstein is arguably the most famous physicist in history, not just for his wild hair and eccentric persona, but for fundamentally rewriting the laws of the universe.[ukgermanconnection.org](https://ukgermanconnection.org/kids/find-out-en/albert-einstein/)nnIn 1905—often called his *annus mirabilis* (miracle year)—he published four papers that changed everything, from the nature of light to the way we understand time and space.[www.ebsco.com](https://www.ebsco.com/research-starters/history/einstein-states-his-theory-special-relativity)nn### The Pillars of His WorknnEinstein’s legacy rests on a few revolutionary concepts that shifted physics away from the classical mechanics of Isaac Newton:[thedecisionlab.com](https://thedecisionlab.com/thinkers/philosophy/albert-einstein)nn* **General Relativity:** This is the big one. Einstein proposed that gravity isn't a pulling force, but a curvature of space-time caused by mass.[www.space.com](https://www.space.com/17661-theory-general-relativity.html#:~:text=The%20gravitational%20field%20comes%20out,result%20of%20the%20curved%20spacetime.)n  * **The Equation:** [fiveable.me](https://fiveable.me/riemannian-geometry/unit-13/einstein-field-equations-geometric-interpretation/study-guide/9y5ta3S24M3gpsDn#:~:text=Expressed%20mathematically%20as%20G%20%CE%BC,8%CF%80GT%CE%BC%CE%BD)$G_{munu} + Lambda g_{munu} = frac{8pi G}{c^4} T_{munu}$n* **Special Relativity:** He established that the laws of physics are the same for all non-accelerating observers and that the speed of light is a constant.[www.monash.edu](https://www.monash.edu/student-academic-success/physics/relativity/comparing-einsteins-relativity-to-classical-physics#:~:text=The%20speed%20of%20light%20in%20a%20vacuum%20is%20constant%20for,of%20the%20source%20of%20light.) This led to the most famous equation in history, relating mass ([www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)$m$) and energy ([www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)$E$):[www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)n  * **The Equation:** [www.pbs.org](https://www.pbs.org/wgbh/nova/einstein/lrk-hand-emc2expl.html)$E = mc^2$n* **The Photoelectric Effect:** While most people think he won the Nobel Prize for relativity, he actually won it for this.[www.nobelprize.org](https://www.nobelprize.org/prizes/physics/1921/summary/) He proved that light acts as both a wave and a particle (quanta), which helped kickstart **Quantum Mechanics**.nn---nn### 5 Fast Factsnn| Aspect | Detail |n| :--- | :--- |n| **Nobel Prize** | Physics (1921) |n| **Early Life** | Born in Ulm, Germany; struggled with rigid school systems. |n| **Personal Style** | Famously hated socks and rarely wore them. |n| **Humanitarianism** | A staunch pacifist and advocate for civil rights. |n| **The Brain** | After his death, his brain was removed (without family permission) for study. |nn---nn### Why He Still MattersnnEinstein’s theories weren't just abstract math; they are the reason your **GPS** works.[www.nasa.gov](https://www.nasa.gov/image-article/einsteins-theory-of-relativity-critical-gps-seen-distant-stars/#:~:text=Einstein's%20Theory%20of%20Relativity%2C%20Critical,Seen%20In%20Distant%20Stars%20-%20NASA) Without corrections for time dilation (time moving differently for satellites than for people on Earth), your phone’s map would be off by several kilometers within a single day.[www.youtube.com](https://www.youtube.com/shorts/LkWZSBgJ7Wg)nn> Imagination is more important than knowledge. For knowledge is limited, whereas imagination embraces the entire world, stimulating progress, giving birth to evolution.[www.tuneintoleadership.com](https://www.tuneintoleadership.com/newsletter/the-power-of-imagination-to-elevate-leadership#:~:text=Knowledge%20is%20limited.,%E2%80%95Albert%20Einstein) — **Albert Einstein**nn---nn**Would you like me to dive deeper into one of his specific theories, or perhaps generate an image of Einstein in a modern setting?**",
+            "sources": [
+              {
+                "type": "gemini_source",
+                "title": "Albert Einstein – The Voyage Kids - UK German Connection",
+                "snippet": "Albert Einstein was a scientist and best known for his theory of relativity. This theory tries to explain the relationship between space, time, matter and ...",
+                "domain": "ukgermanconnection.org",
+                "url": "https://ukgermanconnection.org/kids/find-out-en/albert-einstein/",
+                "thumbnail": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcRUYxfhy5YlH9MB9u2_ZAViKb5WoDIXhSd6kXA_ujWQNEpvQxUKShS2-8qgIlbjJI50b9c5MdzIKLThVS-r3d4j6KhZXvNFgsjSz5488syxVA",
+                "source_name": "UK German Connection",
+                "publication_date": null,
+                "markdown": "Albert Einstein is arguably the most famous physicist in history, not just for his wild hair and eccentric persona, but for fundamentally rewriting the laws of the universe."
+              },
+              {
+                "type": "gemini_source",
+                "title": "The Power of Imagination to Elevate Leadership",
+                "snippet": "Knowledge is limited. Imagination embraces the entire world, stimulating progress, giving birth to evolution. ―Albert Einstein.",
+                "domain": "www.tuneintoleadership.com",
+                "url": "https://www.tuneintoleadership.com/newsletter/the-power-of-imagination-to-elevate-leadership#:~:text=Knowledge%20is%20limited.,%E2%80%95Albert%20Einstein",
+                "thumbnail": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcQYRnqFyjfBmF3L6hqP5UaVinHFgDeFSE3zppGauJJly0mNnbpYs8jru5HEow3OAicJsmz-UgV0vxVMJE8Op8DVpsMOSbSe0Lnys3Q3TGPdSJq6McM",
+                "source_name": "Tune Into Leadership",
+                "publication_date": null,
+                "markdown": "For knowledge is limited, whereas imagination embraces the entire world, stimulating progress, giving birth to evolution."
+              }
+            ],
+            "se_results_count": 0,
+            "item_types": [
+              "gemini_text",
+              "gemini_table",
+              "gemini_images"
+            ],
+            "items_count": 5,
+            "items": [
+              {
+                "type": "gemini_text",
+                "rank_group": 1,
+                "rank_absolute": 1,
+                "markdown": "Albert Einstein is arguably the most famous physicist in history, not just for his wild hair and eccentric persona, but for fundamentally rewriting the laws of the universe.[ukgermanconnection.org](https://ukgermanconnection.org/kids/find-out-en/albert-einstein/)",
+                "original_text": "Albert Einstein is arguably the most famous physicist in history, not just for his wild hair and eccentric persona, but for fundamentally rewriting the laws of the universe.",
+                "sources": [
+                  {
+                    "type": "gemini_source",
+                    "title": "Albert Einstein – The Voyage Kids - UK German Connection",
+                    "snippet": "Albert Einstein was a scientist and best known for his theory of relativity. This theory tries to explain the relationship between space, time, matter and ...",
+                    "domain": "ukgermanconnection.org",
+                    "url": "https://ukgermanconnection.org/kids/find-out-en/albert-einstein/",
+                    "thumbnail": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcRUYxfhy5YlH9MB9u2_ZAViKb5WoDIXhSd6kXA_ujWQNEpvQxUKShS2-8qgIlbjJI50b9c5MdzIKLThVS-r3d4j6KhZXvNFgsjSz5488syxVA",
+                    "source_name": "UK German Connection",
+                    "publication_date": null,
+                    "markdown": "Albert Einstein is arguably the most famous physicist in history, not just for his wild hair and eccentric persona, but for fundamentally rewriting the laws of the universe."
+                  }
+                ]
+              },
+              {
+                "type": "gemini_text",
+                "rank_group": 2,
+                "rank_absolute": 2,
+                "markdown": "* **General Relativity:** This is the big one. Einstein proposed that gravity isn't a pulling force, but a curvature of space-time caused by mass.[www.space.com](https://www.space.com/17661-theory-general-relativity.html#:~:text=The%20gravitational%20field%20comes%20out,result%20of%20the%20curved%20spacetime.)n  * **The Equation:** [fiveable.me](https://fiveable.me/riemannian-geometry/unit-13/einstein-field-equations-geometric-interpretation/study-guide/9y5ta3S24M3gpsDn#:~:text=Expressed%20mathematically%20as%20G%20%CE%BC,8%CF%80GT%CE%BC%CE%BD)$G_{munu} + Lambda g_{munu} = frac{8pi G}{c^4} T_{munu}$n* **Special Relativity:** He established that the laws of physics are the same for all non-accelerating observers and that the speed of light is a constant.[www.monash.edu](https://www.monash.edu/student-academic-success/physics/relativity/comparing-einsteins-relativity-to-classical-physics#:~:text=The%20speed%20of%20light%20in%20a%20vacuum%20is%20constant%20for,of%20the%20source%20of%20light.) This led to the most famous equation in history, relating mass ([www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)$m$) and energy ([www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)$E$):[www.nrc.gov](https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation)n  * **The Equation:** [www.pbs.org](https://www.pbs.org/wgbh/nova/einstein/lrk-hand-emc2expl.html)$E = mc^2$n* **The Photoelectric Effect:** While most people think he won the Nobel Prize for relativity, he actually won it for this.[www.nobelprize.org](https://www.nobelprize.org/prizes/physics/1921/summary/) He proved that light acts as both a wave and a particle (quanta), which helped kickstart **Quantum Mechanics**.",
+                "original_text": "General Relativity: This is the big one. Einstein proposed that gravity isn't a pulling force, but a curvature of space-time caused by mass.nThe Equation: G_{munu} + Lambda g_{munu} = frac{8pi G}{c^4} T_{munu}nSpecial Relativity: He established that the laws of physics are the same for all non-accelerating observers and that the speed of light is a constant. This led to the most famous equation in history, relating mass (m) and energy (E):nThe Equation: E = mc^2nThe Photoelectric Effect: While most people think he won the Nobel Prize for relativity, he actually won it for this. He proved that light acts as both a wave and a particle (quanta), which helped kickstart Quantum Mechanics.",
+                "sources": [
+                  {
+                    "type": "gemini_source",
+                    "title": "What is the theory of general relativity? Understanding Einstein's space-time revolution",
+                    "snippet": "The gravitational field comes out of the description of general relativity as a result of the curved spacetime.",
+                    "domain": "www.space.com",
+                    "url": "https://www.space.com/17661-theory-general-relativity.html#:~:text=The%20gravitational%20field%20comes%20out,result%20of%20the%20curved%20spacetime.",
+                    "thumbnail": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcQqRQlomBRusaqdBgDEmB6ccd38TrVXMfTfIZpjEdFpfzEyvxNDVv0fCT88dc1CC2nx4G2lxPC4HLXhQa8ou1hOclbb-7OymA",
+                    "source_name": "Space",
+                    "publication_date": null,
+                    "markdown": "Einstein proposed that gravity isn't a pulling force, but a curvature of space-time caused by mass."
+                  },
+                  {
+                    "type": "gemini_source",
+                    "title": "Einstein field equations and their geometric interpretation | Riemannian Geometry Class Notes | Fiveable",
+                    "snippet": "Expressed mathematically as G μ ν + Λ g μ ν = 8 π G c 4 T μ ν G_{munu} + Lambda g_{munu} = frac{8pi G}{c^4} T_{munu} Gμν+Λgμν=c48πGTμν ...",
+                    "domain": "fiveable.me",
+                    "url": "https://fiveable.me/riemannian-geometry/unit-13/einstein-field-equations-geometric-interpretation/study-guide/9y5ta3S24M3gpsDn#:~:text=Expressed%20mathematically%20as%20G%20%CE%BC,8%CF%80GT%CE%BC%CE%BD",
+                    "thumbnail": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcR7qMtAUUTm43du1ySjDVpM08WaHfGES4As7WWcMezVpKXZatIdxkA7_4K4lYUFR1is8vkfMq0AurxCi6EhUNXIDSarUDE",
+                    "source_name": "Fiveable",
+                    "publication_date": null,
+                    "markdown": "* **The Equation:** $G_{munu} + Lambda g_{munu} = frac{8pi G}{c^4} T_{munu}$"
+                  },
+                  {
+                    "type": "gemini_source",
+                    "title": "Comparing Einstein's Relativity to Classical Physics - Student Academic Success",
+                    "snippet": "The speed of light in a vacuum is constant for all observers regardless, of their motion or the motion of the source of light.",
+                    "domain": "www.monash.edu",
+                    "url": "https://www.monash.edu/student-academic-success/physics/relativity/comparing-einsteins-relativity-to-classical-physics#:~:text=The%20speed%20of%20light%20in%20a%20vacuum%20is%20constant%20for,of%20the%20source%20of%20light.",
+                    "thumbnail": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcTzcGaIpzVwSB-hzqL3h2RNKYjg4qu7SwKvQu2hEIL85-qD5jem3ru_V6AqAhbGXhCxfoHvJ3za7yfz1A2iFO8wJEAqhV0z1rw",
+                    "source_name": "Monash University",
+                    "publication_date": null,
+                    "markdown": "* He established that the laws of physics are the same for all non-accelerating observers and that the speed of light is a constant."
+                  },
+                  {
+                    "type": "gemini_source",
+                    "title": "Mass-energy equation - Nuclear Regulatory Commission",
+                    "snippet": "Mass-energy equation. The equation developed by Albert Einstein, which is usually given as E = mc2, showing that, when the energy of a body changes by an ...",
+                    "domain": "www.nrc.gov",
+                    "url": "https://www.nrc.gov/reading-rm/basic-ref/glossary/mass-energy-equation",
+                    "thumbnail": "https://encrypted-tbn1.gstatic.com/favicon-tbn?q=tbn:ANd9GcTTx1zB9fpnzVG60Xl_uqxhHyMRngCyXNWWzzRn6JGL6wr0wW5Jtrbdh_WbopIu4ilIdtIWQsrfWNpi2wKxWzuuXpDKDlU",
+                    "source_name": "Nuclear Regulatory Commission (.gov)",
+                    "publication_date": null,
+                    "markdown": "This led to the most famous equation in history, relating mass ($m$) and energy ($E$):"
+                  },
+                  {
+                    "type": "gemini_source",
+                    "title": "NOVA | Einstein's Big Idea | Library Resource Kit: E = mc2 Explained - PBS",
+                    "snippet": "E = mc2 Explainednn- E = mc2.n- So why would you have to multiply the mass of that walnut by the speed of light to determine how much energy is bound up inside ...",
+                    "domain": "www.pbs.org",
+                    "url": "https://www.pbs.org/wgbh/nova/einstein/lrk-hand-emc2expl.html",
+                    "thumbnail": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcSiotveZ_1fLzv2E0VJi1hPdYivGLVBEeSoJ1NBr45G4aHt2X1ewyisCmoDKN113epXUdll99UXEHEZi6riztLQ-M6hXhk",
+                    "source_name": "PBS",
+                    "publication_date": null,
+                    "markdown": "    * **The Equation:** $E = mc^2$"
+                  },
+                  {
+                    "type": "gemini_source",
+                    "title": "The Nobel Prize in Physics 1921 - NobelPrize.org",
+                    "snippet": "The Nobel Prize in Physics 1921 was awarded to Albert Einstein for his services to Theoretical Physics, and especially for his discovery of the law of the ...",
+                    "domain": "www.nobelprize.org",
+                    "url": "https://www.nobelprize.org/prizes/physics/1921/summary/",
+                    "thumbnail": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcRbNbQahCQ9P5hc9bHwjcTQuquXujPwra9U4sOFVmJCynjmEsCSQvm1pVOLIaM2nJfEW4iZPRlnxDAlJ4gqYGzJ_A2Ud-w2ylYGC8d2",
+                    "source_name": "NobelPrize.org",
+                    "publication_date": null,
+                    "markdown": "* **The Photoelectric Effect:** While most people think he won the Nobel Prize for relativity, he actually won it for this."
+                  }
+                ]
+              },
+              {
+                "type": "gemini_text",
+                "rank_group": 3,
+                "rank_absolute": 3,
+                "markdown": "### 5 Fast Facts",
+                "original_text": "5 Fast Facts",
+                "sources": null
+              },
+              {
+                "type": "gemini_table",
+                "rank_group": 1,
+                "rank_absolute": 4,
+                "markdown": "| Aspect | Detail |n| :--- | :--- |n| **Nobel Prize** | Physics (1921) |n| **Early Life** | Born in Ulm, Germany; struggled with rigid school systems. |n| **Personal Style** | Famously hated socks and rarely wore them. |n| **Humanitarianism** | A staunch pacifist and advocate for civil rights. |n| **The Brain** | After his death, his brain was removed (without family permission) for study. |",
+                "original_text": "AspecttDetailnNobel PrizetPhysics (1921)nEarly LifetBorn in Ulm, Germany; struggled with rigid school systems.nPersonal StyletFamously hated socks and rarely wore them.nHumanitarianismtA staunch pacifist and advocate for civil rights.nThe BraintAfter his death, his brain was removed (without family permission) for study.",
+                "table": {
+                  "table_header": [
+                    "Aspect",
+                    "Detail"
+                  ],
+                  "table_content": [
+                    [
+                      "Nobel Prize",
+                      "Physics (1921)"
+                    ],
+                    [
+                      "Early Life",
+                      "Born in Ulm, Germany; struggled with rigid school systems."
+                    ],
+                    [
+                      "Personal Style",
+                      "Famously hated socks and rarely wore them."
+                    ],
+                    [
+                      "Humanitarianism",
+                      "A staunch pacifist and advocate for civil rights."
+                    ],
+                    [
+                      "The Brain",
+                      "After his death, his brain was removed (without family permission) for study."
+                    ]
+                  ]
+                }
+              },
+              {
+                "type": "gemini_images",
+                "rank_group": 1,
+                "rank_absolute": 5,
+                "markdown": "![famous paintings by Vincent van Gogh](https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTaBy_xbG0ZXNkAPAApT1bDOmSargM2g15ZzsApA18FeCeHnJO_5T71z_dC3pah)![famous paintings by Vincent van Gogh](https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcRE0_1oc7mYJRAcH0KonNBg8bG5WmzWbjkxACHwfPOL8-9LuCAVWarhWVO2mqr5)![famous paintings by Vincent van Gogh](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3nzZ81wpCP3dVf-0dKylLC3RfgqO7G1tF46HxTC5MsmkwTgCSQSJeWv7eQE9v)![famous paintings by Vincent van Gogh](https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR6Jfz2dPkwW9VRyIaH_zo592o64IN1bli0puvZIGMCRqQdwkKXiZoxHtwu2iKM)",
+                "items": [
+                  {
+                    "type": "gemini_images_element",
+                    "url": "https://www.singulart.com/blog/en/2023/09/04/van-gogh-famous-paintings/",
+                    "alt": "famous paintings by Vincent van Gogh",
+                    "image_url": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTaBy_xbG0ZXNkAPAApT1bDOmSargM2g15ZzsApA18FeCeHnJO_5T71z_dC3pah",
+                    "markdown": "![famous paintings by Vincent van Gogh](https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTaBy_xbG0ZXNkAPAApT1bDOmSargM2g15ZzsApA18FeCeHnJO_5T71z_dC3pah)"
+                  },
+                  {
+                    "type": "gemini_images_element",
+                    "url": "https://www.thecollector.com/10-van-gogh-paintings-to-know/",
+                    "alt": "famous paintings by Vincent van Gogh",
+                    "image_url": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR6Jfz2dPkwW9VRyIaH_zo592o64IN1bli0puvZIGMCRqQdwkKXiZoxHtwu2iKM",
+                    "markdown": "![famous paintings by Vincent van Gogh](https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcR6Jfz2dPkwW9VRyIaH_zo592o64IN1bli0puvZIGMCRqQdwkKXiZoxHtwu2iKM)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

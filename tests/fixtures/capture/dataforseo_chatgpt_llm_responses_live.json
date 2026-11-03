@@ -1,0 +1,131 @@
+{
+  "_source": {
+    "url": "https://docs.dataforseo.com/v3/ai_optimization/chat_gpt/llm_responses/live/",
+    "fetched": "2026-11-03",
+    "note": "Documented example response copied verbatim from the provider docs. Not a live capture."
+  },
+  "response": {
+    "version": "0.1.20260717",
+    "status_code": 20000,
+    "status_message": "Ok.",
+    "time": "4.8468 sec.",
+    "cost": 0.029631,
+    "tasks_count": 1,
+    "tasks_error": 0,
+    "tasks": [
+      {
+        "id": "07221754-1535-0612-0000-d708c6651bc3",
+        "status_code": 20000,
+        "status_message": "Ok.",
+        "time": "4.8305 sec.",
+        "cost": 0.029631,
+        "result_count": 1,
+        "path": [
+          "v3",
+          "ai_optimization",
+          "chat_gpt",
+          "llm_responses",
+          "live"
+        ],
+        "data": {
+          "api": "ai_optimization",
+          "function": "llm_responses",
+          "se": "chat_gpt",
+          "system_message": "communicate as if we are in a business meeting",
+          "message_chain": [
+            {
+              "role": "user",
+              "message": "Hello, what's up?"
+            },
+            {
+              "role": "ai",
+              "message": "Hello! I’m doing well, thank you. How can I assist you today? Are there any specific topics or projects you’d like to discuss in our meeting?"
+            }
+          ],
+          "temperature": 0.3,
+          "top_p": 0.5,
+          "web_search_country_iso_code": "FR",
+          "web_search_city": "Paris",
+          "model_name": "gpt-4.1-mini",
+          "web_search": true,
+          "user_prompt": "provide information on how relevant the amusement park business is in France now"
+        },
+        "result": [
+          {
+            "model_name": "gpt-4.1-mini-2025-04-14",
+            "input_tokens": 8174,
+            "output_tokens": 476,
+            "reasoning_tokens": 0,
+            "web_search": true,
+            "money_spent": 0.0290312,
+            "datetime": "2026-07-22 17:54:30 +00:00",
+            "items": [
+              {
+                "type": "message",
+                "sections": [
+                  {
+                    "type": "text",
+                    "text": "The amusement park industry in France remains a significant and dynamic sector as of 2024. In 2023, the industry achieved a turnover of approximately €2.5 billion, with major parks like Disneyland Paris, Parc Astérix, Puy du Fou, and Futuroscope accounting for 60% of the total attendance. ([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai))nnNotably, in 2024, Parc Astérix welcomed a record 2.84 million visitors, earning it the title of the best amusement park in France for the third consecutive year. ([ouest-france.fr](https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai)) Similarly, Nigloland attracted 750,000 visitors, placing it among the top five parks in the country. ([parc-attraction-loisirs.fr](https://www.parc-attraction-loisirs.fr/2024/11/12/chiffre-frequentation-2024-nigloland/?utm_source=openai))nnThe Compagnie des Alpes, a leading operator in the sector, reported that its leisure parks generated €570.1 million in revenue in 2023/2024, surpassing the performance of its ski resorts. ([lechotouristique.com](https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai))nnThese developments underscore the continued relevance and growth of the amusement park industry in France, driven by strong consumer demand and ongoing investments in new attractions and experiences. ",
+                    "annotations": [
+                      {
+                        "title": "Entre créations et tensions, le marché des parcs de loisirs en Occitanie joue les montagnes russes",
+                        "url": "https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai",
+                        "start_index": 290,
+                        "end_index": 516,
+                        "text": "([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai))"
+                      },
+                      {
+                        "title": "Le Parc Astérix est élu meilleur parc d’attractions de France : découvrez ses nouveaux projets",
+                        "url": "https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai",
+                        "start_index": 680,
+                        "end_index": 884,
+                        "text": "([ouest-france.fr](https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai))"
+                      },
+                      {
+                        "title": "Parc Nigloland : bons chiffres en 2024 et nouveauté annoncée pour 2025",
+                        "url": "https://www.parc-attraction-loisirs.fr/2024/11/12/chiffre-frequentation-2024-nigloland/?utm_source=openai",
+                        "start_index": 986,
+                        "end_index": 1123,
+                        "text": "([parc-attraction-loisirs.fr](https://www.parc-attraction-loisirs.fr/2024/11/12/chiffre-frequentation-2024-nigloland/?utm_source=openai))"
+                      },
+                      {
+                        "title": "Compagnie des Alpes : pour la première fois, les parcs de loisirs dépassent les domaines skiables",
+                        "url": "https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai",
+                        "start_index": 1313,
+                        "end_index": 1492,
+                        "text": "([lechotouristique.com](https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai))"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "fan_out_queries": [
+              "current relevance of amusement park business in France 2024"
+            ],
+            "search_results": [
+              {
+                "title": "Amusement Parks Market Size, Forecasts Report 2026-2035",
+                "url": "https://www.gminsights.com/industry-analysis/amusement-parks-market",
+                "date": "2026-10-30 00:00:00 +00:00",
+                "snippet": "# Amusement Parks Market Size & Share 2026-2035n## Amusement Parks Market SizenThe amusement parks market was valued at USD 80.5 billion in 2025, reached USD 86.1 billion in 2026, and is expected to grow at a 5.7% CAGR (2026–2035) to reach USD 142.1 billion by 2035.n...n## Amusement Parks Market Reg..."
+              },
+              {
+                "title": "Pourquoi la France continue d’attirer toujours plus de parcs",
+                "url": "https://www.24matins.fr/pourquoi-la-france-continue-dattirer-toujours-plus-de-parcs-1419544",
+                "date": "2026-10-10 00:00:00 +00:00",
+                "snippet": "Le *SNELAC* recense pourtant un marché encore en progression, avec environ **650 parcs de loisirs** et **70 millions de visiteurs** attendus en 2025, contre seulement 3 millions en 1980.n...n*Disneyland Paris* reste de loin le poids lourd, avec 16 millions de visiteurs pour ses deux parcs.n*Le Parc ..."
+              },
+              {
+                "title": "Sales for financial year 2024/25",
+                "url": "https://echanges.dila.gouv.fr/OPENDATA/AMF/ECO/2025/10/FCECO080060_20251028.pdf",
+                "date": "2026-08-20 00:00:00 +00:00",
+                "snippet": "Paris, October 28, 2025 – (Unaudited data) – Compagnie des Alpes reported record sales of €1,397 million for fiscal year 2024/25 (ended September 30, 2025), an increase of 12.8% compared with the previous year.n...nOur mountain operations posted significant growth for the third consecutive year, and..."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

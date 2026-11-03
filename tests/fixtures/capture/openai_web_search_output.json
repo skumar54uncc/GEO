@@ -1,0 +1,39 @@
+{
+  "_source": {
+    "url": "https://developers.openai.com/api/docs/guides/tools-web-search",
+    "fetched": "2026-11-03",
+    "note": "The documented 'output' array copied verbatim. The docs show only the output array, not the full response envelope. Not a live capture."
+  },
+  "output": [
+    {
+      "type": "web_search_call",
+      "id": "ws_67c9fa0502748190b7dd390736892e100be649c1a5ff9609",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "latest news about AI"
+      }
+    },
+    {
+      "id": "msg_67c9fa077e288190af08fdffda2e34f20be649c1a5ff9609",
+      "type": "message",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "On March 6, 2025, several news...",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "start_index": 2606,
+              "end_index": 2758,
+              "url": "https://...",
+              "title": "Title..."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

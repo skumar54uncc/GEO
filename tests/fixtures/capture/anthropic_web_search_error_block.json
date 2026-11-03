@@ -1,0 +1,15 @@
+{
+  "_source": {
+    "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool",
+    "fetched": "2026-11-03",
+    "note": "Documented error block copied verbatim."
+  },
+  "block": {
+    "type": "web_search_tool_result",
+    "tool_use_id": "srvtoolu_a93jad",
+    "content": {
+      "type": "web_search_tool_result_error",
+      "error_code": "max_uses_exceeded"
+    }
+  }
+}

@@ -1,0 +1,596 @@
+{
+  "_source": {
+    "note": "Real SerpAPI response recorded by this project (legacy SQLite capture, migrated in Phase 1). Exported from provider_cache/raw_payloads on 2026-11-03. Contains no API key.",
+    "captured_at": "2026-08-13T16:26:06.841Z"
+  },
+  "params": {
+    "q": "Where should I study power systems and electric grid engineering as an undergraduate in North Carolina?",
+    "gl": "us",
+    "hl": "en",
+    "engine": "google",
+    "location": "United States",
+    "no_cache": "false"
+  },
+  "response": {
+    "search_metadata": {
+      "id": "6a7df01cb333ee3bf9375ce6",
+      "status": "Success",
+      "json_endpoint": "https://serpapi.com/searches/vWiucxvRiRFDITf5IfPM8w/6a7df01cb333ee3bf9375ce6.json",
+      "pixel_position_endpoint": "https://serpapi.com/searches/vWiucxvRiRFDITf5IfPM8w/6a7df01cb333ee3bf9375ce6.json_with_pixel_position",
+      "created_at": "2026-08-13 16:26:04 UTC",
+      "processed_at": "2026-08-13 16:26:04 UTC",
+      "google_url": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&sourceid=chrome&ie=UTF-8",
+      "raw_html_file": "https://serpapi.com/searches/vWiucxvRiRFDITf5IfPM8w/6a7df01cb333ee3bf9375ce6.html",
+      "total_time_taken": 2.43
+    },
+    "search_parameters": {
+      "engine": "google",
+      "q": "Where should I study power systems and electric grid engineering as an undergraduate in North Carolina?",
+      "location_requested": "United States",
+      "location_used": "United States",
+      "google_domain": "google.com",
+      "hl": "en",
+      "gl": "us",
+      "device": "desktop"
+    },
+    "search_information": {
+      "query_displayed": "Where should I study power systems and electric grid engineering as an undergraduate in North Carolina?",
+      "total_results": 134,
+      "time_taken_displayed": 0.35,
+      "organic_results_state": "Results for exact spelling"
+    },
+    "related_questions": [
+      {
+        "question": "Can you make $500,000 as an electrical engineer?",
+        "type": "ai_overview",
+        "page_token": "3tyGUHicHdBLjpswAIBh9TKznNg4mXYiRZU8ODxUTOKAAW8qYye8DFgJDRN2vUEP0VP1NB3N9l99-n__Nc3Q_fvyp54me9uuVvM8P1fjWJnzsxr7lbw9BrVS0phSqm778vUFfr-oHbkX-O2q8DG1lrsMJN6riMD7WmYWUSjGbNgfT66BaUvncjANMx2IEryJiL1RaIhwa5ry4P1MeKIMj1WmHhxYQT2Rir5aeKcPJYBh1FsT75mjfXxhgykSF4Njt0bS0xnzDaItP4iUb06LANqZhO7tUuRhcyL7IMumKMpEK1t8ZaRulaMDQShOcrwukXW0q73M2MOJhz9krqFIvy1sEHPs6Xvp6jr2BProOR00Ev0M1cLWwqkRqUWgu2BT5NRjPpPcuwENX5tzUiBKwsFrQsx8-ogzwT6cvoT0Vwn0xFIq0gdAKaiA7DkpOttFvcFPF3XfoafP07ufl37a2utY_QfUyos7",
+        "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=3tyGUHicHdBLjpswAIBh9TKznNg4mXYiRZU8ODxUTOKAAW8qYye8DFgJDRN2vUEP0VP1NB3N9l99-n__Nc3Q_fvyp54me9uuVvM8P1fjWJnzsxr7lbw9BrVS0phSqm778vUFfr-oHbkX-O2q8DG1lrsMJN6riMD7WmYWUSjGbNgfT66BaUvncjANMx2IEryJiL1RaIhwa5ry4P1MeKIMj1WmHhxYQT2Rir5aeKcPJYBh1FsT75mjfXxhgykSF4Njt0bS0xnzDaItP4iUb06LANqZhO7tUuRhcyL7IMumKMpEK1t8ZaRulaMDQShOcrwukXW0q73M2MOJhz9krqFIvy1sEHPs6Xvp6jr2BProOR00Ev0M1cLWwqkRqUWgu2BT5NRjPpPcuwENX5tzUiBKwsFrQsx8-ogzwT6cvoT0Vwn0xFIq0gdAKaiA7DkpOttFvcFPF3XfoafP07ufl37a2utY_QfUyos7",
+        "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiQ2FuIHlvdSBtYWtlICQ1MDAsMDAwIGFzIGFuIGVsZWN0cmljYWwgZW5naW5lZXI/IiwibGsiOiJjNVBTUzA3TVU2ak1MMVhJVGN4T1ZWQXhOUUFCaGNSaUJhQndhazVxY2tsUlpuSmlqa0pxWG5wbVhtcHFFUUEiLCJicyI6ImM2WFFQVXNFTVJBR1lLNU5aYjNWVzFpS2hBVV9VR0hCdGJhOU9pYmpacmpjakNRNWw4V2Y0SjkyMlR2MHNCRFVjaWJ6dkJQR0JHTjdKNWgwaDYzYkVFNHZyRDJ6MXNJVnpIMUs1R3RtN3hKSUJoYWkzTFcyT2ZmZnpZX0VGSE8xanE0aTBKQ0pFSFRCODFOQVZUd1JIRjUwcEl3eWxVcmJjclRzdXJrY18wVE4tOHIwNjhnLVlpZjhTcmx3bmNCbE5xWGlXZlB4VDUyRVE2bkNfak9EWmVqYWgtWi1fSGVNZVRPM3l3bG1XU1B0dGRlVWFLQjl5dGNzV1BDb3VVYjBMbXRpY1YxNzE5eU12LUN5Y0hfZ0o2c1AiLCJpZCI6ImZjX0h2Qjlhc0ZEdFpUazR3X2J5Njc0QmdfNSJ9",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiQ2FuIHlvdSBtYWtlICQ1MDAsMDAwIGFzIGFuIGVsZWN0cmljYWwgZW5naW5lZXI%2FIiwibGsiOiJjNVBTUzA3TVU2ak1MMVhJVGN4T1ZWQXhOUUFCaGNSaUJhQndhazVxY2tsUlpuSmlqa0pxWG5wbVhtcHFFUUEiLCJicyI6ImM2WFFQVXNFTVJBR1lLNU5aYjNWVzFpS2hBVV9VR0hCdGJhOU9pYmpacmpjakNRNWw4V2Y0SjkyMlR2MHNCRFVjaWJ6dkJQR0JHTjdKNWgwaDYzYkVFNHZyRDJ6MXNJVnpIMUs1R3RtN3hKSUJoYWkzTFcyT2ZmZnpZX0VGSE8xanE0aTBKQ0pFSFRCODFOQVZUd1JIRjUwcEl3eWxVcmJjclRzdXJrY18wVE4tOHIwNjhnLVlpZjhTcmx3bmNCbE5xWGlXZlB4VDUyRVE2bkNfak9EWmVqYWgtWi1fSGVNZVRPM3l3bG1XU1B0dGRlVWFLQjl5dGNzV1BDb3VVYjBMbXRpY1YxNzE5eU12LUN5Y0hfZ0o2c1AiLCJpZCI6ImZjX0h2Qjlhc0ZEdFpUazR3X2J5Njc0QmdfNSJ9"
+      },
+      {
+        "question": "What degree do you need to be a power systems engineer?",
+        "type": "ai_overview",
+        "page_token": "rQyOQ3icHdDPbpswAIBx7WV6bDCUTI0UTWKACS1GOGBjLpP_kEBswCsopLntDfYQe6o-Taudv8NP-v78M_2oP7797ZbFzrvNZl3Xx_M0nU37KKdhw-f3UW4kN0ZwqXfb71vw4yT30ZUFP99kUFTWkhA7xwHEFTVIQn-SNZlKeL5LoOb63iVHtxvEGDstkV41ar_VJmeO_c0c4pVJR1HC1gJYhoHimTERBzFCIbvxS_rSQnAn0MTyrlBBbY9M2hTujaoE1_ii_HZ4HlDc5WJUZValfVsSJIm6Za4NBU1npVdP6uWFDBlow-CpvSBTgukJQ8KFk_rKQ67SbC1HM4iYTDk9gEozr_H02ri3Q-2my1frj4m5qqoCImyCqGsOSh98ViOIE8wJnB0Fnr9s5qEoHWGfBjhB7zltKqH97JXGfkEMEZGJRIg0B3ZLQ7zk0OhX2gUPJ3ndew__T-9_nYZlZ9-m8yf9EYwp",
+        "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=rQyOQ3icHdDPbpswAIBx7WV6bDCUTI0UTWKACS1GOGBjLpP_kEBswCsopLntDfYQe6o-Taudv8NP-v78M_2oP7797ZbFzrvNZl3Xx_M0nU37KKdhw-f3UW4kN0ZwqXfb71vw4yT30ZUFP99kUFTWkhA7xwHEFTVIQn-SNZlKeL5LoOb63iVHtxvEGDstkV41ar_VJmeO_c0c4pVJR1HC1gJYhoHimTERBzFCIbvxS_rSQnAn0MTyrlBBbY9M2hTujaoE1_ii_HZ4HlDc5WJUZValfVsSJIm6Za4NBU1npVdP6uWFDBlow-CpvSBTgukJQ8KFk_rKQ67SbC1HM4iYTDk9gEozr_H02ri3Q-2my1frj4m5qqoCImyCqGsOSh98ViOIE8wJnB0Fnr9s5qEoHWGfBjhB7zltKqH97JXGfkEMEZGJRIg0B3ZLQ7zk0OhX2gUPJ3ndew__T-9_nYZlZ9-m8yf9EYwp",
+        "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hhdCBkZWdyZWUgZG8geW91IG5lZWQgdG8gYmUgYSBwb3dlciBzeXN0ZW1zIGVuZ2luZWVyPyIsImxrIjoiY3czSnNRMkFNQXhGd1QybzNoVHNFLVN2UUVHTWJLTW8yOE8xdC0zemJJV3BoNFE1eTEtR1pKUnppTWJqVTBHdUxOMkpScl8tamc4IiwiYnMiOiJjNlhRUFVzRU1SQUdZSzVOWmIzVlcxaUtoQVVfVUdIQnRiYTlPaWJqWnJqY2pDUTVsOFdmNEo5MjJUdjBzQkRVY2lienZCUEdCR043SjVoMGg2M2JFRTR2ckQyejFzSVZ6SDFLNUd0bTd4SklCaGFpM0xXMk9mZmZ6WV9FRkhPMWpxNGkwSkNKRUhUQjgxTkFWVHdSSEY1MHBJd3lsVXJiY3JUc3Vya2NfMFROLThyMDY4Zy1ZaWY4U3Jsd25jQmxOcVhpV2ZQeFQ1MkVRNm5DX2pPRFplamFoLVotX0hlTWVUTzN5d2xtV1NQdHRkZVVhS0I5eXRjc1dQQ291VWIwTG10aWNWMTcxOXlNdi1DeWNIX2dKNnNQIiwiaWQiOiJmY19IdkI5YXNGRHRaVGs0d19ieTY3NEJnXzUifQ==",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hhdCBkZWdyZWUgZG8geW91IG5lZWQgdG8gYmUgYSBwb3dlciBzeXN0ZW1zIGVuZ2luZWVyPyIsImxrIjoiY3czSnNRMkFNQXhGd1QybzNoVHNFLVN2UUVHTWJLTW8yOE8xdC0zemJJV3BoNFE1eTEtR1pKUnppTWJqVTBHdUxOMkpScl8tamc4IiwiYnMiOiJjNlhRUFVzRU1SQUdZSzVOWmIzVlcxaUtoQVVfVUdIQnRiYTlPaWJqWnJqY2pDUTVsOFdmNEo5MjJUdjBzQkRVY2lienZCUEdCR043SjVoMGg2M2JFRTR2ckQyejFzSVZ6SDFLNUd0bTd4SklCaGFpM0xXMk9mZmZ6WV9FRkhPMWpxNGkwSkNKRUhUQjgxTkFWVHdSSEY1MHBJd3lsVXJiY3JUc3Vya2NfMFROLThyMDY4Zy1ZaWY4U3Jsd25jQmxOcVhpV2ZQeFQ1MkVRNm5DX2pPRFplamFoLVotX0hlTWVUTzN5d2xtV1NQdHRkZVVhS0I5eXRjc1dQQ291VWIwTG10aWNWMTcxOXlNdi1DeWNIX2dKNnNQIiwiaWQiOiJmY19IdkI5YXNGRHRaVGs0d19ieTY3NEJnXzUifQ%3D%3D"
+      },
+      {
+        "question": "Which university is best for electrical and electronic engineering?",
+        "type": "ai_overview",
+        "page_token": "ZkTOOXicHdHNbpswHABw7WV6bPhI0i1SVI2AIVSYYey_Y18qgklIbD5U0Cjc9i499on6NJt2_h1_fz7MrdVf3z7rceyH3Wo1TdPjteuupnosu2ZVDHNbrsrCmHNR6t32aWs_X8p90A2HwzB5Get78ImVN_VM2NjwYJNXbXxIw-_v1R06pfExifqIWrKVIE_nJRklJDNlbC0jr08cbVdhLbjG7OTIAFzv5WxIBy3h4MsXQX-6yoEbs9XMLBynJyjgXjdq-edOrFNuzYkLHGw95YuYaYDWRPfrAkmWBtMsdbfwcBNmlMiMKyO08RPHDJTFTh72ft7iTN6PU95AQGhsc-RFnI0Fs5DMF_QLkNHC4A3V8p5R9CYaeeEatswnTdGwNQEkeNTXiquMc4mCWh6VPm7ECYckIgWEg6XsH7eKChcHcRveYo9EeE65ZCXHhWjLmSIkcFQnUoOfAqpLO0YpUxYJlfdwKX_v3Yf_C_vXSzPu-rfu-hfjKJV1",
+        "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=ZkTOOXicHdHNbpswHABw7WV6bPhI0i1SVI2AIVSYYey_Y18qgklIbD5U0Cjc9i499on6NJt2_h1_fz7MrdVf3z7rceyH3Wo1TdPjteuupnosu2ZVDHNbrsrCmHNR6t32aWs_X8p90A2HwzB5Get78ImVN_VM2NjwYJNXbXxIw-_v1R06pfExifqIWrKVIE_nJRklJDNlbC0jr08cbVdhLbjG7OTIAFzv5WxIBy3h4MsXQX-6yoEbs9XMLBynJyjgXjdq-edOrFNuzYkLHGw95YuYaYDWRPfrAkmWBtMsdbfwcBNmlMiMKyO08RPHDJTFTh72ft7iTN6PU95AQGhsc-RFnI0Fs5DMF_QLkNHC4A3V8p5R9CYaeeEatswnTdGwNQEkeNTXiquMc4mCWh6VPm7ECYckIgWEg6XsH7eKChcHcRveYo9EeE65ZCXHhWjLmSIkcFQnUoOfAqpLO0YpUxYJlfdwKX_v3Yf_C_vXSzPu-rfu-hfjKJV1",
+        "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hpY2ggdW5pdmVyc2l0eSBpcyBiZXN0IGZvciBlbGVjdHJpY2FsIGFuZCBlbGVjdHJvbmljIGVuZ2luZWVyaW5nPyIsImxrIjoiY3kzSHNRMkFNQXdFd0Qyb2ZoWTJDZVpKWG9vY3lVNUFiRV9EZGJmdFQ1TTFMTmZOU00wWFNoek1pV3NFMkdrelpLV2otUGwzdUF6MEtpZERYajgiLCJicyI6ImM2WFFQVXNFTVJBR1lLNU5aYjNWVzFpS2hBVV9VR0hCdGJhOU9pYmpacmpjakNRNWw4V2Y0SjkyMlR2MHNCRFVjaWJ6dkJQR0JHTjdKNWgwaDYzYkVFNHZyRDJ6MXNJVnpIMUs1R3RtN3hKSUJoYWkzTFcyT2ZmZnpZX0VGSE8xanE0aTBKQ0pFSFRCODFOQVZUd1JIRjUwcEl3eWxVcmJjclRzdXJrY18wVE4tOHIwNjhnLVlpZjhTcmx3bmNCbE5xWGlXZlB4VDUyRVE2bkNfak9EWmVqYWgtWi1fSGVNZVRPM3l3bG1XU1B0dGRlVWFLQjl5dGNzV1BDb3VVYjBMbXRpY1YxNzE5eU12LUN5Y0hfZ0o2c1AiLCJpZCI6ImZjX0h2Qjlhc0ZEdFpUazR3X2J5Njc0QmdfNSJ9",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hpY2ggdW5pdmVyc2l0eSBpcyBiZXN0IGZvciBlbGVjdHJpY2FsIGFuZCBlbGVjdHJvbmljIGVuZ2luZWVyaW5nPyIsImxrIjoiY3kzSHNRMkFNQXdFd0Qyb2ZoWTJDZVpKWG9vY3lVNUFiRV9EZGJmdFQ1TTFMTmZOU00wWFNoek1pV3NFMkdrelpLV2otUGwzdUF6MEtpZERYajgiLCJicyI6ImM2WFFQVXNFTVJBR1lLNU5aYjNWVzFpS2hBVV9VR0hCdGJhOU9pYmpacmpjakNRNWw4V2Y0SjkyMlR2MHNCRFVjaWJ6dkJQR0JHTjdKNWgwaDYzYkVFNHZyRDJ6MXNJVnpIMUs1R3RtN3hKSUJoYWkzTFcyT2ZmZnpZX0VGSE8xanE0aTBKQ0pFSFRCODFOQVZUd1JIRjUwcEl3eWxVcmJjclRzdXJrY18wVE4tOHIwNjhnLVlpZjhTcmx3bmNCbE5xWGlXZlB4VDUyRVE2bkNfak9EWmVqYWgtWi1fSGVNZVRPM3l3bG1XU1B0dGRlVWFLQjl5dGNzV1BDb3VVYjBMbXRpY1YxNzE5eU12LUN5Y0hfZ0o2c1AiLCJpZCI6ImZjX0h2Qjlhc0ZEdFpUazR3X2J5Njc0QmdfNSJ9"
+      },
+      {
+        "question": "What is the best college for engineering in North Carolina?",
+        "type": "ai_overview",
+        "page_token": "BZbxV3icHdBdbpswAABg7TJ9bGxIMjVSNInEUFBsFNf82C-TMQGCbUCBhYS33mCH2Kl2mlU7wSd9n3_MtdN_v_1upmkYd6vVPM-vdd_X5vKqeruS47NTKyWNKaTSu-33LfxRqT26c-9wU945GYb0SMGHM93oUUEORZvAlEkWca5TnJlokAkHZW6cOPfiIjCNspDQI7lhoKGyaL60UUeYoKdcpKdkmDB8q0rfQLkILZx-nTu1ywEcs9xzGazXhTG8BKYlGR2YrxfqkFExb-atuSs7g-JYbyQCbpr7IPZDt4RvUCwYCkbuGKWd-uIp2LAz8H2sE1Ci85N2DS50FOOg_CXRYxFZeTil_VNaY1hHDunib5nziJhFa9SIsNThhuckoO9UpsEIvozrhXGXoKgLrpFH38kzzsRHYpuQ2_mhWlrFGcl4PsQXK87ECWexIBf7jftSqfveffk_vf9Z2Wk33Pr6HxfAirg",
+        "serpapi_ai_overview_link": "https://serpapi.com/search.json?engine=google_ai_overview&page_token=BZbxV3icHdBdbpswAABg7TJ9bGxIMjVSNInEUFBsFNf82C-TMQGCbUCBhYS33mCH2Kl2mlU7wSd9n3_MtdN_v_1upmkYd6vVPM-vdd_X5vKqeruS47NTKyWNKaTSu-33LfxRqT26c-9wU945GYb0SMGHM93oUUEORZvAlEkWca5TnJlokAkHZW6cOPfiIjCNspDQI7lhoKGyaL60UUeYoKdcpKdkmDB8q0rfQLkILZx-nTu1ywEcs9xzGazXhTG8BKYlGR2YrxfqkFExb-atuSs7g-JYbyQCbpr7IPZDt4RvUCwYCkbuGKWd-uIp2LAz8H2sE1Ci85N2DS50FOOg_CXRYxFZeTil_VNaY1hHDunib5nziJhFa9SIsNThhuckoO9UpsEIvozrhXGXoKgLrpFH38kzzsRHYpuQ2_mhWlrFGcl4PsQXK87ECWexIBf7jftSqfveffk_vf9Z2Wk33Pr6HxfAirg",
+        "next_page_token": "eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgYmVzdCBjb2xsZWdlIGZvciBlbmdpbmVlcmluZyBpbiBOb3J0aCBDYXJvbGluYT8iLCJsayI6ImN3WEJ3UW5BUUFnRXdEN3kyanJTalRrMnB5QXJlRUxhejh4MWYyNkRPQmduSHA3QnFreHU0cTBHdFVOa2h6WkNVUFU0bG5WbHlINCIsImJzIjoiYzZYUVBVc0VNUkFHWUs1TlpiM1ZXMWlLaEFVX1VHSEJ0YmE5T2lialpyamNqQ1E1bDhXZjRKOTIyVHYwc0JEVWNpYnp2QlBHQkdON0o1aDBoNjNiRUU0dnJEMnoxc0lWekgxSzVHdG03eEpJQmhhaTNMVzJPZmZmellfRUZITzFqcTRpMEpDSkVIVEI4MU5BVlR3UkhGNTBwSXd5bFVyYmNyVHN1cmtjXzBUTi04cjA2OGctWWlmOFNybHduY0JsTnFYaVdmUHhUNTJFUTZuQ19qT0RaZWphaC1aLV9IZU1lVE8zeXdsbVdTUHR0ZGVVYUtCOXl0Y3NXUENvdVViMExtdGljVjE3MTl5TXYtQ3ljSF9nSjZzUCIsImlkIjoiZmNfSHZCOWFzRkR0WlRrNHdfYnk2NzRCZ181In0=",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google_related_questions&google_domain=google.com&next_page_token=eyJvbnMiOiIxMDA0MSIsImZjIjoiRXFBQkNtSkJTbWxVTkhSTVZ6UXdSbUozZGxZelZqQlJlWE5RZWt0b1prNHhXbTFzVEhoYVpHeHpiMFJpWmxVemFXTnZkVTk2ZFRaSloyRkdkRWhDWkdGeGNHZDFkbWgzU0ZOWllXNXNkV0p5WTNreFprdEtObDlKUVdGTmIySkZRVzlVUjJKNVVSSVdTSFpDT1dGelJrUjBXbFJyTkhkZlluazJOelJDWnhvaVFVUnpjamxtVWs5alUyUjVhMjFKTUVzMWRtdExkMnhFVTE4MU9WazFWVnBDUVEiLCJmY3YiOiIzIiwiZWkiOiJIdkI5YXNGRHRaVGs0d19ieTY3NEJnIiwicWMiOiJjeFhLd1EwQ01Rd0VRTjY4S0dFN3VTS293SXIzRWt2QlFYYWkwejFvZ0Nvb0ZYaU9OTmY5YUF3aTIxaGRZY2k1OU1SekhBemttWk9QaExpQ25XV0dGZFN3bjd5YWsyRmVJZi1BNWNxb0licGtFdWJ3RWJPaFNJeHVMcmZMNl9PLWIxOCIsInF1ZXN0aW9uIjoiV2hhdCBpcyB0aGUgYmVzdCBjb2xsZWdlIGZvciBlbmdpbmVlcmluZyBpbiBOb3J0aCBDYXJvbGluYT8iLCJsayI6ImN3WEJ3UW5BUUFnRXdEN3kyanJTalRrMnB5QXJlRUxhejh4MWYyNkRPQmduSHA3QnFreHU0cTBHdFVOa2h6WkNVUFU0bG5WbHlINCIsImJzIjoiYzZYUVBVc0VNUkFHWUs1TlpiM1ZXMWlLaEFVX1VHSEJ0YmE5T2lialpyamNqQ1E1bDhXZjRKOTIyVHYwc0JEVWNpYnp2QlBHQkdON0o1aDBoNjNiRUU0dnJEMnoxc0lWekgxSzVHdG03eEpJQmhhaTNMVzJPZmZmellfRUZITzFqcTRpMEpDSkVIVEI4MU5BVlR3UkhGNTBwSXd5bFVyYmNyVHN1cmtjXzBUTi04cjA2OGctWWlmOFNybHduY0JsTnFYaVdmUHhUNTJFUTZuQ19qT0RaZWphaC1aLV9IZU1lVE8zeXdsbVdTUHR0ZGVVYUtCOXl0Y3NXUENvdVViMExtdGljVjE3MTl5TXYtQ3ljSF9nSjZzUCIsImlkIjoiZmNfSHZCOWFzRkR0WlRrNHdfYnk2NzRCZ181In0%3D"
+      }
+    ],
+    "ai_overview": {
+      "text_blocks": [
+        {
+          "type": "paragraph",
+          "snippet": "For an undergraduate focus in power systems and electric grid engineering in North Carolina, North Carolina State University (NC State) in Raleigh is the premier choice, backed by UNC Charlotte\n\nas a strong secondary option with a dedicated power concentration.",
+          "snippet_links": [
+            {
+              "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/"
+            }
+          ],
+          "snippet_highlighted_words": [
+            "North Carolina State University (NC State) in Raleigh"
+          ],
+          "reference_indexes": [
+            0,
+            1
+          ]
+        },
+        {
+          "type": "heading",
+          "snippet": "Top Choices in North Carolina"
+        },
+        {
+          "type": "list",
+          "list": [
+            {
+              "snippet": "North Carolina State University (NC State): Offers a Bachelor of Science in Electrical Engineering with dedicated formal concentrations in Power Systems and Renewable Electric Energy Systems (REES)\n. Home to major research initiatives like the FREEDM Systems Center, providing unmatched undergraduate research and networking with major utilities like Duke Energy.",
+              "snippet_links": [
+                {
+                  "link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/"
+                }
+              ],
+              "reference_indexes": [
+                2,
+                3,
+                4
+              ]
+            },
+            {
+              "snippet": "UNC Charlotte: Offers a focused Power and Energy Systems Concentration inside its Electrical Engineering undergraduate program, featuring specialized coursework in power system analysis and an intensive two-semester senior design project.",
+              "snippet_links": [
+                {
+                  "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "snippet": "Program Comparison"
+        },
+        {
+          "type": "table",
+          "table": [
+            [
+              "University",
+              "Specific Concentration/Major",
+              "Key Highlights"
+            ],
+            [
+              "NC State",
+              "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)",
+              "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+            ],
+            [
+              "UNC Charlotte",
+              "BS in Electrical Engineering – Power and Energy Systems",
+              "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+            ]
+          ],
+          "detailed": [
+            [
+              {
+                "snippet": "University"
+              },
+              {
+                "snippet": "Specific Concentration/Major"
+              },
+              {
+                "snippet": "Key Highlights"
+              }
+            ],
+            [
+              {
+                "snippet": "NC State"
+              },
+              {
+                "snippet": "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)"
+              },
+              {
+                "snippet": "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+              }
+            ],
+            [
+              {
+                "snippet": "UNC Charlotte"
+              },
+              {
+                "snippet": "BS in Electrical Engineering – Power and Energy Systems"
+              },
+              {
+                "snippet": "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+              }
+            ]
+          ],
+          "formatted": [
+            {
+              "university": "NC State",
+              "specific_concentration_major": "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)",
+              "key_highlights": "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+            },
+            {
+              "university": "UNC Charlotte",
+              "specific_concentration_major": "BS in Electrical Engineering – Power and Energy Systems",
+              "key_highlights": "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "snippet": "Would you like help comparing admissions requirements for these programs, or do you want to explore their graduate pathways (like NC State's online power master's options)?",
+          "snippet_links": [
+            {
+              "link": "https://online-distance.ncsu.edu/program/master-of-science-in-electric-power-systems-engineering/"
+            }
+          ],
+          "reference_indexes": [
+            5
+          ]
+        }
+      ],
+      "references": [
+        {
+          "title": "Power and Energy Systems Concentration - Electrical and Computer Engineering",
+          "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+          "snippet": "The concentration includes: * An intensive, two-semester senior design project * The following required course: * ECGR 4141: Power...",
+          "source": "University of North Carolina at Charlotte",
+          "thumbnail": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+          "source_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://ece.charlotte.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 0
+        },
+        {
+          "title": "Which Universities are the best for Power Engineering ...",
+          "link": "https://www.reddit.com/r/PowerSystemsEE/comments/1o8hw40/which_universities_are_the_best_for_power/",
+          "snippet": "Recommended Universities for Power Engineering: In Europe, top universities include KU Leuven, TU Delft, rwth Aachen, FAU Erlangen...",
+          "source": "Reddit",
+          "thumbnail": "https://www.reddit.com/r/PowerSystemsEE/comments/1o8hw40/which_universities_are_the_best_for_power/",
+          "source_icon": "https://encrypted-tbn2.gstatic.com/faviconV2?url=https://www.reddit.com&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 1
+        },
+        {
+          "title": "Electrical Engineering (BS): Power Systems Concentration \\u003c North Carolina State University",
+          "link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/",
+          "snippet": "The Electrical Engineering (EE) program at NC State offers a Power Systems concentration. The concentration covers: * Modern power...",
+          "source": "NC State University",
+          "thumbnail": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/",
+          "source_icon": "https://encrypted-tbn1.gstatic.com/faviconV2?url=https://catalog.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 2
+        },
+        {
+          "title": "REES Concentration - Electrical and Computer Engineering",
+          "link": "https://ece.ncsu.edu/ugrad/ee/rees/",
+          "snippet": "The Electrical and Computer Engineering Department at NC State offers an undergraduate concentration in Renewable Electric Energy Systems (REES) within the Bachelo...",
+          "source": "NC State University",
+          "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmIcnbw0FDZcWfMhwJj-JD4Yd3LKg1O-x5yiiziGK674Lyrl5ZqBp4o908",
+          "source_icon": "https://encrypted-tbn1.gstatic.com/faviconV2?url=https://ece.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 3
+        },
+        {
+          "title": "Education - FREEDM Systems Center - NC State University",
+          "link": "https://freedm.ncsu.edu/education/",
+          "snippet": "FREEDM offers opportunities for undergraduate students in science, technology, engineering and math fields to participate in renewable and electric power energy sy...",
+          "source": "FREEDM Systems Center",
+          "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcTrxm65uE7GZJBevFO6LzxIsCmo9EnE-ca9przFYR4HAX7vSQqdaqNL56TmL5Ib2O12SS_8jw",
+          "source_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://freedm.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 4
+        },
+        {
+          "title": "Electric Power Systems Engineering",
+          "link": "https://online-distance.ncsu.edu/program/master-of-science-in-electric-power-systems-engineering/",
+          "snippet": "... degree in an engineering discipline, the Master of Science in Electrical Power Systems Engineering (MSEPSE) provides graduate students with a thorough understa...",
+          "source": "NC State Online and Distance Education",
+          "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcRjmcrnn8raYt2gwQQ4MVfBJX-XkXv0A2oBZVEdarGgm-0Z3mVYJa_s1zrWI2oyq-sZFQWuDA",
+          "source_icon": "https://encrypted-tbn0.gstatic.com/faviconV2?url=https://online-distance.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 5
+        }
+      ]
+    },
+    "organic_results": [
+      {
+        "position": 1,
+        "title": "Electrical Engineering (BS) < North Carolina State University",
+        "link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs/",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs/&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCIQAQ",
+        "displayed_link": "https://catalog.ncsu.edu › electrical-computer › electrica...",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAMFBMVEXMAQHQLy_bcHD__Pz67e3gh4f24ODnpKTkmJjvxsbWU1Py0NDrt7fMAAD____IAAB7-vmFAAAADXRSTlP8_f39_fv8-vz7_P38t6CbEgAAALtJREFUKJGd0UsShCAMBFCQP0r6_rcdAwaFQhfTK6teJSFRqa-Uj_yF0K8IHB4vCEdk9Bqx0Rm1RAS2tG7bCvclolhGMyJaah3R8Frkw1trSBIfiEhjnkfQk1l0lEF33I1qtgNFEH6yHeVC8GNM4quo7EKy7TUVt71dq54TvK0xENS8m1dndb62kq7cVofgzp_k-8om3ljvliz6raRFP4IjiG6ECTXZPon8NiJikElwIY_Ig-VTzW2X-cQf4B0k2-ybMEoAAAAASUVORK5CYII.png",
+        "snippet": "Plan of Study Grid First Year Fall Semester. Graduates can pursue roles as power systems engineers, designing and optimizing the infrastructure that delivers ...",
+        "snippet_highlighted_words": [
+          "Study Grid",
+          "can",
+          "power systems"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "Plan of Study Grid First Year Fall Semester. Graduates can pursue roles as power systems engineers, designing and optimizing the infrastructure that delivers  ...",
+            "source_info_link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs/",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAMFBMVEXMAQHQLy_bcHD__Pz67e3gh4f24ODnpKTkmJjvxsbWU1Py0NDrt7fMAAD____IAAB7-vmFAAAADXRSTlP8_f39_fv8-vz7_P38t6CbEgAAALtJREFUKJGd0UsShCAMBFCQP0r6_rcdAwaFQhfTK6teJSFRqa-Uj_yF0K8IHB4vCEdk9Bqx0Rm1RAS2tG7bCvclolhGMyJaah3R8Frkw1trSBIfiEhjnkfQk1l0lEF33I1qtgNFEH6yHeVC8GNM4quo7EKy7TUVt71dq54TvK0xENS8m1dndb62kq7cVofgzp_k-8om3ljvliz6raRFP4IjiG6ECTXZPon8NiJikElwIY_Ig-VTzW2X-cQf4B0k2-ybMEoAAAAASUVORK5CYII.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs/&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fcatalog.ncsu.edu%2Fundergraduate%2Fengineering%2Felectrical-computer%2Felectrical-engineering-bs%2F",
+        "source": "NC State University"
+      },
+      {
+        "position": 2,
+        "title": "Power and Energy Systems Concentration",
+        "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCcQAQ",
+        "displayed_link": "https://ece.charlotte.edu › Undergraduate Programs",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAP1BMVEX-_______________R3NhehXh0lImPqKCitq-wwru_zcgAQiQAUjsATjYASjAJV0FFdmYCVT_n7essZ1T09_ZqzCOeAAAAA3RSTlNzyMOtj9ybAAABAElEQVR4AXTSCQ6EIAwFUJXdllXuf9aptYRmmZ_EEB4UaDyO8_qTk8xIrPM-hBjTfVvLM-dxiSVAxEwpFPCGci30UL_k1ukLSeFYVtJDSDo33kX2-cGj3tXOkNk6ygidwoZS1HxVc1DYeao_ZsK36t64ptI6vIyNVqbW4XT2xshT4Ojw8rYBmkL_YrGTloWQqIFDYUO5vc5CpMvmSBtnosZT5sJ12QLTJODOwxBUl51ys5pV2f04ecmjUNYXazy3Eb1CL8WiYA4KHTL2JqOSFD69cmAKWoVclct5Rhgb6ZkS5B-oZ6Ow4tLXEMdG0p5xBXMlEzwNZTiVaSTnb3izAwCwOxnJmK0_rQAAAABJRU5ErkJggg.png",
+        "snippet": "Visit the University of North Carolina at Charlotte homepage ... Bachelor of Science in Electrical Engineering with Concentration in Power and Energy Systems ...",
+        "snippet_highlighted_words": [
+          "University of North Carolina at Charlotte"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "Visit the University of North Carolina at Charlotte homepage ... Bachelor of Science in Electrical Engineering with Concentration in Power and Energy Systems ...",
+            "source_info_link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAP1BMVEX-_______________R3NhehXh0lImPqKCitq-wwru_zcgAQiQAUjsATjYASjAJV0FFdmYCVT_n7essZ1T09_ZqzCOeAAAAA3RSTlNzyMOtj9ybAAABAElEQVR4AXTSCQ6EIAwFUJXdllXuf9aptYRmmZ_EEB4UaDyO8_qTk8xIrPM-hBjTfVvLM-dxiSVAxEwpFPCGci30UL_k1ukLSeFYVtJDSDo33kX2-cGj3tXOkNk6ygidwoZS1HxVc1DYeao_ZsK36t64ptI6vIyNVqbW4XT2xshT4Ojw8rYBmkL_YrGTloWQqIFDYUO5vc5CpMvmSBtnosZT5sJ12QLTJODOwxBUl51ys5pV2f04ecmjUNYXazy3Eb1CL8WiYA4KHTL2JqOSFD69cmAKWoVclct5Rhgb6ZkS5B-oZ6Ow4tLXEMdG0p5xBXMlEzwNZTiVaSTnb3izAwCwOxnJmK0_rQAAAABJRU5ErkJggg.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fece.charlotte.edu%2Fundergraduate-programs%2Fundergraduate-program-information%2Fpower-and-energy-systems-concentration%2F",
+        "source": "University of North Carolina at Charlotte",
+        "read_more_link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/#:~:text=Explore&text=Bachelor%20of%20Science%20in%20Electrical,in%20Power%20and%20Energy%20Systems"
+      },
+      {
+        "position": 3,
+        "title": "8 Electrical and Electronic Engineering Degree Programs ...",
+        "link": "https://www.educations.com/electrical-and-electronic-engineering/usa/north-carolina/raleigh",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.educations.com/electrical-and-electronic-engineering/usa/north-carolina/raleigh&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECC4QAQ",
+        "displayed_link": "https://www.educations.com › ... › USA › North Carolina",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAWlBMVEVHcEyKzdWGzdGLz9OMztNLj4F6vsKMzdKJztSKzdGKzs-Izs-Hzc-Izc5GfFkrlIkWk4sUlIkMkYMLkoOJzdALkYMKkoMKkYMOkoYIkoMQk4eIzM1_x8cNkYSF18G5AAAAHnRSTlMAGEdVOBAJIpF4wu6s_wMbMUh_neGx69Ra__79_sLc6BJoAAAA30lEQVR4Ab3SRxKEIBAFUAlKzpj1_tecNlUZt_M3Co8MxS0IE1oWr6kY4QJ_IBNSSfKBVBvzjfKB1h4_O57rnPdua42lUZqWllGKdgwxRW-3nlkTVFGhOT6wbtrUeejMhMCUEp6zJJtZwH5oU3BVhRDsVCoY_NSz7_u2joExGDEbc0dIkyLQaN4QtJVg7wgxW8Y3HMyev-Gw4nhBe-4J9LkVsCtanx6YOd17oi61Kw87KsmJA9j7Ag8LTkBj1oRVh0FciMCACwmMimvKEOemn5S80qG-i7XmlxGvna_P_Qcb7BzKUh1GuAAAAABJRU5ErkJggg.png",
+        "snippet": "8 Electrical and Electronic Engineering Degree Programs in Raleigh North Carolina USA · North Carolina State University · Electrical Engineering (BS) · North ...",
+        "snippet_highlighted_words": [
+          "North Carolina State University"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "8 Electrical and Electronic Engineering Degree Programs in Raleigh North Carolina USA · North Carolina State University · Electrical Engineering (BS) · North ...",
+            "source_info_link": "https://www.educations.com/electrical-and-electronic-engineering/usa/north-carolina/raleigh",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAWlBMVEVHcEyKzdWGzdGLz9OMztNLj4F6vsKMzdKJztSKzdGKzs-Izs-Hzc-Izc5GfFkrlIkWk4sUlIkMkYMLkoOJzdALkYMKkoMKkYMOkoYIkoMQk4eIzM1_x8cNkYSF18G5AAAAHnRSTlMAGEdVOBAJIpF4wu6s_wMbMUh_neGx69Ra__79_sLc6BJoAAAA30lEQVR4Ab3SRxKEIBAFUAlKzpj1_tecNlUZt_M3Co8MxS0IE1oWr6kY4QJ_IBNSSfKBVBvzjfKB1h4_O57rnPdua42lUZqWllGKdgwxRW-3nlkTVFGhOT6wbtrUeejMhMCUEp6zJJtZwH5oU3BVhRDsVCoY_NSz7_u2joExGDEbc0dIkyLQaN4QtJVg7wgxW8Y3HMyev-Gw4nhBe-4J9LkVsCtanx6YOd17oi61Kw87KsmJA9j7Ag8LTkBj1oRVh0FciMCACwmMimvKEOemn5S80qG-i7XmlxGvna_P_Qcb7BzKUh1GuAAAAABJRU5ErkJggg.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://www.educations.com/electrical-and-electronic-engineering/usa/north-carolina/raleigh&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.educations.com%2Felectrical-and-electronic-engineering%2Fusa%2Fnorth-carolina%2Fraleigh",
+        "source": "educations.com",
+        "read_more_link": "https://www.educations.com/electrical-and-electronic-engineering/usa/north-carolina/raleigh#:~:text=8%20Electrical%20and%20Electronic%20Engineering,in%20Raleigh%20North%20Carolina%20USA&text=North%20Carolina%20State%20University&text=Electrical%20Engineering%20(BS)&text=North%20Carolina%20State%20University"
+      },
+      {
+        "position": 4,
+        "title": "Power Systems (Uni) : r/PowerSystemsEE",
+        "link": "https://www.reddit.com/r/PowerSystemsEE/comments/urryle/power_systems_uni/",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.reddit.com/r/PowerSystemsEE/comments/urryle/power_systems_uni/&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCsQAQ",
+        "displayed_link": "6 comments · 4 years ago",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAhFBMVEVHcEz_RQD_RQD_RQD_RQD_RQD_RQD_RQD_RQD_PQD_NgD-XS32dlf5vK3____64dusLADUz9H-jXLOPAoSHiFrLBm3uLn3_f7jVS_b6e77pJDJo6H718__RQDw9ffs5-jm8fPIXlHqKwD5-PjolIP_VgP_SQLQ2uAyODvQ4ekABAhqcHK4ptuCAAAAHnRSTlMAPobB7P9mHdb__________________________8J6YdtgAAABWUlEQVR4AWySYZNDMBCGWyw2SI9TGnWqILT____dm6Enc-MZH8Qz2V3Je_rj7Lgekec659N_fIgPnn-yCULaYaYwsCqShYhiQXQ-dJxIedltQDZfqZQyY6K1st3vO78WsiyNDI3zySK_caJUygTMzN7eTnxdBXMcb3-0TsMC30RUJfciqSIs8JCZycHwWV1n2UVuXDKzxsDOySWu5AGVoB_TUh5imhJFpQTNfav7uDcSlBERJLUN9LOLewn6LnpCNS0EyvKg-vLRjVRLUIuxe8hSDYyyLqatyr68jdO6cxpvWGIeDOQQujagNs7YuumbJmYiZz0E3aJvMc95Ps8F-rV6PQQ0JY4XpVqVv0Cu2lYps9HbDp6HRS9Kv1-vt1Z4HeDI_1yZiFMNFIzWqYkChftl8zSkegE6HSYmENgxYYQHRGzUHiLHyh3ModvZo7nHxA71ofwdSnYAAPpVIo4RUPiIAAAAAElFTkSuQmCC.png",
+        "snippet": "NC State has some solid graduate courses related to planning and operations. Check out Virginia Tech, NCSU, Georgia Tech, Texas A&M, and ...",
+        "snippet_highlighted_words": [
+          "NC State"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "NC State has some solid graduate courses related to planning and operations. Check out Virginia Tech, NCSU, Georgia Tech, Texas A&M, and ...",
+            "source_info_link": "https://www.reddit.com/r/PowerSystemsEE/comments/urryle/power_systems_uni/",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAhFBMVEVHcEz_RQD_RQD_RQD_RQD_RQD_RQD_RQD_RQD_PQD_NgD-XS32dlf5vK3____64dusLADUz9H-jXLOPAoSHiFrLBm3uLn3_f7jVS_b6e77pJDJo6H718__RQDw9ffs5-jm8fPIXlHqKwD5-PjolIP_VgP_SQLQ2uAyODvQ4ekABAhqcHK4ptuCAAAAHnRSTlMAPobB7P9mHdb__________________________8J6YdtgAAABWUlEQVR4AWySYZNDMBCGWyw2SI9TGnWqILT____dm6Enc-MZH8Qz2V3Je_rj7Lgekec659N_fIgPnn-yCULaYaYwsCqShYhiQXQ-dJxIedltQDZfqZQyY6K1st3vO78WsiyNDI3zySK_caJUygTMzN7eTnxdBXMcb3-0TsMC30RUJfciqSIs8JCZycHwWV1n2UVuXDKzxsDOySWu5AGVoB_TUh5imhJFpQTNfav7uDcSlBERJLUN9LOLewn6LnpCNS0EyvKg-vLRjVRLUIuxe8hSDYyyLqatyr68jdO6cxpvWGIeDOQQujagNs7YuumbJmYiZz0E3aJvMc95Ps8F-rV6PQQ0JY4XpVqVv0Cu2lYps9HbDp6HRS9Kv1-vt1Z4HeDI_1yZiFMNFIzWqYkChftl8zSkegE6HSYmENgxYYQHRGzUHiLHyh3ModvZo7nHxA71ofwdSnYAAPpVIo4RUPiIAAAAAElFTkSuQmCC.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://www.reddit.com/r/PowerSystemsEE/comments/urryle/power_systems_uni/&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.reddit.com%2Fr%2FPowerSystemsEE%2Fcomments%2Furryle%2Fpower_systems_uni%2F",
+        "source": "Reddit · r/PowerSystemsEE"
+      },
+      {
+        "position": 5,
+        "title": "Electrical Engineering",
+        "link": "https://www.wcu.edu/learn/programs/electrical-engineering-bsee/index.aspx",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.wcu.edu/learn/programs/electrical-engineering-bsee/index.aspx&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCoQAQ",
+        "displayed_link": "https://www.wcu.edu › learn › programs › electrical-engi...",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAZlBMVEVYLIhZLIhZLIdZK4hZK4dYLIe9rM_-_v7s5_CMbaypksGhiLuXerTg1-fHudf5-PpsQ5WHZqna0ORgNY2bgrjMwNl2UJy4psvSx95tRpa0n8l6V6CQdLCtmcVdMovFttb08ffo4O5QRGzRAAAAqElEQVR4AUWKxYEEQQwDZau97mFmzj_IY9BHVIAoiEBQTYII5OUx0dQ9o-VFaZBQVDVZesOAtgOC9p7aBzIYx0kAsquici58sXUjYMbJ923t_ThnGkGV0dvX2BXF3F6bQQTaelsXt8du6T_ah3Lv57j59Zm_hvOjrTo3f4PUuee66N9g3P0A7X-wunpOhUjNH0JTLztqPeNrCDBJ2nhd8_5NENRAtQDBO8FWCLQNPyCEAAAAAElFTkSuQmCC.png",
+        "snippet": "Earn an ABET‑accredited Electrical Engineering degree at Western Carolina University. Benefit from small classes, project‑based learning, expert faculty, ...",
+        "snippet_highlighted_words": [
+          "Electrical Engineering degree",
+          "Carolina"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "Earn an ABET‑accredited Electrical Engineering degree at Western Carolina University. Benefit from small classes, project‑based learning, expert faculty, ...",
+            "source_info_link": "https://www.wcu.edu/learn/programs/electrical-engineering-bsee/index.aspx",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAZlBMVEVYLIhZLIhZLIdZK4hZK4dYLIe9rM_-_v7s5_CMbaypksGhiLuXerTg1-fHudf5-PpsQ5WHZqna0ORgNY2bgrjMwNl2UJy4psvSx95tRpa0n8l6V6CQdLCtmcVdMovFttb08ffo4O5QRGzRAAAAqElEQVR4AUWKxYEEQQwDZau97mFmzj_IY9BHVIAoiEBQTYII5OUx0dQ9o-VFaZBQVDVZesOAtgOC9p7aBzIYx0kAsquici58sXUjYMbJ923t_ThnGkGV0dvX2BXF3F6bQQTaelsXt8du6T_ah3Lv57j59Zm_hvOjrTo3f4PUuee66N9g3P0A7X-wunpOhUjNH0JTLztqPeNrCDBJ2nhd8_5NENRAtQDBO8FWCLQNPyCEAAAAAElFTkSuQmCC.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://www.wcu.edu/learn/programs/electrical-engineering-bsee/index.aspx&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.wcu.edu%2Flearn%2Fprograms%2Felectrical-engineering-bsee%2Findex.aspx",
+        "source": "Western Carolina University"
+      },
+      {
+        "position": 6,
+        "title": "Bachelor of Science in Electronics and Electrical Engineering",
+        "link": "https://case.carolinau.edu/program/bachelor-science/electronics-and-electrical-engineering",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://case.carolinau.edu/program/bachelor-science/electronics-and-electrical-engineering&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCkQAQ",
+        "displayed_link": "https://case.carolinau.edu › program › electronics-and-e...",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAe1BMVEUAKGgAJmcAIWUAH2QAI2YAH2YAAFwAG2RKW4ZfbJE4TH0AAFsAF2EAE2DT1-H____5-vyQmbIADF6or8IAJWcABV3CyNWzusppdZi7wdDh5OsAHGNBVIJSYovJztkAAFlyfZ0GLWwZNnDv8vZXZo6aorh-iaUAAEzY3OTKiSLaAAAA2klEQVR4AcXQBY7FIBQFUKQOnVt39_1vcLwpkEw884kgB7k88g-NMm79Qbbjen4gJCUhNU34bwAQxU6SZrpmeQGUlVfVaGy0OuYNosBpeSs6AK6GogZ6-T2UvYHMA4bx2ahhPgBTe-_sdAwBzNk9G8EUszogEk_yRY3DfWAV5FEV2aajpApmC4DkSaBXSKxAd9ecurC1tDuwh_elh_4V2ipxxaojcSugHL9SZmMNA0l-ALUt8nEeUJpIkn4FmqEBphPMQMJFVTfrFTNpBbcpqXjiiFx-QkZe1z4Ao0sOjQvacg4AAAAASUVORK5CYII.png",
+        "snippet": "Carolina University's integrated BS and MS engineering programs. The BS Electronics and Electrical Engineering program … 800-937-5097 admissions@carolinau.edu ...",
+        "snippet_highlighted_words": [
+          "Carolina University's integrated BS and MS engineering programs"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "Carolina University's integrated BS and MS engineering programs. The BS Electronics and Electrical Engineering program … 800-937-5097 admissions@carolinau.edu ...",
+            "source_info_link": "https://case.carolinau.edu/program/bachelor-science/electronics-and-electrical-engineering",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y-mAAAAe1BMVEUAKGgAJmcAIWUAH2QAI2YAH2YAAFwAG2RKW4ZfbJE4TH0AAFsAF2EAE2DT1-H____5-vyQmbIADF6or8IAJWcABV3CyNWzusppdZi7wdDh5OsAHGNBVIJSYovJztkAAFlyfZ0GLWwZNnDv8vZXZo6aorh-iaUAAEzY3OTKiSLaAAAA2klEQVR4AcXQBY7FIBQFUKQOnVt39_1vcLwpkEw884kgB7k88g-NMm79Qbbjen4gJCUhNU34bwAQxU6SZrpmeQGUlVfVaGy0OuYNosBpeSs6AK6GogZ6-T2UvYHMA4bx2ahhPgBTe-_sdAwBzNk9G8EUszogEk_yRY3DfWAV5FEV2aajpApmC4DkSaBXSKxAd9ecurC1tDuwh_elh_4V2ipxxaojcSugHL9SZmMNA0l-ALUt8nEeUJpIkn4FmqEBphPMQMJFVTfrFTNpBbcpqXjiiFx-QkZe1z4Ao0sOjQvacg4AAAAASUVORK5CYII.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://case.carolinau.edu/program/bachelor-science/electronics-and-electrical-engineering&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fcase.carolinau.edu%2Fprogram%2Fbachelor-science%2Felectronics-and-electrical-engineering",
+        "source": "Carolina University"
+      },
+      {
+        "position": 7,
+        "title": "Which university in the US, has the best master's program ...",
+        "link": "https://www.quora.com/Which-university-in-the-US-has-the-best-master%E2%80%99s-program-in-power-systems-in-terms-of-research",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.quora.com/Which-university-in-the-US-has-the-best-master%25E2%2580%2599s-program-in-power-systems-in-terms-of-research&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECDEQAQ",
+        "displayed_link": "30+ answers · 13 years ago",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcBAMAAACAI8KnAAAAMFBMVEVHcEy4Kia5Kie5Kie5Kia5Kie5Kye5Kya5Kia5Kya5Kye5Kye5Kia5Kie5Kye4KybpLYg9AAAAEHRSTlMADBsoY5-1xoDS-f_mdeg3NaD4rAAAALBJREFUeAFjIAIwKhsJIHjMrullIQZwuc7Vu3fvmgGTFwfygPxCqOTs3WCwUwAiuXv3ntirp3fvhkh37d7XyMAg8Xr3CrCxs3cfAdF-u3eCDGdZvbsBxOXYvcsBSInu3iMANvH07kAgpbZ7K8SG6N1JQNJ8914I9_buYjQummI0o9AsgjjjCcwZEEfugToS1QuJKB7cPR_mfaiHP8ADBwyS4EFXDgKN8IA1BgEBAuEPAM0eYq2VgXsvAAAAAElFTkSuQmCC.png",
+        "snippet": "Which university in the US, has the best master’s program in power systems in terms of research?",
+        "about_this_result": {
+          "source": {
+            "description": "One program that comes to mind is Cal Poly SLO's Master's in Electrical Engineering which can be tailored for power systems. Cal Poly is known ...",
+            "source_info_link": "https://www.quora.com/Which-university-in-the-US-has-the-best-master%E2%80%99s-program-in-power-systems-in-terms-of-research",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABwAAAAcBAMAAACAI8KnAAAAMFBMVEVHcEy4Kia5Kie5Kie5Kia5Kie5Kye5Kya5Kia5Kya5Kye5Kye5Kia5Kie5Kye4KybpLYg9AAAAEHRSTlMADBsoY5-1xoDS-f_mdeg3NaD4rAAAALBJREFUeAFjIAIwKhsJIHjMrullIQZwuc7Vu3fvmgGTFwfygPxCqOTs3WCwUwAiuXv3ntirp3fvhkh37d7XyMAg8Xr3CrCxs3cfAdF-u3eCDGdZvbsBxOXYvcsBSInu3iMANvH07kAgpbZ7K8SG6N1JQNJ8914I9_buYjQummI0o9AsgjjjCcwZEEfugToS1QuJKB7cPR_mfaiHP8ADBwyS4EFXDgKN8IA1BgEBAuEPAM0eYq2VgXsvAAAAAElFTkSuQmCC.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://www.quora.com/Which-university-in-the-US-has-the-best-master%E2%80%99s-program-in-power-systems-in-terms-of-research&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.quora.com%2FWhich-university-in-the-US-has-the-best-master%25E2%2580%2599s-program-in-power-systems-in-terms-of-research",
+        "source": "Quora"
+      },
+      {
+        "position": 8,
+        "title": "Best Online Engineering Schools in North Carolina (NC)",
+        "link": "https://www.onlineengineeringprograms.com/usa/north-carolina",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.onlineengineeringprograms.com/usa/north-carolina&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECC0QAQ",
+        "displayed_link": "https://www.onlineengineeringprograms.com › usa › nor...",
+        "favicon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8_9hAAABQUlEQVR4AY3TAwxWbRgA0PvbzLbNIdu2bdu2bduN2caQbdsN8etk49nOxWsGIggtfeEvypGU3PzF1-NV5X8oyjl2cpqMfMc3NVCTi7QlFcPYTwECvtwAedhGRAJSsZu039pAa85RjH9ozGVy8Cc_EvDq_XED_9KSi2znCDXpyA5KkIbZVOQ73mvgZ7LRjpK04k-mEuImlwixmJ_ebeAX6jCePsSmBwu4zlGmsIgbHKYK6XnRQHjGEYse1OM4IbaTiIAfKMpVQmzmPxnB77RmJMOJTzOeUpcA0AizecIg_nh3EVMRjT_ox2PK8GqqwDiukIBPbmlm7hFiGr8TvBKX_YQYwU-faiAsA1jOfaZSnMps5D6XGMT3n2gAiM8ZQjzkCU_pSmz-54unMxJr2EEllnKLwt92wSAycQlIRHZ-5008A4mEoBf-1XoKAAAAAElFTkSuQmCC.png",
+        "date": "Jul 23, 2025",
+        "snippet": "Western Carolina University offers an online bachelor of science program in engineering technology with a concentration in technical operations.",
+        "snippet_highlighted_words": [
+          "Western Carolina University"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "Western Carolina University offers an online bachelor of science program in engineering technology with a concentration in technical operations.",
+            "source_info_link": "https://www.onlineengineeringprograms.com/usa/north-carolina",
+            "icon": "https://serpapi.com/images/i/iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8_9hAAABQUlEQVR4AY3TAwxWbRgA0PvbzLbNIdu2bdu2bduN2caQbdsN8etk49nOxWsGIggtfeEvypGU3PzF1-NV5X8oyjl2cpqMfMc3NVCTi7QlFcPYTwECvtwAedhGRAJSsZu039pAa85RjH9ozGVy8Cc_EvDq_XED_9KSi2znCDXpyA5KkIbZVOQ73mvgZ7LRjpK04k-mEuImlwixmJ_ebeAX6jCePsSmBwu4zlGmsIgbHKYK6XnRQHjGEYse1OM4IbaTiIAfKMpVQmzmPxnB77RmJMOJTzOeUpcA0AizecIg_nh3EVMRjT_ox2PK8GqqwDiukIBPbmlm7hFiGr8TvBKX_YQYwU-faiAsA1jOfaZSnMps5D6XGMT3n2gAiM8ZQjzkCU_pSmz-54unMxJr2EEllnKLwt92wSAycQlIRHZ-5008A4mEoBf-1XoKAAAAAElFTkSuQmCC.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://www.onlineengineeringprograms.com/usa/north-carolina&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Fwww.onlineengineeringprograms.com%2Fusa%2Fnorth-carolina",
+        "source": "Online Engineering Programs",
+        "read_more_link": "https://www.onlineengineeringprograms.com/usa/north-carolina#:~:text=Western%20Carolina%20University%20offers%20an,a%20concentration%20in%20technical%20operations."
+      },
+      {
+        "position": 9,
+        "title": "North Carolina Engineering Programs",
+        "link": "https://educatingengineers.com/states/north-carolina/",
+        "redirect_link": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://educatingengineers.com/states/north-carolina/&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28QFnoECCgQAQ",
+        "displayed_link": "https://educatingengineers.com › States › North-carolina",
+        "favicon": "https://serpapi.com/searches/6a7df01cb333ee3bf9375ce6/images/DhdB_cZU4PdkobdxE1rdw1P-K6oOlDHhNPpsfAjVyE4.png",
+        "snippet": "The NC State College of Engineering is a nationally recognized leader in engineering education, offering an extensive range of undergraduate and graduate degree ...",
+        "snippet_highlighted_words": [
+          "The NC State College of Engineering"
+        ],
+        "about_this_result": {
+          "source": {
+            "description": "The NC State College of Engineering is a nationally recognized leader in engineering education, offering an extensive range of undergraduate and graduate degree ...",
+            "source_info_link": "https://educatingengineers.com/states/north-carolina/",
+            "icon": "https://serpapi.com/searches/6a7df01cb333ee3bf9375ce6/images/DhdB_cZU4PdkobdxE1rdw-o5wXDTO3ntlreGvxCn9HDaDDGxtcYLuBvcdrBrkivr.png"
+          },
+          "languages": [
+            "en"
+          ],
+          "regions": [
+            "US"
+          ]
+        },
+        "about_page_link": "https://www.google.com/search?q=About+https://educatingengineers.com/states/north-carolina/&tbm=ilp",
+        "about_page_serpapi_link": "https://serpapi.com/search.json?engine=google_about_this_result&google_domain=google.com&q=About+https%3A%2F%2Feducatingengineers.com%2Fstates%2Fnorth-carolina%2F",
+        "source": "Educating Engineers",
+        "read_more_link": "https://educatingengineers.com/states/north-carolina/#:~:text=The%20NC%20State%20College%20of,academic%20departments%20and%20research%20centers."
+      }
+    ],
+    "related_searches": [
+      {
+        "block_position": 1,
+        "query": "Electrical engineering NC State",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=Electrical+engineering+NC+State&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAgmEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Electrical+engineering+NC+State"
+      },
+      {
+        "block_position": 1,
+        "query": "NC State Electrical Engineering curriculum",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=NC+State+Electrical+Engineering+curriculum&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAhHEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=NC+State+Electrical+Engineering+curriculum"
+      },
+      {
+        "block_position": 1,
+        "query": "Nc state power systems",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=Nc+state+power+systems&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAhFEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Nc+state+power+systems"
+      },
+      {
+        "block_position": 1,
+        "query": "NC State Electrical Engineering transfer Guide",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=NC+State+Electrical+Engineering+transfer+Guide&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAg-EAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=NC+State+Electrical+Engineering+transfer+Guide"
+      },
+      {
+        "block_position": 1,
+        "query": "NC State Electrical Engineering ranking",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=NC+State+Electrical+Engineering+ranking&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAg1EAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=NC+State+Electrical+Engineering+ranking"
+      },
+      {
+        "block_position": 1,
+        "query": "Electrical Engineering wake Tech",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=Electrical+Engineering+wake+Tech&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAgyEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Electrical+Engineering+wake+Tech"
+      },
+      {
+        "block_position": 1,
+        "query": "Power engineering degree online",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=Power+engineering+degree+online&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAgwEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Power+engineering+degree+online"
+      },
+      {
+        "block_position": 1,
+        "query": "Ncsu Electrical Engineering Faculty",
+        "link": "https://www.google.com/search?sca_esv=9cac12e99034826d&gl=us&hl=en&sxsrf=APpeQnuGsGvT3amingFtSgZdBLjrB3JHKA:1786638366015&q=Ncsu+Electrical+Engineering+Faculty&sa=X&ved=2ahUKEwjBypfJgp6WAxU1CnkGHdulC28Q1QJ6BAgsEAE",
+        "serpapi_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Ncsu+Electrical+Engineering+Faculty"
+      }
+    ],
+    "pagination": {
+      "current": 1,
+      "next": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&start=10&sourceid=chrome&ie=UTF-8",
+      "other_pages": {
+        "2": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&start=10&sourceid=chrome&ie=UTF-8",
+        "3": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&start=20&sourceid=chrome&ie=UTF-8",
+        "4": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&start=30&sourceid=chrome&ie=UTF-8",
+        "5": "https://www.google.com/search?q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&oq=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&hl=en&gl=us&start=40&sourceid=chrome&ie=UTF-8"
+      }
+    },
+    "serpapi_pagination": {
+      "current": 1,
+      "next_link": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=10",
+      "next": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=10",
+      "other_pages": {
+        "2": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=10",
+        "3": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=20",
+        "4": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=30",
+        "5": "https://serpapi.com/search.json?device=desktop&engine=google&gl=us&google_domain=google.com&hl=en&location=United+States&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina%3F&start=40"
+      }
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "_source": {
+    "note": "Real SerpAPI response recorded by this project (legacy SQLite capture, migrated in Phase 1). Exported from provider_cache/raw_payloads on 2026-11-03. Contains no API key.",
+    "captured_at": "2026-08-13T16:26:20.146Z"
+  },
+  "params": {
+    "engine": "google_ai_overview",
+    "no_cache": "false",
+    "page_token": "SJxv8XiczVbLcrJIFH6AeY5hQ35FxaipolJNi7HxkuBvvGRDIXQalIvSEEN28y6zmkeap5kGvKDRpOZfTM1ZdNPd537O5_GPP13HX_392192FK3pXbm83W5LJAiIi0tm4JUNmvhm-TVwaWja93HsYmnLQ4A0BNFwMq2vrYfJCnWGwnw2cs0tR1wpphwN4tDEjiWZdhh4mLNdCftc8ibVOJNKFQ47UvdNbhm0045exitxqy-S24YoEy6zJ-kLg-Ilc-d9Sct6mS2r32ttdijREvZLWIW19lTvdyNQqgqVVumxbHiMAfwXBBEAREYAZSf0-R0ABQDxayVIS_mGhRtCdntRkcZUyRl3Sr3rPgGVrRqyYXZs9l_rMlPUzuVA96qgXDTIjvN01R7ShZmFn6PLvb90memBe23KVZMgV36BMplDkG1y9nLZlfnpuQPA6Eca1t4GPL7JBTVa6nAu216BLmkCZKKiyXNiuYAeGKrad7FBuYNBsPMORsySXLYI606hvAjZVik7pm1mHyFNmxaOW0LwUDdcZD3h13VdVcznCFgN9ZaM3iNFB2VzwfjcwLCwpdu6cJ-dK9VKXWjVGs2bDC0mPcCFFuFiLX04tvzOm9Ys9UtypYCVfRnPqkE07VKBlJRfO0noUSTLeE4PuTA5pikvqQKBHJATc72n9BuKYJdUAizC6r63cGBML4a7r_Y2x0qhB_e2M6zIWh5Zp6Di6FxmVQUXArlQ-09JQEcgafKBH2aMJ9qQjAg4ZrH4wwRTODtptD2mQcuTNBDbJ-ZYr53gMlWuKEAjhVhBITTWwnsiWb4VRB4UJgbBKJVjtwTtLMCDqx10VkvnUwpYlJpcPXWmaPgrkq_hvEjKHhRnPX6Cjb6nxj08edZI6-OxlcRVFW1qwkJsP2uXsRB4i38xO8z_CVryydLLLCkQXUKL8i1akAbhZbSQQ1mOk0XN0dK7ihbYuzxZtvlzYbKcJUEGyD--yfZ-ssDPk6WAlvT6G7QoX6JlD8ULaOldQotyFS35ZDlBy-lkKaBlN1mOaPmlyaL9ymTJwIPz7XTMxEtyfdz8DAeUPNWGc2OmLga6Rh_tCX6p_KT29-Pm1YvuPMNyb3THupOrapRYNzq7CO6wxW2kqY1DzFM7iF2LRzyNYivh18EWhzxNaIQ9yhu-xWMXm1HomDwJHXbyieNjHDo-4Y2UgY99C4ckNKzYiDDv-PwwCCObh0YYsL-sxj3nuWEgCUYjUZXH7iSudT4c3Y1H1e6PvlBbuTSC0ag5TuT6DJrv0wC_dJoD5XU5r4twGTWFufCwqj72RMGZfAye4Ca4_WhanoydRpIEEZr0fO1jOxsPbH3aGNX1-sbYjAOSTPRqoG_oWNFn3WUdiU4_rsy37qwvR_V1iDOvqISst1VlM2z7TwHnhabEmkgkYKiBKQEmgHOgsX9Kz0bA9i1DxS1rbZmjpqFj-ia1TMOsVHGrJdTEZvXW4jwSJWtJrHDUD6XKP1EHWCU"
+  },
+  "response": {
+    "search_metadata": {
+      "id": "6a7df01e03b1361b9dcfaeeb",
+      "status": "Success",
+      "json_endpoint": "https://serpapi.com/searches/xGpsUKEW2jARFGT94KSSTg/6a7df01e03b1361b9dcfaeeb.json",
+      "created_at": "2026-08-13 16:26:06 UTC",
+      "processed_at": "2026-08-13 16:26:06 UTC",
+      "google_ai_overview_url": "https://www.google.com/async/folsrch?uule=w+CAIQICINVW5pdGVkIFN0YXRlcw&gl=us&sourceid=chrome&hl=en&yv=3&cs=1&ei=HvB9asFDtZTk4w_by674Bg&async=_basejs:/xjs/_/js/k%3Dxjs.s.en.eJC3DW_LHtA.2019.O/am%3DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACIAAgBIAIAAAAAIAAAAAAAAAAAAAAAAACAAEAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIQACAANAAAAAAAAAAAggAAAAAAgAAAAAAAAACAAQAEABAAIQAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAACAJAAAQIhCAAAAA8Lf5BgAADQAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAABAAgAAAAAAAAAAABYAAAAQGAAAQAAICIAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAgAAAACgAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAEAAAAKAAAAAAAADgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAIYAAAAAAAAAAAAAAFAAR-ABAAAQAAAAAACAAAAAAAAAABEAAAAAAAAAAQAAgAYAAAAADkAHg8AIcIDgAAAAAAAAAAAAAAAAAAAAAAAAAACIACmANJQAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBFeAoAAAAAAICtAQAB/dg%3D0/br%3D1/ichc%3D1/rs%3DACT90oG5alIdPefp5JEcUtAd7J6gRxtE_A/cb%3Dloaded_h_0?cb%3D121509378,_basecss:/xjs/_/ss/k%3Dxjs.s.djnCTdnFvQ8.L.B1.O/am%3DAAAIAAAAAAAQAAAAAAAAAAAAAAgQQAQAAAAAAAAAAAAAAAAAAEAIAAQAACAAAAAAAAAAAAAAAAAAAgABAAAAAAAAAGAQAAAAgAEAAAAAAAAKAAAAAECABogAAAQAAAAAAAAAKPQAAAC4AQAAEAAAgAdgADgCAAAAAAAQAAAAAAAACAAANAAAAACADwAAggAAIAAAAAAAAAABAAAAAAAEABAABQAAAIAAFAAAAAQAAAAABAAAAAAAAAAAAAKJAAAQAACAAAAAAAAAAAAADgAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAIHAAAAAAAAAQBgAAAAAAAACAQAAACAAAAAAAAAAAAIBIgAQAQAAAAAAADAAAAAAAAAAACAAIQiEAAAKgAAQEAAAAAM4DAAQAAAAAAAAAAIACAgAAAAAAAAAAACAAAEEAQgABAAAAAAAEAAAAAAABAAAAADkAAAAAAAAAgAAKAAEIgGEACACAREEAQAgAgIAAQAAAACACAAAAAAAFICAAAAAAAAAAAAAAiAAAAAAAAAAAAAAAAABgAQB2CAgAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE/br%3D1/cb%3Dloaded_h_0/rs%3DACT90oGLmJuKeVUQg9zO9yu2JIq30b4DUQ?cb%3D121509378,_basecomb:/xjs/_/js/k%3Dxjs.s.en.eJC3DW_LHtA.2019.O/ck%3Dxjs.s.djnCTdnFvQ8.L.B1.O/am%3DAAAIAAAAAAAQAAAAAAAAAAAAAAgQQAQAAAAAAAAAAAAAAAAAAEAIAAQAACAAAAAAAAAAAAAAAAAAAgABAAAAAAAAAGAQAAAAgAEAACIAAgBKAIAAAECIBogAAAQAAAAAAAAAKPQAEAC4AQAAEAAAgAdgADgCAAAAAAAQAAAAAAIQCCAANAAAAACADwAAggAAIAAAgAAAAAABAACAAQAEABAAJQAAAIAKFAAAAAQAAAAABAAAAAAAAAAAACKJAAAQIhCAAAAA8Lf5BgAADwAAAAAAHAAAAAAAAAAQAAAAAAAAAAAAAABAInAAAAAAAAAQBhYAAAAQGACAQAAICIAAAAAAAAAAAIBIgAQAQAAAIAAADAAAAAAAAAAACAAIQiEAAAKgAAQEAAAEAM4DAAQAAAAAAAAAAIACAgAAAAAAAQAAACAAAEEAQgABAAAAAAAEAAAAKAABAAAAADkAAAAAAAAAgEAKAAEIgGEACACAREEAQAgAgIAIYAAAACACAAAAAAAFICR-ABAAAQAAAAAAiAAAAAAAAAABEAAAAABgAQB2CAgAYAAAAADkAHg8AIcIDgAAAAAAAAAAAAAAAAAAAAAAAAAACIACmANJQQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBFeAoAAAAAAICtAQAB/d%3D1/ed%3D1/dg%3D0/br%3D1/ujg%3D1/ichc%3D1/rs%3DACT90oGSrMsgP3NYaXJbM_QsOhVeZ1SshA/cb%3Dloaded_h_0?cb%3D121509378,_fmt:madl,_id:B2Jtyd,_mado:ed&q=Where+should+I+study+power+systems+and+electric+grid+engineering+as+an+undergraduate+in+North+Carolina?&mlro=0a7yJEOHVu3Fzi_luR2H-L03klstCtR8TyB5XCcxWoeZF8MEfjY54Cjt80Y0Gk2OK40iVzMPCqo6z8dmBei7yyotIVKnQzwXTMh_W7R5_5qaqTogyV_2o_qsTE_XHj5I4iLu1YwlXLBt5pre&mlros=Idvk1qNDnPo&mrc=CAA4gANQAWgAcACYAQCgAUaoAQCwAQG6AQEB&sca_esv=9cac12e99034826d&mgtyp=41&snr=1",
+      "raw_html_file": "https://serpapi.com/searches/xGpsUKEW2jARFGT94KSSTg/6a7df01e03b1361b9dcfaeeb.html",
+      "total_time_taken": 13.24
+    },
+    "search_parameters": {
+      "engine": "google_ai_overview",
+      "page_token": "SJxv8XiczVbLcrJIFH6AeY5hQ35FxaipolJNi7HxkuBvvGRDIXQalIvSEEN28y6zmkeap5kGvKDRpOZfTM1ZdNPd537O5_GPP13HX_392192FK3pXbm83W5LJAiIi0tm4JUNmvhm-TVwaWja93HsYmnLQ4A0BNFwMq2vrYfJCnWGwnw2cs0tR1wpphwN4tDEjiWZdhh4mLNdCftc8ibVOJNKFQ47UvdNbhm0045exitxqy-S24YoEy6zJ-kLg-Ilc-d9Sct6mS2r32ttdijREvZLWIW19lTvdyNQqgqVVumxbHiMAfwXBBEAREYAZSf0-R0ABQDxayVIS_mGhRtCdntRkcZUyRl3Sr3rPgGVrRqyYXZs9l_rMlPUzuVA96qgXDTIjvN01R7ShZmFn6PLvb90memBe23KVZMgV36BMplDkG1y9nLZlfnpuQPA6Eca1t4GPL7JBTVa6nAu216BLmkCZKKiyXNiuYAeGKrad7FBuYNBsPMORsySXLYI606hvAjZVik7pm1mHyFNmxaOW0LwUDdcZD3h13VdVcznCFgN9ZaM3iNFB2VzwfjcwLCwpdu6cJ-dK9VKXWjVGs2bDC0mPcCFFuFiLX04tvzOm9Ys9UtypYCVfRnPqkE07VKBlJRfO0noUSTLeE4PuTA5pikvqQKBHJATc72n9BuKYJdUAizC6r63cGBML4a7r_Y2x0qhB_e2M6zIWh5Zp6Di6FxmVQUXArlQ-09JQEcgafKBH2aMJ9qQjAg4ZrH4wwRTODtptD2mQcuTNBDbJ-ZYr53gMlWuKEAjhVhBITTWwnsiWb4VRB4UJgbBKJVjtwTtLMCDqx10VkvnUwpYlJpcPXWmaPgrkq_hvEjKHhRnPX6Cjb6nxj08edZI6-OxlcRVFW1qwkJsP2uXsRB4i38xO8z_CVryydLLLCkQXUKL8i1akAbhZbSQQ1mOk0XN0dK7ihbYuzxZtvlzYbKcJUEGyD--yfZ-ssDPk6WAlvT6G7QoX6JlD8ULaOldQotyFS35ZDlBy-lkKaBlN1mOaPmlyaL9ymTJwIPz7XTMxEtyfdz8DAeUPNWGc2OmLga6Rh_tCX6p_KT29-Pm1YvuPMNyb3THupOrapRYNzq7CO6wxW2kqY1DzFM7iF2LRzyNYivh18EWhzxNaIQ9yhu-xWMXm1HomDwJHXbyieNjHDo-4Y2UgY99C4ckNKzYiDDv-PwwCCObh0YYsL-sxj3nuWEgCUYjUZXH7iSudT4c3Y1H1e6PvlBbuTSC0ag5TuT6DJrv0wC_dJoD5XU5r4twGTWFufCwqj72RMGZfAye4Ca4_WhanoydRpIEEZr0fO1jOxsPbH3aGNX1-sbYjAOSTPRqoG_oWNFn3WUdiU4_rsy37qwvR_V1iDOvqISst1VlM2z7TwHnhabEmkgkYKiBKQEmgHOgsX9Kz0bA9i1DxS1rbZmjpqFj-ia1TMOsVHGrJdTEZvXW4jwSJWtJrHDUD6XKP1EHWCU"
+    },
+    "ai_overview": {
+      "text_blocks": [
+        {
+          "type": "paragraph",
+          "snippet": "For an undergraduate focus in power systems and electric grid engineering in North Carolina, North Carolina State University (NC State) in Raleigh is the premier choice, backed by UNC Charlotte\n\nas a strong secondary option with a dedicated power concentration.",
+          "snippet_links": [
+            {
+              "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/"
+            }
+          ],
+          "snippet_highlighted_words": [
+            "North Carolina State University (NC State) in Raleigh"
+          ],
+          "reference_indexes": [
+            0,
+            1
+          ]
+        },
+        {
+          "type": "heading",
+          "snippet": "Top Choices in North Carolina"
+        },
+        {
+          "type": "list",
+          "list": [
+            {
+              "snippet": "North Carolina State University (NC State): Offers a Bachelor of Science in Electrical Engineering with dedicated formal concentrations in Power Systems and Renewable Electric Energy Systems (REES)\n. Home to major research initiatives like the FREEDM Systems Center, providing unmatched undergraduate research and networking with major utilities like Duke Energy.",
+              "snippet_links": [
+                {
+                  "link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/"
+                }
+              ],
+              "reference_indexes": [
+                2,
+                3,
+                4
+              ]
+            },
+            {
+              "snippet": "UNC Charlotte: Offers a focused Power and Energy Systems Concentration inside its Electrical Engineering undergraduate program, featuring specialized coursework in power system analysis and an intensive two-semester senior design project.",
+              "snippet_links": [
+                {
+                  "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "snippet": "Program Comparison"
+        },
+        {
+          "type": "table",
+          "table": [
+            [
+              "University",
+              "Specific Concentration/Major",
+              "Key Highlights"
+            ],
+            [
+              "NC State",
+              "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)",
+              "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+            ],
+            [
+              "UNC Charlotte",
+              "BS in Electrical Engineering – Power and Energy Systems",
+              "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+            ]
+          ],
+          "detailed": [
+            [
+              {
+                "snippet": "University"
+              },
+              {
+                "snippet": "Specific Concentration/Major"
+              },
+              {
+                "snippet": "Key Highlights"
+              }
+            ],
+            [
+              {
+                "snippet": "NC State"
+              },
+              {
+                "snippet": "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)"
+              },
+              {
+                "snippet": "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+              }
+            ],
+            [
+              {
+                "snippet": "UNC Charlotte"
+              },
+              {
+                "snippet": "BS in Electrical Engineering – Power and Energy Systems"
+              },
+              {
+                "snippet": "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+              }
+            ]
+          ],
+          "formatted": [
+            {
+              "university": "NC State",
+              "specific_concentration_major": "BS in Electrical Engineering – Power Systems or Renewable Electric Energy Systems (REES)",
+              "key_highlights": "Access to cutting-edge smart grid research centers, high industry recruitment, and extensive power electronics courses."
+            },
+            {
+              "university": "UNC Charlotte",
+              "specific_concentration_major": "BS in Electrical Engineering – Power and Energy Systems",
+              "key_highlights": "Practical, hands-on regional utility focus with sequential Power System Analysis I & II and dedicated capstone design."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "snippet": "Would you like help comparing admissions requirements for these programs, or do you want to explore their graduate pathways (like NC State's online power master's options)?",
+          "snippet_links": [
+            {
+              "link": "https://online-distance.ncsu.edu/program/master-of-science-in-electric-power-systems-engineering/"
+            }
+          ],
+          "reference_indexes": [
+            5
+          ]
+        }
+      ],
+      "references": [
+        {
+          "title": "Power and Energy Systems Concentration - Electrical and Computer Engineering",
+          "link": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+          "snippet": "The concentration includes: * An intensive, two-semester senior design project * The following required course: * ECGR 4141: Power...",
+          "source": "University of North Carolina at Charlotte",
+          "thumbnail": "https://ece.charlotte.edu/undergraduate-programs/undergraduate-program-information/power-and-energy-systems-concentration/",
+          "source_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://ece.charlotte.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 0
+        },
+        {
+          "title": "Which Universities are the best for Power Engineering ...",
+          "link": "https://www.reddit.com/r/PowerSystemsEE/comments/1o8hw40/which_universities_are_the_best_for_power/",
+          "snippet": "Recommended Universities for Power Engineering: In Europe, top universities include KU Leuven, TU Delft, rwth Aachen, FAU Erlangen...",
+          "source": "Reddit",
+          "thumbnail": "https://www.reddit.com/r/PowerSystemsEE/comments/1o8hw40/which_universities_are_the_best_for_power/",
+          "source_icon": "https://encrypted-tbn2.gstatic.com/faviconV2?url=https://www.reddit.com&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 1
+        },
+        {
+          "title": "Electrical Engineering (BS): Power Systems Concentration \\u003c North Carolina State University",
+          "link": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/",
+          "snippet": "The Electrical Engineering (EE) program at NC State offers a Power Systems concentration. The concentration covers: * Modern power...",
+          "source": "NC State University",
+          "thumbnail": "https://catalog.ncsu.edu/undergraduate/engineering/electrical-computer/electrical-engineering-bs-power-systems-concentration/",
+          "source_icon": "https://encrypted-tbn1.gstatic.com/faviconV2?url=https://catalog.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 2
+        },
+        {
+          "title": "REES Concentration - Electrical and Computer Engineering",
+          "link": "https://ece.ncsu.edu/ugrad/ee/rees/",
+          "snippet": "The Electrical and Computer Engineering Department at NC State offers an undergraduate concentration in Renewable Electric Energy Systems (REES) within the Bachelo...",
+          "source": "NC State University",
+          "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmIcnbw0FDZcWfMhwJj-JD4Yd3LKg1O-x5yiiziGK674Lyrl5ZqBp4o908",
+          "source_icon": "https://encrypted-tbn1.gstatic.com/faviconV2?url=https://ece.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 3
+        },
+        {
+          "title": "Education - FREEDM Systems Center - NC State University",
+          "link": "https://freedm.ncsu.edu/education/",
+          "snippet": "FREEDM offers opportunities for undergraduate students in science, technology, engineering and math fields to participate in renewable and electric power energy sy...",
+          "source": "FREEDM Systems Center",
+          "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcTrxm65uE7GZJBevFO6LzxIsCmo9EnE-ca9przFYR4HAX7vSQqdaqNL56TmL5Ib2O12SS_8jw",
+          "source_icon": "https://encrypted-tbn3.gstatic.com/faviconV2?url=https://freedm.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 4
+        },
+        {
+          "title": "Electric Power Systems Engineering",
+          "link": "https://online-distance.ncsu.edu/program/master-of-science-in-electric-power-systems-engineering/",
+          "snippet": "... degree in an engineering discipline, the Master of Science in Electrical Power Systems Engineering (MSEPSE) provides graduate students with a thorough understa...",
+          "source": "NC State Online and Distance Education",
+          "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcRjmcrnn8raYt2gwQQ4MVfBJX-XkXv0A2oBZVEdarGgm-0Z3mVYJa_s1zrWI2oyq-sZFQWuDA",
+          "source_icon": "https://encrypted-tbn0.gstatic.com/faviconV2?url=https://online-distance.ncsu.edu&client=AIM&size=128&type=FAVICON&fallback_opts=TYPE,SIZE,URL",
+          "index": 5
+        }
+      ]
+    }
+  }
+}

@@ -5,4 +5,8 @@ export const QUEUES = {
   crawlPage: "crawl.page",
   auditRun: "audit.run",
   entityCheck: "entity.check",
+  scanRun: "scan.run",
+  captureRetry: "capture.retry",
+  fanoutRun: "fanout.run",
+  judgeRun: "judge.run",
 } as const;

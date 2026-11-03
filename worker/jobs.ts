@@ -1,7 +1,12 @@
 import type PgBoss from "pg-boss";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { planRetry, runRetry, runScan } from "@/lib/capture/batch";
+import { computeCalibration } from "@/lib/capture/calibration";
+import { planFanout, runFanout } from "@/lib/capture/fanout";
+import { judgeScan } from "@/lib/capture/service";
 import { getDb } from "@/lib/db/pg/client";
-import { crawlRuns } from "@/lib/db/pg/schema";
+import { campaigns, crawlRuns, scans } from "@/lib/db/pg/schema";
+import { loadAliases } from "@/lib/judge/aliases";
 import { runAudit } from "@/lib/site/audit/run";
 import { primaryHostFor, siteContext } from "@/lib/site/context";
 import { crawlHost, liveCrawlDeps } from "@/lib/site/crawl";
@@ -22,6 +27,10 @@ export type DiscoverData = { site_id: string };
 export type CrawlPageData = { crawl_run_id: string; host_id: string };
 export type AuditRunData = { crawl_run_id: string; user_id?: string | null };
 export type EntityCheckData = { brand_id: string; org_id: string };
+export type ScanRunData = { scan_id: string; org_id: string };
+export type RetryData = { scan_id: string; org_id: string; approved_usd: number | null };
+export type FanoutData = { scan_id: string; org_id: string; approved_usd: number; limit: number };
+export type JudgeRunData = { scan_id: string; org_id: string };
 
 /** Runs once every host of a crawl is done: entity candidates, then the audit. */
 export async function afterCrawl(boss: PgBoss, crawlRunId: string, siteId: string): Promise<void> {
@@ -99,6 +108,45 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
     await ensurePhase2Providers(db, job.data.org_id);
     const res = await runEntityCheck(db, { brandId: job.data.brand_id, orgId: job.data.org_id, deps: liveEntityDeps() });
     log(`[worker] entity.check: ${res.match} match, ${res.mismatch} mismatch, ${res.missing} missing`);
+    return res;
+  });
+
+  await boss.work<ScanRunData>(QUEUES.scanRun, async ([job]) => {
+    const db = getDb();
+    const { scan_id: scanId, org_id: orgId } = job.data;
+    const summary = await runScan(db, scanId, { orgId, log });
+    log(`[worker] scan.run ${scanId}: ${summary.status}, $${summary.actualUsd} actual vs $${summary.estimateUsd ?? "unknown"} estimated`);
+    const [scan] = await db.select().from(scans).where(eq(scans.id, scanId));
+    if (scan?.kind === "calibration") {
+      const [c] = await db.select({ brandId: campaigns.brandId }).from(campaigns).where(eq(campaigns.id, scan.campaignId));
+      const month = (scan.approvedAt ?? new Date()).toISOString().slice(0, 7);
+      const res = await computeCalibration(db, { orgId, scanId, month, aliases: await loadAliases(db, orgId, c.brandId) });
+      log(`[worker] calibration ${month}: ${res.map((r) => `${r.engine} agreement ${r.agreement.agree}/${r.agreement.n}`).join(", ")}`);
+    }
+    await boss.send(QUEUES.judgeRun, { scan_id: scanId, org_id: orgId } satisfies JudgeRunData, JOB_OPTIONS);
+    return { status: summary.status, actualUsd: summary.actualUsd, estimateUsd: summary.estimateUsd, byCell: summary.byCell };
+  });
+
+  await boss.work<RetryData>(QUEUES.captureRetry, async ([job]) => {
+    const db = getDb();
+    const plan = await planRetry(db, job.data.scan_id, job.data.org_id);
+    const out = await runRetry(db, plan, { orgId: job.data.org_id, approvedUsd: job.data.approved_usd });
+    log(`[worker] capture.retry ${job.data.scan_id}: ${out.length} draws retried`);
+    await boss.send(QUEUES.judgeRun, { scan_id: job.data.scan_id, org_id: job.data.org_id } satisfies JudgeRunData, JOB_OPTIONS);
+    return { retried: out.length, statuses: out.map((o) => o.status) };
+  });
+
+  await boss.work<FanoutData>(QUEUES.fanoutRun, async ([job]) => {
+    const db = getDb();
+    const plan = await planFanout(db, job.data.scan_id, job.data.limit);
+    const res = await runFanout(db, plan, { orgId: job.data.org_id, approvedUsd: job.data.approved_usd });
+    log(`[worker] fanout.run ${job.data.scan_id}: ${res.fetched} fetched, ${res.failed} failed, $${res.usd}`);
+    return res;
+  });
+
+  await boss.work<JudgeRunData>(QUEUES.judgeRun, async ([job]) => {
+    const res = await judgeScan(getDb(), job.data.org_id, job.data.scan_id, log);
+    log(`[worker] judge.run ${job.data.scan_id}: ${res.judged} judged, ${res.failed} failed`);
     return res;
   });
 

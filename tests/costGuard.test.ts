@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { chargeUnits, checkBudget, recordCall, unitsToUsd } from "@/lib/cost/guard";
+import { chargeUnits, checkBudget, recordCall, spentThisMonth, unitsToUsd } from "@/lib/cost/guard";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
 import { costLedger, providerAccounts } from "@/lib/db/pg/schema";
@@ -29,9 +29,27 @@ describe("cost guard", () => {
     const { orgId } = await legacyContext(db);
     await db
       .update(providerAccounts)
-      .set({ creditUnitUsd: "0.015", monthlyBudgetUsd: "1", spentUsdMonth: "0.99", creditsRemaining: 1000, perRunCapUnits: 100 })
+      .set({ creditUnitUsd: "0.015", monthlyBudgetUsd: "1", creditsRemaining: 1000, perRunCapUnits: 100 })
       .where(eq(providerAccounts.orgId, orgId));
+    await recordCall(db, { orgId, provider: "serpapi", units: 66, ok: true });
     expect((await checkBudget(db, orgId, "serpapi", { units: 2 })).reason).toMatch(/monthly budget/);
+  });
+
+  it("monthly spend comes from this UTC month's ledger rows, so last month does not count", async () => {
+    const db = getDb();
+    const { orgId } = await legacyContext(db);
+    await db
+      .update(providerAccounts)
+      .set({ monthlyBudgetUsd: "1" })
+      .where(and(eq(providerAccounts.orgId, orgId), eq(providerAccounts.provider, "serpapi")));
+    const now = new Date();
+    const lastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) - 24 * 3600 * 1000);
+    await recordCall(db, { orgId, provider: "serpapi", units: 1, ok: true, usd: 0.9, at: lastMonth });
+    await recordCall(db, { orgId, provider: "serpapi", units: 1, ok: true, usd: null });
+    expect(await spentThisMonth(db, orgId, "serpapi")).toBe(0);
+    expect((await checkBudget(db, orgId, "serpapi", { units: 1, usd: 0.5 })).allowed).toBe(true);
+    await recordCall(db, { orgId, provider: "serpapi", units: 1, ok: true, usd: 0.6 });
+    expect((await checkBudget(db, orgId, "serpapi", { units: 1, usd: 0.5 })).reason).toMatch(/monthly budget/);
   });
 
   it("records every call in cost_ledger, with USD null when the price is unknown", async () => {

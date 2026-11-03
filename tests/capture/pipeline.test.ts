@@ -11,6 +11,7 @@ import { getDb } from "@/lib/db/pg/client";
 import { alerts, canaryRuns, citations, costLedger, draws, fanoutQueries, prompts, providerAccounts, scans, serpSnapshots } from "@/lib/db/pg/schema";
 import { getRawText } from "@/lib/rawstore";
 import { ensureCaptureProviders } from "@/lib/capture/accounts";
+import { recordCall } from "@/lib/cost/guard";
 import { resetDatabase } from "../helpers";
 import fs from "fs";
 import path from "path";
@@ -120,7 +121,8 @@ describe("captureDraw", () => {
   it("the cost guard refuses over budget: blocked draw, no call", async () => {
     const db = getDb();
     const ctx = await setup();
-    await db.update(providerAccounts).set({ monthlyBudgetUsd: "1", spentUsdMonth: "0.995" }).where(and(eq(providerAccounts.orgId, ctx.orgId), eq(providerAccounts.provider, "anthropic")));
+    await db.update(providerAccounts).set({ monthlyBudgetUsd: "1" }).where(and(eq(providerAccounts.orgId, ctx.orgId), eq(providerAccounts.provider, "anthropic")));
+    await recordCall(db, { orgId: ctx.orgId, provider: "anthropic", units: 1, ok: true, usd: 0.995 });
     const a = fakeAdapter("anthropic", {}, 0.01);
     const out = await captureDraw(db, plan(ctx), { adapter: a });
     expect(a.calls).toBe(0);

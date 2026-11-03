@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import { costLedger, providerAccounts } from "@/lib/db/pg/schema";
 
@@ -34,6 +34,16 @@ export function unitsToUsd(units: number, creditUnitUsd: string | null | undefin
   if (creditUnitUsd === null || creditUnitUsd === undefined) return null;
   const price = Number(creditUnitUsd);
   return Number.isFinite(price) ? units * price : null;
+}
+
+/** USD recorded in the ledger since the start of the current UTC month. Rows with unknown USD add nothing. */
+export async function spentThisMonth(db: Db, orgId: string, provider: string, now = new Date()): Promise<number> {
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const [row] = await db
+    .select({ spent: sql<string>`coalesce(sum(${costLedger.usd}), 0)` })
+    .from(costLedger)
+    .where(and(eq(costLedger.orgId, orgId), eq(costLedger.provider, provider), gte(costLedger.at, monthStart)));
+  return Number(row?.spent ?? 0);
 }
 
 /**
@@ -83,7 +93,7 @@ export async function checkBudget(
     }
   }
   if (usd !== null && account.monthlyBudgetUsd !== null) {
-    const spent = Number(account.spentUsdMonth);
+    const spent = await spentThisMonth(db, orgId, provider);
     if (spent + usd > Number(account.monthlyBudgetUsd)) {
       return {
         allowed: false,

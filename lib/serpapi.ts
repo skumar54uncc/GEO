@@ -39,26 +39,12 @@ export async function estimateAioBatch(promptIds: number[]): Promise<CreditEstim
   const calls_per_prompt = 2;
   const breakdown: CreditEstimate["breakdown"] = [];
   let uncached = 0;
+  // Measurement draws are never served from a cache, so every prompt can cost a search plus a page_token follow-up.
   for (const prompt_id of promptIds) {
     const prompt = await store.getPrompt(prompt_id);
     if (!prompt) continue;
-    const googleParams = googleSearchParams(prompt.text);
-    const googleHash = hashParams(googleParams);
-    const cached = await store.getSerpCache(googleHash);
-    const googleCached = Boolean(cached);
-    let aioCached = false;
-    if (cached) {
-      try {
-        const json = JSON.parse(cached.raw_json) as { ai_overview?: { text_blocks?: unknown; page_token?: string } };
-        const aio = json.ai_overview;
-        aioCached = Boolean(aio?.text_blocks) || !aio;
-      } catch {
-        aioCached = false;
-      }
-    }
-    breakdown.push({ prompt_id, google_cached: googleCached, aio_unknown: !aioCached });
-    if (!googleCached) uncached += 1;
-    if (!aioCached) uncached += 1;
+    breakdown.push({ prompt_id, google_cached: false, aio_unknown: true });
+    uncached += 2;
   }
   const estimated_calls = promptIds.length * calls_per_prompt;
   const allowedByCap = estimated_calls <= cfg.serpapi_per_run_cap;
@@ -82,14 +68,19 @@ export async function estimateAioBatch(promptIds: number[]): Promise<CreditEstim
   };
 }
 
-function googleSearchParams(q: string): Record<string, unknown> {
+/**
+ * A measurement draw: no_cache=true so SerpAPI runs a real search, and the draw index in the local cache
+ * key (keys starting with "_" are never sent), so draw 2 is never a copy of draw 1.
+ */
+export function aioMeasurementParams(q: string, drawIndex: number): Record<string, unknown> {
   return {
     engine: "google",
     q,
     location: GOOGLE_AIO_LOCATION,
     gl: "us",
     hl: "en",
-    no_cache: "false",
+    no_cache: "true",
+    _draw_index: drawIndex,
   };
 }
 
@@ -100,7 +91,8 @@ export async function serpCall(
   const store = getStore();
   const engine = String(params.engine ?? "unknown");
   const params_hash = hashParams(params);
-  const cached = await store.getSerpCache(params_hash);
+  const measurement = params.no_cache === "true";
+  const cached = measurement ? null : await store.getSerpCache(params_hash);
   if (cached) {
     await store.logSerpEvent({
       created_at: nowIso(),
@@ -141,11 +133,11 @@ export async function serpCall(
 
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null) continue;
+    if (v === undefined || v === null || k.startsWith("_")) continue;
     query.set(k, String(v));
   }
   query.set("api_key", apiKey());
-  query.set("no_cache", "false");
+  if (!measurement) query.set("no_cache", "false");
 
   let json: Record<string, unknown> | null = null;
   try {
@@ -274,7 +266,10 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
   let cached_calls = 0;
   let live_calls = 0;
 
-  const google = await serpCall(googleSearchParams(prompt.text), { prompt_id: promptId });
+  const previous = await store.listResponses({ prompt_id: promptId, surface: "google_aio" });
+  const drawIndex = previous.reduce((m, r) => Math.max(m, r.run_number), 0) + 1;
+  const params = aioMeasurementParams(prompt.text, drawIndex);
+  const google = await serpCall(params, { prompt_id: promptId });
   credits += google.credits_charged;
   if (google.cached) cached_calls += 1;
   else live_calls += 1;
@@ -311,7 +306,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
   if (aio && !aio.text_blocks && typeof aio.page_token === "string") {
     const token = aio.page_token;
     const aioCall = await serpCall(
-      { engine: "google_ai_overview", page_token: token, no_cache: "false" },
+      { engine: "google_ai_overview", page_token: token, no_cache: "true", _draw_index: drawIndex },
       { prompt_id: promptId },
     );
     credits += aioCall.credits_charged;
@@ -350,7 +345,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
     await store.putSerpCache({
       engine: "google",
       params_hash: google.params_hash,
-      params_json: JSON.stringify(googleSearchParams(prompt.text)),
+      params_json: JSON.stringify(params),
       raw_json: JSON.stringify(merged),
       credits_charged: google.credits_charged,
     });
@@ -371,7 +366,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
       {
         prompt_id: promptId,
         surface: "google_aio",
-        run_number: 1,
+        run_number: drawIndex,
         raw_text: "no AI Overview shown",
         source_type: "serpapi",
         location_note: AIO_LOCATION_NOTE,
@@ -408,7 +403,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
     {
       prompt_id: promptId,
       surface: "google_aio",
-      run_number: 1,
+      run_number: drawIndex,
       raw_text: shown ? text : "no AI Overview shown",
       source_type: "serpapi",
       location_note: AIO_LOCATION_NOTE,

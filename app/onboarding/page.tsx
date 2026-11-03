@@ -365,7 +365,7 @@ function EntitiesStep({ view, reloadSite, setMsg }: { view: SiteView; reloadSite
               <input type="checkbox" checked={showRejected} onChange={(e) => setShowRejected(e.target.checked)} />
               Show rejected
             </label>
-            <Button size="sm" variant="outline" onClick={() => act(async () => { const r = await api<{ result: { added: number } }>(`/api/sites/${view.site.id}/entities`, { method: "POST", body: JSON.stringify({ action: "extract" }) }); return `${r.result.added} new candidates.`; })}>
+            <Button size="sm" variant="outline" onClick={() => act(async () => { const r = await api<{ result: { added: number; dropped: number } }>(`/api/sites/${view.site.id}/entities`, { method: "POST", body: JSON.stringify({ action: "extract" }) }); return `${r.result.added} new candidates; ${r.result.dropped} unreviewed ones no longer found were removed.`; })}>
               Re-extract from latest crawl
             </Button>
             <Button size="sm" variant="outline" onClick={() => act(async () => { const r = await api<{ result: { status: string; reason: string | null; assigned: number; rejected: number } }>(`/api/sites/${view.site.id}/entities`, { method: "POST", body: JSON.stringify({ action: "group" }) }); return r.result.status === "ran" ? `Grouped ${r.result.assigned}; ${r.result.rejected} model answers rejected.` : `Grouping ${r.result.status}: ${r.result.reason}`; })}>

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDomain } from "tldts";
 import type { Db } from "@/lib/db/pg/client";
-import { brands, sites } from "@/lib/db/pg/schema";
+import { brands, siteHosts, sites } from "@/lib/db/pg/schema";
 
 export class SiteNotFound extends Error {}
 export class SiteInputError extends Error {}
@@ -43,6 +43,16 @@ export type SiteContext = {
   rootHost: string;
   rootDomain: string;
 };
+
+/** The host the root URL lands on (charlotte.edu redirects to www.charlotte.edu). */
+export async function primaryHostFor(db: Db, siteId: string): Promise<string> {
+  const ctx = await siteContext(db, siteId);
+  const [row] = await db
+    .select({ rootFinalUrl: siteHosts.rootFinalUrl })
+    .from(siteHosts)
+    .where(and(eq(siteHosts.siteId, siteId), eq(siteHosts.host, ctx.rootHost)));
+  return row?.rootFinalUrl ? new URL(row.rootFinalUrl).hostname.toLowerCase() : ctx.rootHost;
+}
 
 export async function siteContext(db: Db, siteId: string, orgId?: string): Promise<SiteContext> {
   const [row] = await db

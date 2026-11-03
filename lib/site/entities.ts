@@ -65,7 +65,18 @@ const PROGRAM_PATTERNS: Array<{ re: RegExp; field: number; degree: number | stri
   { re: /^(Minor|Major|Graduate Certificate|Undergraduate Certificate|Certificate) in (.{3,80})$/, field: 2, degree: 1 },
 ];
 const COLLEGE_RE = /^(?:The\s)?(?:[A-Z][\w'’.&-]*\s){0,6}(?:College|School)\s+of\s+(?:[A-Z][\w'’&,-]*|and|&|the|of)(?:\s(?:[A-Z][\w'’&,-]*|and|&|the|of|\+)){0,8}$|^(?:[A-Z][\w'’.&-]*\s){1,5}(?:College|School)$/;
-const NOT_COLLEGE = /\b(High|Middle|Elementary|Summer|Charter|Day)\s+School\b|\bSchool\s+of\s+Thought\b/;
+const NOT_COLLEGE =
+  /\b(High|Middle|Elementary|Summer|Charter|Day)\s+School\b|\bSchool\s+of\s+Thought\b|^(A|An|Our|Your|The Best)\s|\b(Funds?|Endowments?|Scholarships?|Fellowships?|Strategic Plan|Awards?|Giving|Campaign|Dean[’']s|Student Center|Engagement|News|Events?|Faculty|Staff|Alumni|Advising|Newsletter|Magazine)\b/;
+// Words that make a short "Field, Ph.D." heading a subject rather than a person's name.
+const SUBJECT =
+  /\b(Science|Sciences|Studies|Engineering|Health|Business|Education|Management|Analytics|Arts?|History|Psychology|Biology|Chemistry|Physics|Mathematics|Statistics|Nursing|Administration|Policy|Design|Technology|Informatics|Computing|Economics|Sociology|Communication|Justice|Finance|Accounting|Marketing|Music|Theatre|Dance|Languages?|Literature|English|Philosophy|Geography|Anthropology|Architecture|Planning|Work|Therapy|Care|Kinesiology|Security|Intelligence|Learning|Leadership|Counseling|Medicine|Law|Data|Research|Development|Systems|Media|Film|Religion|Writing)\b/;
+const PERSON_NAME = /^(?:[A-Z]\.\s)?[A-Z][a-z’'-]+(?:\s[A-Z]\.)?\s[A-Z][a-zA-Z’'-]+$/;
+const DOCTORATE = /^(Ph\.?D\.?|Ed\.?D\.?|D\.?N\.?P\.?|M\.?D\.?|J\.?D\.?)$/;
+const PROGRAM_NOISE = /\b(faculty|staff|students?|programs?|alumni|news|events?|apply|admissions?|info(?:rmation)? session|webinar)\b/i;
+const HEADLINE_VERB = /^(We|Our)\s|\b(Launches|Launched|Announces|Opens|Receives|Wins|Names|Manage|Celebrates|Hosts|Awarded|Earns)\b/;
+const STREET_WORD = /\b(Blvd|Boulevard|Street|St|Ave|Avenue|Road|Rd|Drive|Dr|Lane|Ln|Way|Hwy|Highway|Parkway|Pkwy|Court|Ct|Place|Pl|Suite)\b/;
+// State codes that are also degree abbreviations ("Respiratory Care, MS"). Full state names still match.
+const DEGREE_LIKE_STATE = new Set(["MS", "MA", "MD", "PA"]);
 const CENTER_RE = /^(?:[A-Z][\w'’.&,-]*\s|(?:and|for|of|on|the|in|&)\s){1,10}(?:Center|Centre|Institute|Laboratory|Lab|Consortium|Observatory)(?:\s(?:for|of|on|in)\s(?:[A-Z][\w'’&,-]*|and|of|the|&)(?:\s(?:[A-Z][\w'’&,-]*|and|of|the|&)){0,8})?(?:\s\([A-Z0-9]{2,10}\))?$/;
 const SERVICE_CENTER = /\b(Career|Health|Visitor|Help|Recreation|Writing|Fitness|Support|Contact|Counseling|Student|Wellness|Testing|Tutoring|Advising|Resource|Welcome|Child|Event|Conference|Aquatic|Media|Print|Copy|Services?|Shopping|Medical|Disability|Call|Data|Learning|Success|Admissions|Information|Parking|Mail|Dining|Activity|Activities|Craft)\b/;
 const RANK_WORD = /\b(ranked|ranks|ranking|rankings|rated|No\.\s?\d+|#\s?\d+|top\s\d+|Top\s\d+|R1)\b/;
@@ -98,8 +109,28 @@ function texts(page: EntityPage): Array<{ text: string; method: Method }> {
   return out.filter((t) => t.text.length >= 3 && t.text.length <= 140);
 }
 
-/** Deterministic extraction. Every candidate keeps the URL it came from. */
-export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
+function hostAndPath(url: string): { host: string; path: string } {
+  try {
+    const u = new URL(url);
+    return { host: u.hostname.toLowerCase(), path: u.pathname };
+  } catch {
+    return { host: "", path: "" };
+  }
+}
+
+/** "The University of North Carolina at Charlotte Homepage" -> "University of North Carolina at Charlotte". */
+export function nameFromHomeTitle(title: string): string | null {
+  const parts = title.split(/\s+[|–—-]\s+/).map((p) => clean(p.replace(/\b(home\s?page|home|welcome to)\b/gi, "")));
+  const best = parts.filter((p) => /\b(University|College|Institute|School)\b/.test(p)).sort((a, b) => b.length - a.length)[0];
+  return best ? best.replace(/^The\s+/, "") : null;
+}
+
+/**
+ * Deterministic extraction. Every candidate keeps the URL it came from. `primaryHost` is where the
+ * root URL lands; only its home page and titles can name the institution, since other hosts name units.
+ */
+export function extractEntityCandidates(pages: EntityPage[], opts: { primaryHost?: string | null } = {}): Candidate[] {
+  const primary = opts.primaryHost?.toLowerCase() ?? null;
   const found = new Map<string, Candidate>();
   const add = (c: Omit<Candidate, "normalized" | "sourceUrls"> & { normalized?: string }) => {
     const normalized = c.normalized ?? normalizeValue(c.value);
@@ -136,15 +167,35 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
           if (parts.length >= 2) add({ kind: "location", value: parts.join(", "), sourceUrl: p.url, method: "schema", evidence: "JSON-LD PostalAddress", details: { address: addr }, requiresContext: false });
         }
       }
+      const { host, path } = hostAndPath(p.url);
+      const isOrgLike = types.some((t) => t === "Organization" || t === "WebSite");
+      if (isOrgLike && typeof node.name === "string" && node.name.trim() && !types.some((t) => UNIVERSITY_TYPES.has(t))) {
+        const v = clean(node.name);
+        const cleaned = nameFromHomeTitle(v);
+        if (primary && host === primary && path === "/" && cleaned) {
+          add({ kind: "name", value: cleaned, sourceUrl: p.url, method: "schema", evidence: `JSON-LD ${types.join("/")} name on the main home page: "${v}"`, details: null, requiresContext: false });
+          names.push(cleaned);
+        } else if (COLLEGE_RE.test(v) && !NOT_COLLEGE.test(v)) {
+          add({ kind: "college", value: v, sourceUrl: p.url, method: "schema", evidence: `JSON-LD ${types.join("/")} name of ${host}`, details: null, requiresContext: false });
+        }
+      }
       if (types.includes("EducationalOccupationalProgram") && typeof node.name === "string") {
         add({ kind: "program", value: clean(node.name), sourceUrl: p.url, method: "schema", evidence: "JSON-LD EducationalOccupationalProgram", details: { credential: node.educationalCredentialAwarded ?? null }, requiresContext: false });
       }
     }
   }
 
-  // name from the most common title suffix ("Page | UNC Charlotte")
+  // name from the main home page title
+  const home = pages.find((p) => primary && hostAndPath(p.url).host === primary && hostAndPath(p.url).path === "/");
+  const homeName = home?.title ? nameFromHomeTitle(home.title) : null;
+  if (home && homeName) {
+    add({ kind: "name", value: homeName, sourceUrl: home.url, method: "title", evidence: `home page title "${home.title}"`, details: null, requiresContext: false });
+    names.push(homeName);
+  }
+
+  // name or alias from the most common title suffix on the main host ("Page | UNC Charlotte")
   const suffixes = new Map<string, { count: number; url: string }>();
-  for (const p of pages) {
+  for (const p of pages.filter((x) => !primary || hostAndPath(x.url).host === primary)) {
     const parts = (p.title ?? "").split(/\s+[|–—-]\s+/).map(clean).filter(Boolean);
     if (parts.length < 2) continue;
     const last = parts[parts.length - 1];
@@ -152,7 +203,7 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
     s.count++;
     suffixes.set(last, s);
   }
-  const titled = pages.filter((p) => p.title).length;
+  const titled = pages.filter((p) => p.title && (!primary || hostAndPath(p.url).host === primary)).length;
   for (const [suffix, s] of Array.from(suffixes.entries())) {
     if (s.count >= 3 && s.count >= titled * 0.2) {
       const isName = !names.length;
@@ -208,7 +259,7 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
         add({ kind: "college", value: text, sourceUrl: p.url, method, evidence: null, details: null, requiresContext: false });
         continue;
       }
-      if (CENTER_RE.test(text) && !SERVICE_CENTER.test(text) && text.split(/\s+/).length <= 14) {
+      if (CENTER_RE.test(text) && !SERVICE_CENTER.test(text) && !HEADLINE_VERB.test(text) && !/\b(Endowment|Fund)\b/.test(text) && text.split(/\s+/).length <= 14) {
         let path = "";
         try {
           path = new URL(p.url).hostname + new URL(p.url).pathname;
@@ -224,6 +275,11 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
         const field = clean(m[pat.field]).replace(/[,(–-]+$/, "").trim();
         const degree = clean(typeof pat.degree === "number" ? m[pat.degree] : pat.degree);
         if (field.split(/\s+/).length > 10 || /\b(apply|request|visit|learn more|click)\b/i.test(field)) break;
+        if (PROGRAM_NOISE.test(field)) break;
+        // "Angelica Martins, Ph.D." is a person, not a program.
+        if (DOCTORATE.test(degree) && PERSON_NAME.test(field) && !SUBJECT.test(field)) break;
+        // Headlines ("Ph.D. student eyes a future in ...") have several lowercase words; program names do not.
+        if (field.split(/\s+/).filter((w) => /^[a-z]/.test(w) && !STOP.has(w) && w !== "with").length >= 2) break;
         add({ kind: "program", value: text, normalized: `${normalizeValue(field)}|${normalizeValue(degree).replace(/\s/g, "")}`, sourceUrl: p.url, method, evidence: null, details: { field, degree }, requiresContext: false });
         break;
       }
@@ -232,8 +288,10 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
     let claims = 0;
     for (const s of sentences(p.text)) {
       if (claims >= 5) break;
-      if (s.length < 30 || s.length > 400) continue;
+      if (s.length < 30 || s.length > 300) continue;
       if (!RANK_WORD.test(s)) continue;
+      // Stat blocks and navigation run together ("32,000+ STUDENTS ... 400+ STUDENT ORGANIZATIONS") are not claims.
+      if ((s.match(/\b[A-Z]{3,}\b/g) ?? []).filter((w) => !/^(UNC|UNCC|QS|THE|USA|STEM|R1)$/.test(w)).length >= 2) continue;
       const body = s.match(RANK_BODY);
       if (!body) continue;
       add({ kind: "ranking_claim", value: s, sourceUrl: p.url, method: "text", evidence: "the site's own words, not verified", details: { body: body[0] }, requiresContext: false });
@@ -245,7 +303,13 @@ export function extractEntityCandidates(pages: EntityPage[]): Candidate[] {
   const places = new Map<string, Set<string>>();
   for (const p of pages) {
     for (const m of Array.from(p.text.matchAll(CITY_STATE))) {
-      const v = `${m[1]}, ${m[2]}`;
+      if (DEGREE_LIKE_STATE.has(m[2])) continue;
+      // "9201 University City Blvd Charlotte, NC": keep only the words after the street name.
+      const words = m[1].split(" ");
+      const lastStreet = words.map((w) => STREET_WORD.test(w)).lastIndexOf(true);
+      const city = words.slice(lastStreet + 1).join(" ");
+      if (!city) continue;
+      const v = `${city}, ${m[2]}`;
       if (!places.has(v)) places.set(v, new Set());
       places.get(v)!.add(p.url);
     }
@@ -276,10 +340,16 @@ export async function loadEntityPages(db: Db, crawlRunId: string): Promise<Entit
   return out;
 }
 
-/** Stores candidates. Existing rows keep their review status; only new sources are added. */
-export async function saveCandidates(db: Db, siteId: string, crawlRunId: string, candidates: Candidate[]): Promise<{ added: number; updated: number }> {
+/**
+ * Stores candidates. Reviewed rows (confirmed or rejected) are never changed or removed. Unreviewed
+ * proposals that this extraction no longer finds are dropped, so rule fixes clean up old noise.
+ */
+export async function saveCandidates(db: Db, siteId: string, crawlRunId: string, candidates: Candidate[]): Promise<{ added: number; updated: number; dropped: number }> {
   const existing = await db.select().from(entityCandidates).where(eq(entityCandidates.siteId, siteId));
   const byKey = new Map(existing.map((e) => [`${e.kind}|${e.normalized}`, e]));
+  const found = new Set(candidates.map((c) => `${c.kind}|${c.normalized}`));
+  const stale = existing.filter((e) => e.status === "proposed" && !found.has(`${e.kind}|${e.normalized}`)).map((e) => e.id);
+  if (stale.length) await db.delete(entityCandidates).where(inArray(entityCandidates.id, stale));
   let added = 0;
   let updated = 0;
   for (const c of candidates) {
@@ -310,7 +380,7 @@ export async function saveCandidates(db: Db, siteId: string, crawlRunId: string,
       .onConflictDoNothing();
     added++;
   }
-  return { added, updated };
+  return { added, updated, dropped: stale.length };
 }
 
 /**

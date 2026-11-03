@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/pg/client";
 import { crawlRuns } from "@/lib/db/pg/schema";
 import { runAudit } from "@/lib/site/audit/run";
-import { siteContext } from "@/lib/site/context";
+import { primaryHostFor, siteContext } from "@/lib/site/context";
 import { crawlHost, liveCrawlDeps } from "@/lib/site/crawl";
 import { discoverSite, liveDiscoveryDeps } from "@/lib/site/discovery";
 import { extractEntityCandidates, loadEntityPages, saveCandidates } from "@/lib/site/entities";
@@ -26,7 +26,7 @@ export type EntityCheckData = { brand_id: string; org_id: string };
 /** Runs once every host of a crawl is done: entity candidates, then the audit. */
 export async function afterCrawl(boss: PgBoss, crawlRunId: string, siteId: string): Promise<void> {
   const db = getDb();
-  const candidates = extractEntityCandidates(await loadEntityPages(db, crawlRunId));
+  const candidates = extractEntityCandidates(await loadEntityPages(db, crawlRunId), { primaryHost: await primaryHostFor(db, siteId) });
   await saveCandidates(db, siteId, crawlRunId, candidates);
   await boss.send(QUEUES.auditRun, { crawl_run_id: crawlRunId } satisfies AuditRunData, JOB_OPTIONS);
 }

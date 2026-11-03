@@ -147,6 +147,15 @@ describe("end to end: onboard, discover, crawl, audit, report", () => {
     expect(rows.find((r) => r.kind === "name")?.value).toBe("University of North Carolina at Charlotte");
     expect(rows.find((r) => r.kind === "alias" && r.value === "Charlotte")?.requiresContext).toBe(true);
     expect(rows.every((r) => r.sourceUrl.startsWith("http://"))).toBe(true);
+
+    // Re-extraction keeps reviewed rows and drops unreviewed ones that are no longer found.
+    const alias = rows.find((r) => r.kind === "alias" && r.value === "UNC Charlotte")!;
+    await db.update(entityCandidates).set({ status: "confirmed" }).where(eq(entityCandidates.id, alias.id));
+    const res = await saveCandidates(db, siteId, crawlRunId, []);
+    expect(res.dropped).toBe(rows.length - 1);
+    const left = await db.select().from(entityCandidates).where(eq(entityCandidates.siteId, siteId));
+    expect(left.map((r) => r.id)).toEqual([alias.id]);
+    await saveCandidates(db, siteId, crawlRunId, extractEntityCandidates(await loadEntityPages(db, crawlRunId)));
   });
 
   it("audits, and a rerun on the same crawl gives identical findings", async () => {

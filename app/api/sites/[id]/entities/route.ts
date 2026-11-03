@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { recordAudit, withRole } from "@/lib/auth";
 import { getDb } from "@/lib/db/pg/client";
 import { crawlRuns } from "@/lib/db/pg/schema";
-import { siteContext } from "@/lib/site/context";
+import { primaryHostFor, siteContext } from "@/lib/site/context";
 import { extractEntityCandidates, groupWithLlm, loadEntityPages, reviewCandidate, saveCandidates } from "@/lib/site/entities";
 import { jsonBody, siteErrors } from "@/lib/site/http";
 import { ensurePhase2Providers } from "@/lib/site/providerCall";
@@ -32,7 +32,8 @@ export const POST = withRole<{ id: string }>("editor", async (req, { user, param
     }
     const [run] = await db.select().from(crawlRuns).where(eq(crawlRuns.siteId, params.id)).orderBy(desc(crawlRuns.createdAt)).limit(1);
     if (!run) return NextResponse.json({ error: "Crawl the site first." }, { status: 400 });
-    const res = await saveCandidates(db, params.id, run.id, extractEntityCandidates(await loadEntityPages(db, run.id)));
+    const candidates = extractEntityCandidates(await loadEntityPages(db, run.id), { primaryHost: await primaryHostFor(db, params.id) });
+    const res = await saveCandidates(db, params.id, run.id, candidates);
     return NextResponse.json({ result: res });
   }),
 );

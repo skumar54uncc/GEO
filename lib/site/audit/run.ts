@@ -3,7 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import { auditFindings, auditRules, auditRuns, crawlPages, crawlRuns, entityChecks, pagespeedResults, siteHosts } from "@/lib/db/pg/schema";
 import { getRawText } from "@/lib/rawstore";
-import { siteContext } from "../context";
+import { primaryHostFor, siteContext } from "../context";
 import type { FaqItem } from "../extract";
 import { stableStringify } from "../providerCall";
 import { evaluateRules, RULES, RULES_VERSION, type AuditInput, type Finding } from "./rules";
@@ -34,13 +34,8 @@ export async function loadAuditInput(db: Db, crawlRunId: string): Promise<AuditI
   if (!run) throw new Error("crawl run not found");
   const ctx = await siteContext(db, run.siteId);
   const hostRows = run.hostIds.length ? await db.select().from(siteHosts).where(inArray(siteHosts.id, run.hostIds)) : [];
-  const allHosts = await db
-    .select({ host: siteHosts.host, rootFinalUrl: siteHosts.rootFinalUrl })
-    .from(siteHosts)
-    .where(eq(siteHosts.siteId, run.siteId));
-  // The primary host is where the root URL lands (charlotte.edu redirects to www.charlotte.edu).
-  const rootFinal = allHosts.find((h) => h.host === ctx.rootHost)?.rootFinalUrl;
-  const primaryHost = rootFinal ? new URL(rootFinal).hostname.toLowerCase() : ctx.rootHost;
+  const allHosts = await db.select({ host: siteHosts.host }).from(siteHosts).where(eq(siteHosts.siteId, run.siteId));
+  const primaryHost = await primaryHostFor(db, run.siteId);
   const hosts: AuditInput["hosts"] = [];
   for (const h of hostRows.sort((a, b) => a.host.localeCompare(b.host))) {
     hosts.push({

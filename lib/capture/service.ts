@@ -118,7 +118,7 @@ export async function campaignFor(db: Db, orgId: string, campaignId?: string | n
 
 export async function captureTestOptions(db: Db, orgId: string, campaignId?: string | null) {
   const campaign = await campaignFor(db, orgId, campaignId);
-  await ensureNamedRegion(db, CHARLOTTE_REGION);
+  const charlotte = await ensureNamedRegion(db, CHARLOTTE_REGION);
   const promptRows = await db
     .select({ id: prompts.id, seq: prompts.seq, text: prompts.text, status: prompts.status })
     .from(prompts)
@@ -135,6 +135,7 @@ export async function captureTestOptions(db: Db, orgId: string, campaignId?: str
     campaign: { id: campaign.id, name: campaign.name },
     prompts: promptRows,
     regions: await listRegions(db),
+    default_region_id: charlotte.id,
     routes: allRoutes().map((r) => ({ ...r, fidelity: fidelityFor(r.runner), role: roleOf(r) })),
     recent,
   };

@@ -11,12 +11,19 @@ const LINKS = [
   { href: "/audit", label: "Audit" },
   { href: "/bots", label: "Bot hits" },
   { href: "/capture", label: "Capture" },
+  { href: "/capture/test", label: "Capture test" },
   { href: "/serpapi", label: "SerpAPI" },
   { href: "/demand", label: "Demand" },
   { href: "/analyze", label: "Analyze" },
   { href: "/recommend", label: "Recommend" },
   { href: "/config", label: "Config" },
+  { href: "/settings/providers", label: "Providers" },
 ];
+
+function activeHref(path: string): string | null {
+  const hits = LINKS.filter((l) => (l.href === "/" ? path === "/" : path === l.href || path.startsWith(`${l.href}/`)));
+  return hits.sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
+}
 
 type Me = { email: string; role: string } | null;
 
@@ -62,7 +69,7 @@ export function Nav() {
           {path === "/login" ? null : (
             <nav className="flex flex-wrap gap-1">
               {LINKS.map((l) => {
-                const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+                const active = l.href === activeHref(path);
                 return (
                   <Link
                     key={l.href}

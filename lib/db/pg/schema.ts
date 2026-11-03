@@ -587,6 +587,9 @@ export const regions = pgTable("regions", {
   city: text("city"),
   language: text("language"),
   serpLocation: text("serp_location"),
+  latitude: numeric("latitude"),
+  longitude: numeric("longitude"),
+  timezone: text("timezone"),
   label: text("label").notNull().unique(),
   createdAt: createdAt(),
 });
@@ -752,6 +755,8 @@ export const scans = pgTable("scans", {
   promptSetId: uuid("prompt_set_id").references(() => promptSets.id),
   scheduleId: uuid("schedule_id").references(() => schedules.id),
   name: text("name").notNull().default(""),
+  // scan | capture_test | dry_run | calibration | canary
+  kind: text("kind").notNull().default("scan"),
   status: scanStatusEnum("status").notNull(),
   estimate: jsonb("estimate"),
   approvedBy: uuid("approved_by").references(() => users.id),
@@ -784,10 +789,16 @@ export const draws = pgTable(
     costUsd: numeric("cost_usd"),
     latencyMs: integer("latency_ms"),
     capturedAt: ts("captured_at").notNull(),
+    // A "retry failed draws" action adds a new attempt row; the failed row stays.
+    attempt: integer("attempt").notNull().default(1),
+    error: text("error"),
+    // Local SERP draws before parity passes, and any series not yet validated.
+    experimental: boolean("experimental").notNull().default(false),
+    paramsHash: text("params_hash"),
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex("draws_unique_cell").on(t.scanId, t.promptId, t.engine, t.runner, t.regionId, t.drawIndex),
+    uniqueIndex("draws_unique_cell").on(t.scanId, t.promptId, t.engine, t.runner, t.regionId, t.drawIndex, t.attempt),
     index("draws_prompt").on(t.promptId),
   ],
 );
@@ -879,6 +890,10 @@ export const citations = pgTable("citations", {
   // Null when the source did not say whether the citation was a link.
   linked: boolean("linked"),
   sourceClass: sourceClassEnum("source_class").notNull(),
+  title: text("title"),
+  // Character span in draws.answer_text where the citation is attached, when the provider or judge gives one.
+  spanStart: integer("span_start"),
+  spanEnd: integer("span_end"),
   createdAt: createdAt(),
 });
 
@@ -989,6 +1004,43 @@ export const costLedger = pgTable(
   },
   (t) => [index("cost_ledger_provider_at").on(t.provider, t.at)],
 );
+
+// One fixed prompt per engine before every scan. A failed canary refuses that engine for the scan.
+export const canaryRuns = pgTable(
+  "canary_runs",
+  {
+    id: id(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id),
+    scanId: uuid("scan_id").references(() => scans.id),
+    engine: engineEnum("engine").notNull(),
+    runner: runnerEnum("runner").notNull(),
+    provider: text("provider").notNull(),
+    drawId: uuid("draw_id").references(() => draws.id),
+    ok: boolean("ok").notNull(),
+    reason: text("reason"),
+    at: ts("at").notNull().defaultNow(),
+  },
+  (t) => [index("canary_runs_engine_at").on(t.engine, t.at)],
+);
+
+// Monthly primary vs fallback runner agreement per engine, with n.
+export const calibrationRuns = pgTable("calibration_runs", {
+  id: id(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id),
+  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
+  scanId: uuid("scan_id").references(() => scans.id),
+  month: text("month").notNull(),
+  engine: engineEnum("engine").notNull(),
+  primaryRunner: runnerEnum("primary_runner").notNull(),
+  fallbackRunner: runnerEnum("fallback_runner").notNull(),
+  nPrompts: integer("n_prompts").notNull(),
+  mentionPairs: integer("mention_pairs").notNull(),
+  mentionAgreement: numeric("mention_agreement"),
+  jaccardPairs: integer("jaccard_pairs").notNull(),
+  citationJaccardMean: numeric("citation_jaccard_mean"),
+  details: jsonb("details"),
+  createdAt: createdAt(),
+});
 
 export const modelEvents = pgTable("model_events", {
   id: id(),

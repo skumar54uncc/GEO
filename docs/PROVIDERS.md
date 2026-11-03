@@ -103,4 +103,13 @@ Today the AI Overview capture stores one draw per prompt and caches by params. R
 
 | Provider | Approved for adapter | Approved by | Date |
 |---|---|---|---|
-| (pending) | | | |
+| DataForSEO LLM Scraper (ChatGPT, Gemini UI) | Yes, pending procurement review of collection method before production data | Project owner | 2026-11-03 |
+| Bright Data AI scrapers (Perplexity UI) | Yes, pending procurement review of collection method before production data | Project owner | 2026-11-03 |
+| DataForSEO Google AI Mode and Organic with AI Overview | Yes. Primary for both Google surfaces. SerpAPI drops to the free tier for parity checks; legacy SerpAPI draws keep rendering | Project owner | 2026-11-03 |
+| Anthropic web search (Claude primary) | Yes | Project owner | 2026-11-03 |
+| OpenAI web search (ChatGPT fallback) | Yes | Project owner | 2026-11-03 |
+| Perplexity Agent API (Perplexity fallback) | Yes | Project owner | 2026-11-03 |
+| Gemini Search grounding (Gemini fallback) | Yes | Project owner | 2026-11-03 |
+| DataForSEO LLM Responses (parametric sample) | Yes | Project owner | 2026-11-03 |
+
+Adapters are built against documented sample responses first. Keys are added before the live gate run.

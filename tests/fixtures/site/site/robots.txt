@@ -1,0 +1,18 @@
+# Fixture robots.txt
+User-agent: *
+Disallow: /admin/
+Disallow: /*.pdf$
+Disallow: /search
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /private/
+Allow: /private/public-note.html
+
+User-agent: CCBot
+User-agent: Bytespider
+Disallow: /
+
+Sitemap: http://www.fixture.test:{{PORT}}/sitemap_index.xml

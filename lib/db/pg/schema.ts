@@ -151,6 +151,18 @@ export const alertKindEnum = pgEnum("alert_kind", [
   "blocked",
 ]);
 export const alertStatusEnum = pgEnum("alert_status", ["open", "acknowledged"]);
+export const entityCandidateKindEnum = pgEnum("entity_candidate_kind", [
+  "name",
+  "alias",
+  "college",
+  "program",
+  "research_center",
+  "ranking_claim",
+  "location",
+]);
+export const extractionMethodEnum = pgEnum("extraction_method", ["schema", "title", "heading", "navigation", "text"]);
+export const reviewStatusEnum = pgEnum("review_status", ["proposed", "confirmed", "rejected"]);
+export const botLogFormatEnum = pgEnum("bot_log_format", ["common", "combined", "cloudflare_json"]);
 
 // ---------- 3.1 tenancy and access ----------
 export const organizations = pgTable("organizations", {
@@ -195,6 +207,8 @@ export const brands = pgTable("brands", {
   rootDomain: text("root_domain").notNull(),
   entityType: entityTypeEnum("entity_type").notNull().default("university"),
   ipedsUnitid: text("ipeds_unitid"),
+  // Confirmed profile used as the expected values in entity_checks. Only user confirmed fields.
+  profile: jsonb("profile").notNull().default(sql`'{}'::jsonb`),
   createdAt: createdAt(),
 });
 
@@ -233,6 +247,7 @@ export const competitors = pgTable(
     name: text("name").notNull(),
     ipedsUnitid: text("ipeds_unitid"),
     source: competitorSourceEnum("source").notNull().default("manual"),
+    reasons: jsonb("reasons"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: createdAt(),
   },
@@ -294,7 +309,13 @@ export const sites = pgTable("sites", {
   id: id(),
   brandId: uuid("brand_id").notNull().references(() => brands.id),
   rootUrl: text("root_url").notNull(),
+  // new | discovering | discovered | failed
+  status: text("status").notNull().default("new"),
+  discovery: jsonb("discovery"),
+  discoveryError: text("discovery_error"),
+  discoveredAt: ts("discovered_at"),
   createdAt: createdAt(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
 export const siteHosts = pgTable(
@@ -303,9 +324,27 @@ export const siteHosts = pgTable(
     id: id(),
     siteId: uuid("site_id").notNull().references(() => sites.id),
     host: text("host").notNull(),
+    // First way the host was found; every way is in discovered_via_all.
     discoveredVia: discoveredViaEnum("discovered_via").notNull(),
+    discoveredViaAll: text("discovered_via_all").array().notNull().default(sql`'{}'::text[]`),
     included: boolean("included").notNull().default(false),
+    // True once a person changed `included`; rediscovery never overrides a user choice.
+    includedByUser: boolean("included_by_user").notNull().default(false),
+    resolves: boolean("resolves"),
+    rootStatus: integer("root_status"),
+    rootFinalUrl: text("root_final_url"),
+    loginPortal: boolean("login_portal"),
+    excludeReason: text("exclude_reason"),
+    robotsStatus: integer("robots_status"),
+    robotsRef: text("robots_ref"),
+    sitemapCount: integer("sitemap_count"),
+    sitemapUrlCount: integer("sitemap_url_count"),
+    // raw store ref to a JSON array of {loc, lastmod} from this host's sitemaps
+    sitemapRef: text("sitemap_ref"),
+    llmsTxtStatus: integer("llms_txt_status"),
+    checkedAt: ts("checked_at"),
     createdAt: createdAt(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("site_hosts_site_host").on(t.siteId, t.host)],
 );
@@ -317,6 +356,12 @@ export const crawlRuns = pgTable("crawl_runs", {
   startedAt: ts("started_at"),
   finishedAt: ts("finished_at"),
   pageCount: integer("page_count").notNull().default(0),
+  pageCapPerHost: integer("page_cap_per_host").notNull().default(50),
+  hostIds: uuid("host_ids").array().notNull().default(sql`'{}'::uuid[]`),
+  hostsDone: uuid("hosts_done").array().notNull().default(sql`'{}'::uuid[]`),
+  userAgent: text("user_agent"),
+  error: text("error"),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: createdAt(),
 });
 
@@ -339,8 +384,15 @@ export const crawlPages = pgTable(
     schemaRaw: jsonb("schema_raw"),
     faq: jsonb("faq"),
     renderMode: renderModeEnum("render_mode"),
+    rawWordCount: integer("raw_word_count"),
     contentHash: text("content_hash"),
     textRef: text("text_ref"),
+    // [{url, text, internal}] from the rendered page
+    outboundLinks: jsonb("outbound_links"),
+    visibleDates: text("visible_dates").array().notNull().default(sql`'{}'::text[]`),
+    robotsMeta: text("robots_meta"),
+    contentType: text("content_type"),
+    fetchError: text("fetch_error"),
     embedding: vector("embedding"),
     embeddingModel: text("embedding_model"),
     createdAt: createdAt(),
@@ -356,29 +408,151 @@ export const auditRules = pgTable("audit_rules", {
   createdAt: createdAt(),
 });
 
-export const auditFindings = pgTable("audit_findings", {
+// One evaluation of the rules over one crawl. findings_sha256 makes reruns comparable.
+export const auditRuns = pgTable("audit_runs", {
   id: id(),
   crawlRunId: uuid("crawl_run_id").notNull().references(() => crawlRuns.id),
-  ruleId: text("rule_id").notNull().references(() => auditRules.id),
-  severity: severityEnum("severity").notNull(),
-  hostId: uuid("host_id").references(() => siteHosts.id),
-  pageId: uuid("page_id").references(() => crawlPages.id),
-  detail: jsonb("detail"),
+  rulesVersion: text("rules_version").notNull(),
+  findingCount: integer("finding_count").notNull(),
+  findingsSha256: text("findings_sha256").notNull(),
+  createdBy: uuid("created_by").references(() => users.id),
   createdAt: createdAt(),
 });
 
-export const botHits = pgTable("bot_hits", {
-  id: id(),
-  siteId: uuid("site_id").notNull().references(() => sites.id),
-  hostId: uuid("host_id").references(() => siteHosts.id),
-  path: text("path").notNull(),
-  userAgent: text("user_agent").notNull(),
-  botName: text("bot_name").notNull(),
-  statusCode: integer("status_code"),
-  hitAt: ts("hit_at").notNull(),
-  sourceFileSha256: text("source_file_sha256").notNull(),
-  createdAt: createdAt(),
-});
+export const auditFindings = pgTable(
+  "audit_findings",
+  {
+    id: id(),
+    auditRunId: uuid("audit_run_id").notNull().references(() => auditRuns.id),
+    crawlRunId: uuid("crawl_run_id").notNull().references(() => crawlRuns.id),
+    ruleId: text("rule_id").notNull().references(() => auditRules.id),
+    severity: severityEnum("severity").notNull(),
+    hostId: uuid("host_id").references(() => siteHosts.id),
+    pageId: uuid("page_id").references(() => crawlPages.id),
+    detail: jsonb("detail"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("audit_findings_run").on(t.auditRunId)],
+);
+
+export const pagespeedResults = pgTable(
+  "pagespeed_results",
+  {
+    id: id(),
+    crawlRunId: uuid("crawl_run_id").notNull().references(() => crawlRuns.id),
+    pageId: uuid("page_id").references(() => crawlPages.id),
+    url: text("url").notNull(),
+    strategy: text("strategy").notNull(),
+    ok: boolean("ok").notNull(),
+    performanceScore: numeric("performance_score"),
+    metrics: jsonb("metrics"),
+    rawPayloadId: text("raw_payload_id").references(() => rawPayloads.sha256),
+    error: text("error"),
+    fetchedAt: ts("fetched_at").notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("pagespeed_results_run_url").on(t.crawlRunId, t.url, t.strategy)],
+);
+
+export const entityCandidates = pgTable(
+  "entity_candidates",
+  {
+    id: id(),
+    siteId: uuid("site_id").notNull().references(() => sites.id),
+    crawlRunId: uuid("crawl_run_id").references(() => crawlRuns.id),
+    kind: entityCandidateKindEnum("kind").notNull(),
+    value: text("value").notNull(),
+    normalized: text("normalized").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    sourceUrls: text("source_urls").array().notNull().default(sql`'{}'::text[]`),
+    method: extractionMethodEnum("method").notNull(),
+    evidence: text("evidence"),
+    details: jsonb("details"),
+    // Label from the grouping step (LLM or deterministic). The LLM never adds items.
+    groupLabel: text("group_label"),
+    groupSource: text("group_source"),
+    requiresContext: boolean("requires_context").notNull().default(false),
+    status: reviewStatusEnum("status").notNull().default("proposed"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: ts("reviewed_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("entity_candidates_site_kind_norm").on(t.siteId, t.kind, t.normalized)],
+);
+
+export const peerSuggestions = pgTable(
+  "peer_suggestions",
+  {
+    id: id(),
+    siteId: uuid("site_id").notNull().references(() => sites.id),
+    ipedsUnitid: text("ipeds_unitid").notNull(),
+    name: text("name").notNull(),
+    city: text("city"),
+    state: text("state"),
+    website: text("website"),
+    score: numeric("score"),
+    reasons: jsonb("reasons").notNull(),
+    rawPayloadId: text("raw_payload_id").references(() => rawPayloads.sha256),
+    status: reviewStatusEnum("status").notNull().default("proposed"),
+    competitorId: uuid("competitor_id").references(() => competitors.id),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("peer_suggestions_site_unitid").on(t.siteId, t.ipedsUnitid)],
+);
+
+export const botLogImports = pgTable(
+  "bot_log_imports",
+  {
+    id: id(),
+    siteId: uuid("site_id").notNull().references(() => sites.id),
+    fileSha256: text("file_sha256").notNull(),
+    fileName: text("file_name"),
+    format: botLogFormatEnum("format").notNull(),
+    linesTotal: integer("lines_total").notNull(),
+    linesUnparsed: integer("lines_unparsed").notNull(),
+    botLines: integer("bot_lines").notNull(),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("bot_log_imports_site_file").on(t.siteId, t.fileSha256)],
+);
+
+export const botHits = pgTable(
+  "bot_hits",
+  {
+    id: id(),
+    siteId: uuid("site_id").notNull().references(() => sites.id),
+    hostId: uuid("host_id").references(() => siteHosts.id),
+    host: text("host"),
+    path: text("path").notNull(),
+    userAgent: text("user_agent").notNull(),
+    botName: text("bot_name").notNull(),
+    statusCode: integer("status_code"),
+    hitAt: ts("hit_at").notNull(),
+    sourceFileSha256: text("source_file_sha256").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("bot_hits_site_bot").on(t.siteId, t.botName)],
+);
+
+// Append only: each check run adds rows; the latest row per (source, field) is current.
+export const entityChecks = pgTable(
+  "entity_checks",
+  {
+    id: id(),
+    brandId: uuid("brand_id").notNull().references(() => brands.id),
+    source: entityCheckSourceEnum("source").notNull(),
+    field: text("field").notNull(),
+    observed: jsonb("observed"),
+    expected: jsonb("expected"),
+    status: entityCheckStatusEnum("status").notNull(),
+    rawPayloadId: text("raw_payload_id").references(() => rawPayloads.sha256),
+    checkedAt: ts("checked_at").notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("entity_checks_brand").on(t.brandId, t.checkedAt)],
+);
 
 // ---------- 3.4 campaigns, personas, regions, prompts ----------
 export const campaigns = pgTable("campaigns", {

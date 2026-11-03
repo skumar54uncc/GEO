@@ -15,6 +15,13 @@
       "when": 1793738666501,
       "tag": "0001_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793741469376,
+      "tag": "0002_phase2_site_audit",
+      "breakpoints": true
     }
   ]
 }

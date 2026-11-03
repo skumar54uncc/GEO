@@ -129,7 +129,7 @@ export async function planScan(
     canaryDraws: spec.canary ? cells.length : 0,
     totalDraws: cells.reduce((s, c) => s + c.draws, 0),
     totalUsd,
-    refusals,
+    refusals: [...new Set(refusals)],
     estimatedAt: new Date().toISOString(),
   };
   const [scan] = await db

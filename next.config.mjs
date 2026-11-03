@@ -1,15 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  eslint: { dirs: ["app", "components", "lib", "scripts", "worker", "tests", "seed"] },
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3"],
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push("better-sqlite3");
-    }
-    return config;
+    serverComponentsExternalPackages: ["pg", "pg-boss"],
   },
 };
 

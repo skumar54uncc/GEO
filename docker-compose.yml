@@ -1,0 +1,20 @@
+# Optional: Postgres 16 with pgvector for machines that use Docker instead of Postgres.app.
+# Bound to 127.0.0.1 only. Set DATABASE_URL=postgres://geo:geo@127.0.0.1:5432/geo in .env.local.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: geo
+      POSTGRES_PASSWORD: geo
+      POSTGRES_DB: geo
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - geo-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geo"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  geo-pgdata:

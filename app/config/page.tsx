@@ -25,6 +25,10 @@ export default function ConfigPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
       }).then((r) => r.json());
+      if (json.error) {
+        setStatus(json.error);
+        return;
+      }
       setConfig(json.config);
       setText(JSON.stringify(json.config, null, 2));
       setStatus("Saved. Alias, competitor, subtopic, and asset lists now drive the judge and metrics.");

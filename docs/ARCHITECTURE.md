@@ -130,6 +130,21 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 - `audit_log` (org_id, user_id nullable, action, entity_type, entity_id, before jsonb, after jsonb, at) (added 2026-11-03). Every write route records one row. Append only.
 - `sessions` (user_id, token_hash, expires_at) (added 2026-11-03). For the Phase 1 dev login.
 
+### 3.10 Implementation additions (Phase 1, 2026-11-03)
+
+Needed to keep the legacy screens and data lossless. Schema source of truth: `lib/db/pg/schema.ts`.
+- `provider_cache` (provider, engine, params_hash, params jsonb, raw_payload_id, units). Cache by full params for every paid provider. A refresh is a new row; lookups take the latest. Replaces `serp_cache`.
+- `seq` bigint identity on `prompts`, `draws`, `judge_runs`. Numeric handles the legacy screens use; migrated rows keep their SQLite ids.
+- `sort_order` on brand aliases, brand domains, competitors and their aliases and domains, facts. Preserves list order from the legacy config.
+- `campaigns.settings` jsonb (subtopics, assets, last location note, migration marker) and `campaigns.updated_at`.
+- `regions.label` (unique). The legacy location note, kept verbatim. Structured fields are filled only for the two known notes.
+- `personas.legacy_key` (legacy audience value). `facts.external_id`, `source_label`, `names[]`.
+- `provider_accounts.org_id`, `credits_starting`, `credits_remaining`, `per_run_cap_units`, `credit_unit_usd` (null when the plan price is unknown).
+- `cost_ledger.org_id`, `engine`, `params_hash`, `ok`, `cached`, `error`, `prompt_id`; `usd` nullable (unknown price). Generalizes `serp_events`.
+- `serp_snapshots.prompt_id`. `scans.name`. `prompts.tags[]` (legacy subtopics) and `prompts.version`.
+- Nullable where the legacy data cannot say: `draws.prompt_set_id` (ad hoc capture of a prompt in no frozen set), `scans.prompt_set_id`, `citations.linked`, `prompts.intent`.
+- Embedding columns are `vector` without a fixed dimension, plus `embedding_model`, so the model can be chosen in Phase 4 without a migration.
+
 ---
 
 ## 4. Migration from SQLite
@@ -142,8 +157,9 @@ Script: `scripts/migrate-sqlite.ts`, idempotent, dry run by default.
 | `prompts` | One campaign "Energy", `prompts` (provenance = synthesized, persona mapped from `audience`), `prompt_sets` v1 frozen with all active prompts |
 | `responses` | One scan "Legacy import", `draws`. `source_type manual` becomes runner `manual_paste`, fidelity high. `serpapi` becomes `serp_provider`. `location_note` goes to a region row, region_honored unknown |
 | `analyses` | `judge_runs` (spans null for legacy rows), then `mentions` and `citations` derived from judge JSON |
-| `serp_cache` | `raw_payloads` plus `cost_ledger` |
-| `serp_organic`, `trends`, `autocomplete` | `demand_signals` |
+| `serp_cache` | `raw_payloads` plus `provider_cache` |
+| `serp_organic` | `serp_snapshots` (organic summary for the prompt's own query) |
+| `trends`, `autocomplete` | `demand_signals` |
 | `serp_events` | `cost_ledger` |
 | `recommendations` | `recommendations` (status open) |
 

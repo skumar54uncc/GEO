@@ -18,3 +18,4 @@ src/uncc_energy_ai_visibility.egg-info
 SerpAPI/
 backups/
 data/raw/
+data/raw-test/

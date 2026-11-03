@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
+import { withRole } from "@/lib/auth";
 import { getStore, storeBackend } from "@/lib/db";
 import type { AppConfig } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withRole("viewer", async () => {
   const store = getStore();
-  return NextResponse.json({ config: store.getConfig(), backend: storeBackend() });
-}
+  return NextResponse.json({ config: await store.getConfig(), backend: storeBackend() });
+});
 
-export async function PUT(req: Request) {
+export const PUT = withRole("admin", async (req) => {
   const patch = (await req.json()) as Partial<AppConfig>;
-  const store = getStore();
-  const config = store.saveConfig(patch);
+  const config = await getStore().saveConfig(patch);
   return NextResponse.json({ config });
-}
+});

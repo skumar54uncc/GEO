@@ -20,8 +20,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UNC Charlotte Energy AI Visibility Tracker",
-  description: "Measurement instrument for AI-answer visibility of UNC Charlotte energy research.",
+  title: "UNC Charlotte AI Visibility Platform",
+  description: "Measurement instrument for how AI answer engines describe UNC Charlotte.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

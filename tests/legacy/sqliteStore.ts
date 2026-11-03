@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { SCHEMA_SQL } from "./schema";
+import { SCHEMA_SQL } from "./sqliteSchema";
 import {
   dataDir,
   defaultSeedConfig,
@@ -10,7 +10,7 @@ import {
   type CoverageRow,
   type Store,
   type UpsertResponseInput,
-} from "./types";
+} from "./storeTypes";
 import type {
   AnalysisRow,
   AppConfig,
@@ -21,8 +21,8 @@ import type {
   SerpEventRow,
   SerpOrganicRow,
   Surface,
-} from "../types";
-import { nowIso } from "../domain";
+} from "@/lib/types";
+import { nowIso } from "@/lib/domain";
 
 type SqliteDatabase = {
   pragma(src: string): unknown;
@@ -33,21 +33,31 @@ type SqliteDatabase = {
     run: (...args: unknown[]) => { lastInsertRowid: number | bigint };
   };
   // better-sqlite3 transaction wraps a function of any arity.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transaction: (fn: (...args: any[]) => unknown) => (...args: any[]) => unknown;
 };
 
 type SqliteCtor = new (filename: string) => SqliteDatabase;
 
-export function tryOpenSqlite(): Store | null {
+// Frozen copy of the pre-Phase-1 SQLite store, used only to prove the Postgres migration
+// reproduces legacy metrics exactly. Always opened on a temporary copy of tracker.db.
+let legacyStore: Store | null = null;
+
+export function setLegacyStore(store: Store | null): void {
+  legacyStore = store;
+}
+
+export function getLegacyStore(): Store {
+  if (!legacyStore) throw new Error("legacy store not opened");
+  return legacyStore;
+}
+
+export function tryOpenSqlite(file: string): Store | null {
   let DatabaseCtor: SqliteCtor;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     DatabaseCtor = require("better-sqlite3");
   } catch {
     return null;
   }
-  const file = path.join(dataDir(), "tracker.db");
   let db: SqliteDatabase;
   try {
     db = new DatabaseCtor(file);

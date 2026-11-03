@@ -33,18 +33,18 @@ function apiKey(): string {
   return key;
 }
 
-export function estimateAioBatch(promptIds: number[]): CreditEstimate {
+export async function estimateAioBatch(promptIds: number[]): Promise<CreditEstimate> {
   const store = getStore();
-  const cfg = store.getConfig();
+  const cfg = await store.getConfig();
   const calls_per_prompt = 2;
   const breakdown: CreditEstimate["breakdown"] = [];
   let uncached = 0;
   for (const prompt_id of promptIds) {
-    const prompt = store.getPrompt(prompt_id);
+    const prompt = await store.getPrompt(prompt_id);
     if (!prompt) continue;
     const googleParams = googleSearchParams(prompt.text);
     const googleHash = hashParams(googleParams);
-    const cached = store.getSerpCache(googleHash);
+    const cached = await store.getSerpCache(googleHash);
     const googleCached = Boolean(cached);
     let aioCached = false;
     if (cached) {
@@ -100,9 +100,9 @@ export async function serpCall(
   const store = getStore();
   const engine = String(params.engine ?? "unknown");
   const params_hash = hashParams(params);
-  const cached = store.getSerpCache(params_hash);
+  const cached = await store.getSerpCache(params_hash);
   if (cached) {
-    store.logSerpEvent({
+    await store.logSerpEvent({
       created_at: nowIso(),
       engine,
       ok: 1,
@@ -123,10 +123,10 @@ export async function serpCall(
     };
   }
 
-  const cfg = store.getConfig();
+  const cfg = await store.getConfig();
   if (cfg.serpapi_credits_remaining < 1) {
     const error = "SerpAPI credit balance is 0. Refusing uncached call.";
-    store.logSerpEvent({
+    await store.logSerpEvent({
       created_at: nowIso(),
       engine,
       ok: 0,
@@ -158,15 +158,15 @@ export async function serpCall(
     }
     if (!res.ok || (json && typeof json.error === "string")) {
       const error = typeof json?.error === "string" ? json.error : `HTTP ${res.status}`;
-      store.putSerpCache({
+      await store.putSerpCache({
         engine,
         params_hash,
         params_json: JSON.stringify(params),
         raw_json: JSON.stringify(json),
         credits_charged: 1,
       });
-      store.chargeCredits(1);
-      store.logSerpEvent({
+      await store.chargeCredits(1);
+      await store.logSerpEvent({
         created_at: nowIso(),
         engine,
         ok: 0,
@@ -178,15 +178,15 @@ export async function serpCall(
       });
       return { ok: false, cached: false, credits_charged: 1, engine, params_hash, json, error };
     }
-    store.putSerpCache({
+    await store.putSerpCache({
       engine,
       params_hash,
       params_json: JSON.stringify(params),
       raw_json: JSON.stringify(json),
       credits_charged: 1,
     });
-    store.chargeCredits(1);
-    store.logSerpEvent({
+    await store.chargeCredits(1);
+    await store.logSerpEvent({
       created_at: nowIso(),
       engine,
       ok: 1,
@@ -199,7 +199,7 @@ export async function serpCall(
     return { ok: true, cached: false, credits_charged: 1, engine, params_hash, json, error: null };
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
-    store.logSerpEvent({
+    await store.logSerpEvent({
       created_at: nowIso(),
       engine,
       ok: 0,
@@ -253,8 +253,8 @@ export function seedAioCitations(rawJson: unknown, config: AppConfig): JudgeCita
 
 export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResult> {
   const store = getStore();
-  const config = store.getConfig();
-  const prompt = store.getPrompt(promptId);
+  const config = await store.getConfig();
+  const prompt = await store.getPrompt(promptId);
   if (!prompt) {
     return {
       prompt_id: promptId,
@@ -294,7 +294,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
   }
 
   const organic = extractOrganic(google.json, config);
-  store.upsertOrganic({
+  await store.upsertOrganic({
     prompt_id: promptId,
     target_ranked: organic.target_ranked ? 1 : 0,
     target_position: organic.target_position,
@@ -318,9 +318,9 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
     if (aioCall.cached) cached_calls += 1;
     else live_calls += 1;
     if (!aioCall.ok || !aioCall.json) {
-      const existing = store.getOrganic(promptId);
+      const existing = await store.getOrganic(promptId);
       if (existing) {
-        store.upsertOrganic({
+        await store.upsertOrganic({
           prompt_id: existing.prompt_id,
           target_ranked: existing.target_ranked,
           target_position: existing.target_position,
@@ -347,7 +347,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
     aio = (aioCall.json.ai_overview ?? aioCall.json) as Record<string, unknown>;
     aioSource = aioCall.json;
     const merged = { ...google.json, ai_overview: aio };
-    store.putSerpCache({
+    await store.putSerpCache({
       engine: "google",
       params_hash: google.params_hash,
       params_json: JSON.stringify(googleSearchParams(prompt.text)),
@@ -357,7 +357,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
   }
 
   if (!aio) {
-    store.upsertOrganic({
+    await store.upsertOrganic({
       prompt_id: promptId,
       target_ranked: organic.target_ranked ? 1 : 0,
       target_position: organic.target_position,
@@ -367,7 +367,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
       aio_shown: 0,
       fetched_at: nowIso(),
     });
-    const rows = store.upsertResponses([
+    const rows = await store.upsertResponses([
       {
         prompt_id: promptId,
         surface: "google_aio",
@@ -393,7 +393,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
 
   const text = flattenTextBlocks(aio.text_blocks) || "no AI Overview shown";
   const shown = Boolean(aio.text_blocks) && text !== "no AI Overview shown";
-  store.upsertOrganic({
+  await store.upsertOrganic({
     prompt_id: promptId,
     target_ranked: organic.target_ranked ? 1 : 0,
     target_position: organic.target_position,
@@ -404,7 +404,7 @@ export async function fetchAioForPrompt(promptId: number): Promise<AioFetchResul
     fetched_at: nowIso(),
   });
 
-  const rows = store.upsertResponses([
+  const rows = await store.upsertResponses([
     {
       prompt_id: promptId,
       surface: "google_aio",
@@ -436,7 +436,7 @@ export async function fetchAioBatch(promptIds: number[]): Promise<{
   results: AioFetchResult[];
   refused: boolean;
 }> {
-  const estimate = estimateAioBatch(promptIds);
+  const estimate = await estimateAioBatch(promptIds);
   if (!estimate.allowed) {
     return { estimate, results: [], refused: true };
   }
@@ -507,7 +507,7 @@ export async function fetchTrends(terms: string[], dataType: string, geo?: strin
   if (geo) params.geo = geo;
   const result = await serpCall(params);
   if (result.ok && result.json) {
-    getStore().putTrend(`${q}::${geo || "WORLD"}`, dataType, JSON.stringify(result.json));
+    await getStore().putTrend(`${q}::${geo || "WORLD"}`, dataType, JSON.stringify(result.json));
   }
   return result;
 }
@@ -515,7 +515,7 @@ export async function fetchTrends(terms: string[], dataType: string, geo?: strin
 export async function fetchAutocomplete(term: string) {
   const result = await serpCall({ engine: "google_autocomplete", q: term, no_cache: "false" });
   if (result.ok && result.json) {
-    getStore().putAutocomplete(term, JSON.stringify(result.json));
+    await getStore().putAutocomplete(term, JSON.stringify(result.json));
   }
   return result;
 }

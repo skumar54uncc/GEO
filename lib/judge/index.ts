@@ -2,10 +2,10 @@ import { getStore } from "../db";
 import { fireworksChat, judgeModel } from "../fireworks";
 import { seedAioCitations } from "../serpapi";
 import { isTargetDomain, registrableDomain } from "../domain";
-import type { JudgeCitation, JudgeJson, ResponseRow } from "../types";
+import type { AppConfig, JudgeCitation, JudgeJson, ResponseRow } from "../types";
 import { buildJudgeSystemPrompt, parseJudgeJson } from "./prompt";
 
-function normalizeJudge(parsed: JudgeJson, config: ReturnType<ReturnType<typeof getStore>["getConfig"]>): JudgeJson {
+function normalizeJudge(parsed: JudgeJson, config: AppConfig): JudgeJson {
   const citations = (parsed.citations ?? []).map((c) => {
     const domain = registrableDomain(c.domain) || String(c.domain || "").toLowerCase();
     return { domain, is_target: isTargetDomain(domain, config) };
@@ -59,14 +59,14 @@ export type AnalyzeResult = {
 
 export async function analyzeResponse(responseId: number): Promise<AnalyzeResult> {
   const store = getStore();
-  const response = store.getResponse(responseId);
+  const response = await store.getResponse(responseId);
   if (!response) {
     return { response_id: responseId, ok: false, error_flag: true, error: "response not found", repaired: false };
   }
-  const config = store.getConfig();
+  const config = await store.getConfig();
   const citationsSeeded = response.surface === "google_aio" || response.surface === "google_ai_mode";
   const system = buildJudgeSystemPrompt(config, { citationsSeeded });
-  const prompt = store.getPrompt(response.prompt_id);
+  const prompt = await store.getPrompt(response.prompt_id);
   const user = [
     `PROMPT (audience=${prompt?.audience ?? "?"}; subtopics=${(prompt?.subtopics ?? []).join(",")}):`,
     prompt?.text ?? "",
@@ -99,36 +99,38 @@ export async function analyzeResponse(responseId: number): Promise<AnalyzeResult
   }
 
   if (!parsed) {
-    store.upsertAnalysis({
+    await store.upsertAnalysis({
       response_id: responseId,
       judge_json: JSON.stringify({ parse_error: true, raw: rawDump, error }),
       judge_model: model,
       error_flag: true,
+      repair_used: repaired,
     });
     return { response_id: responseId, ok: false, error_flag: true, error: error || "JSON parse failed after repair", repaired };
   }
 
   let judge = normalizeJudge(parsed, config);
   if (citationsSeeded) {
-    const seeded = seedFromStoredAio(response, config);
+    const seeded = await seedFromStoredAio(response, config);
     if (seeded.length) judge = applySeededCitations(judge, seeded);
   }
 
-  store.upsertAnalysis({
+  await store.upsertAnalysis({
     response_id: responseId,
     judge_json: JSON.stringify(judge),
     judge_model: model,
     error_flag: false,
+    repair_used: repaired,
   });
   return { response_id: responseId, ok: true, error_flag: false, error: null, repaired };
 }
 
-function seedFromStoredAio(response: ResponseRow, config: ReturnType<ReturnType<typeof getStore>["getConfig"]>): JudgeCitation[] {
+async function seedFromStoredAio(response: ResponseRow, config: AppConfig): Promise<JudgeCitation[]> {
   const store = getStore();
-  const events = store.listSerpEvents(200).filter((e) => e.prompt_id === response.prompt_id && e.ok);
+  const events = (await store.listSerpEvents(200)).filter((e) => e.prompt_id === response.prompt_id && e.ok);
   for (const ev of events) {
     if (!ev.params_hash) continue;
-    const cached = store.getSerpCache(ev.params_hash);
+    const cached = await store.getSerpCache(ev.params_hash);
     if (!cached) continue;
     try {
       const json = JSON.parse(cached.raw_json);
@@ -148,7 +150,7 @@ export async function analyzeBatch(responseIds: number[]): Promise<AnalyzeResult
       results.push(await analyzeResponse(id));
     } catch (err) {
       const store = getStore();
-      store.upsertAnalysis({
+      await store.upsertAnalysis({
         response_id: id,
         judge_json: JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
         judge_model: judgeModel(),

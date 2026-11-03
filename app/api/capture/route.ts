@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withRole } from "@/lib/auth";
 import { getStore } from "@/lib/db";
 import { MANUAL_SURFACES, type ManualSurface } from "@/lib/types";
 import type { UpsertResponseInput } from "@/lib/db/types";
@@ -6,14 +7,14 @@ import type { UpsertResponseInput } from "@/lib/db/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+export const POST = withRole("editor", async (req) => {
   const body = (await req.json()) as {
     prompt_id: number;
     location_note: string;
     runs: Partial<Record<ManualSurface, [string, string, string]>>;
   };
   const store = getStore();
-  const prompt = store.getPrompt(body.prompt_id);
+  const prompt = await store.getPrompt(body.prompt_id);
   if (!prompt) return NextResponse.json({ error: "unknown prompt" }, { status: 404 });
   const location_note = (body.location_note || "").trim();
   if (!location_note) return NextResponse.json({ error: "location_note required on every save" }, { status: 400 });
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
       });
     });
   }
-  const saved = rows.length ? store.upsertResponses(rows) : [];
-  store.saveConfig({ last_location_note: location_note });
-  return NextResponse.json({ saved: saved.length, responses: saved, coverage: store.coverage().find((c) => c.prompt.id === body.prompt_id) });
-}
+  const saved = rows.length ? await store.upsertResponses(rows) : [];
+  await store.saveConfig({ last_location_note: location_note });
+  const coverage = (await store.coverage()).find((c) => c.prompt.id === body.prompt_id);
+  return NextResponse.json({ saved: saved.length, responses: saved, coverage });
+});

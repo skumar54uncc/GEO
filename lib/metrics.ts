@@ -1,6 +1,7 @@
 import { getStore } from "./db";
 import { formatRateLabel, wilsonInterval } from "./domain";
 import type {
+  AnalysisRow,
   AppConfig,
   Audience,
   JudgeJson,
@@ -45,17 +46,18 @@ function rate(successes: number, n: number): RateWithInterval {
   };
 }
 
-export function computeMetrics() {
+export async function computeMetrics() {
   const store = getStore();
-  const config = store.getConfig();
-  const prompts = store.listPrompts();
+  const config = await store.getConfig();
+  const prompts = await store.listPrompts();
   const promptMap = new Map(prompts.map((p) => [p.id, p]));
-  const responses = store.listResponses();
+  const responses = await store.listResponses();
+  const analyses = new Map((await store.listAnalyses()).map((a) => [a.response_id, a]));
   const rows: Joined[] = [];
   for (const r of responses) {
     const prompt = promptMap.get(r.prompt_id);
     if (!prompt) continue;
-    const analysis = store.getAnalysisByResponse(r.id);
+    const analysis = analyses.get(r.id);
     rows.push({
       response_id: r.id,
       prompt,
@@ -112,7 +114,7 @@ export function computeMetrics() {
   const leaderboard = computeLeaderboard(scored, config);
   const citations = computeCitations(scored, config);
   const gapMatrix = computeGapMatrix(scored, config);
-  const organicVsAi = computeOrganicVsAi(config);
+  const organicVsAi = await computeOrganicVsAi(prompts, responses, analyses);
 
   return {
     generated_at: new Date().toISOString(),
@@ -264,18 +266,18 @@ function computeGapMatrix(scored: Joined[], config: AppConfig) {
   return { subtopics: config.subtopics, cells };
 }
 
-function computeOrganicVsAi(config: AppConfig) {
-  const store = getStore();
-  const prompts = store.listPrompts();
-  const organic = store.listOrganic();
+async function computeOrganicVsAi(
+  prompts: PromptRow[],
+  responses: Array<{ id: number; prompt_id: number; surface: Surface }>,
+  analyses: Map<number, AnalysisRow>,
+) {
+  const organic = await getStore().listOrganic();
   const byPrompt = new Map(organic.map((o) => [o.prompt_id, o]));
   return prompts
     .map((prompt) => {
       const org = byPrompt.get(prompt.id);
-      const aioResponses = store.listResponses({ prompt_id: prompt.id, surface: "google_aio" });
-      const aioAnalyses = aioResponses
-        .map((r) => store.getAnalysisByResponse(r.id))
-        .filter(Boolean);
+      const aioResponses = responses.filter((r) => r.prompt_id === prompt.id && r.surface === "google_aio");
+      const aioAnalyses = aioResponses.map((r) => analyses.get(r.id)).filter(Boolean);
       const aioJudge = aioAnalyses
         .map((a) => (a && !a.error_flag ? parseJudge(a.judge_json) : null))
         .filter(Boolean) as JudgeJson[];
@@ -315,4 +317,4 @@ function computeOrganicVsAi(config: AppConfig) {
     .filter((row) => row.has_organic || row.aio_mentioned !== null);
 }
 
-export type Metrics = ReturnType<typeof computeMetrics>;
+export type Metrics = Awaited<ReturnType<typeof computeMetrics>>;

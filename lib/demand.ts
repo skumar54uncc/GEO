@@ -91,14 +91,13 @@ export function listDemandJobs(): DemandJob[] {
   return jobs;
 }
 
-export function estimateDemandPack(): CreditEstimate {
+export async function estimateDemandPack(): Promise<CreditEstimate> {
   const store = getStore();
-  const cfg = store.getConfig();
+  const cfg = await store.getConfig();
   const jobs = listDemandJobs();
-  let uncached = 0;
-  for (const job of jobs) {
-    if (!store.getSerpCache(hashParams(job.params))) uncached += 1;
-  }
+  const cachedFlags: boolean[] = [];
+  for (const job of jobs) cachedFlags.push(Boolean(await store.getSerpCache(hashParams(job.params))));
+  const uncached = cachedFlags.filter((c) => !c).length;
   const estimated_calls = jobs.length;
   const allowedByCap = estimated_calls <= cfg.serpapi_per_run_cap;
   const allowedByBalance = uncached <= cfg.serpapi_credits_remaining;
@@ -117,9 +116,9 @@ export function estimateDemandPack(): CreditEstimate {
     per_run_cap: cfg.serpapi_per_run_cap,
     allowed: allowedByCap && allowedByBalance,
     refusal_reason,
-    breakdown: jobs.map((job, i) => ({
+    breakdown: jobs.map((_job, i) => ({
       prompt_id: i + 1,
-      google_cached: Boolean(store.getSerpCache(hashParams(job.params))),
+      google_cached: cachedFlags[i],
       aio_unknown: false,
     })),
   };
@@ -130,7 +129,7 @@ export async function fetchDemandPack(): Promise<{
   refused: boolean;
   results: Array<{ label: string; ok: boolean; cached: boolean; error: string | null; credits_charged: number }>;
 }> {
-  const estimate = estimateDemandPack();
+  const estimate = await estimateDemandPack();
   if (!estimate.allowed) {
     return { estimate, refused: true, results: [] };
   }
@@ -164,7 +163,7 @@ export async function fetchDemandPack(): Promise<{
       });
     }
   }
-  return { estimate: estimateDemandPack(), refused: false, results };
+  return { estimate: await estimateDemandPack(), refused: false, results };
 }
 
 function num(v: unknown): number | null {
@@ -201,10 +200,11 @@ function ingestTimeseries(json: Record<string, unknown>, geo: string, byTerm: Ma
   }
 }
 
-export function loadDemandSnapshot(): DemandSnapshot {
+export async function loadDemandSnapshot(): Promise<DemandSnapshot> {
   const store = getStore();
-  const trends = store.listTrends();
-  const autos = store.listAutocomplete();
+  const trends = await store.listTrends();
+  const autos = await store.listAutocomplete();
+  const promptById = new Map((await store.listPrompts()).map((p) => [p.id, p]));
   const terms: DemandTermView[] = TREND_TERMS.map((t) => emptyView(t.term, t.subtopic));
   const flagship: DemandTermView[] = FLAGSHIP_TERMS.map((t) => emptyView(t, "grid_technology"));
   const byTerm = new Map([...terms, ...flagship].map((t) => [t.term, t]));
@@ -263,8 +263,8 @@ export function loadDemandSnapshot(): DemandSnapshot {
   });
 
   const google_questions: Array<{ prompt: string; questions: string[] }> = [];
-  for (const org of store.listOrganic()) {
-    const prompt = store.getPrompt(org.prompt_id);
+  for (const org of await store.listOrganic()) {
+    const prompt = promptById.get(org.prompt_id);
     const questions: string[] = [];
     try {
       const paa = JSON.parse(org.paa) as Array<{ question?: string }>;

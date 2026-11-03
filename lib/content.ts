@@ -1,8 +1,18 @@
 import { contentModel, fireworksChat } from "./fireworks";
 import { getStore } from "./db";
 import { computeMetrics } from "./metrics";
-import { loadDemandSnapshot, type DemandTermView } from "./demand";
-import { AUDIENCE_LABELS, type AppConfig, type Audience, type FactRecord, type JudgeJson } from "./types";
+import { loadDemandSnapshot, type DemandSnapshot, type DemandTermView } from "./demand";
+import {
+  AUDIENCE_LABELS,
+  type AnalysisRow,
+  type AppConfig,
+  type Audience,
+  type FactRecord,
+  type JudgeJson,
+  type PromptRow,
+  type ResponseRow,
+  type SerpOrganicRow,
+} from "./types";
 import { FACT_BANK } from "@/seed/facts";
 import { CAMPAIGN, YEAR_SLATE } from "@/seed/campaign";
 
@@ -57,11 +67,36 @@ function templateParagraph(fact: FactRecord, prompt: string): string {
   return `${text} Use that sentence as the first paragraph of a page whose title is the question: “${prompt}” Do not bury the number. Link it to ${url}.`;
 }
 
-function winnersForPrompt(promptId: number): string[] {
+type ContentData = {
+  prompts: Map<number, PromptRow>;
+  responses: ResponseRow[];
+  analyses: Map<number, AnalysisRow>;
+  organic: Map<number, SerpOrganicRow>;
+  demand: DemandSnapshot;
+};
+
+async function loadContentData(): Promise<ContentData> {
   const store = getStore();
+  const [promptList, responses, analyses, organic, demand] = await Promise.all([
+    store.listPrompts(),
+    store.listResponses(),
+    store.listAnalyses(),
+    store.listOrganic(),
+    loadDemandSnapshot(),
+  ]);
+  return {
+    prompts: new Map(promptList.map((p) => [p.id, p])),
+    responses,
+    analyses: new Map(analyses.map((a) => [a.response_id, a])),
+    organic: new Map(organic.map((o) => [o.prompt_id, o])),
+    demand,
+  };
+}
+
+function winnersForPrompt(data: ContentData, promptId: number): string[] {
   const counts = new Map<string, number>();
-  for (const r of store.listResponses({ prompt_id: promptId })) {
-    const a = store.getAnalysisByResponse(r.id);
+  for (const r of data.responses.filter((x) => x.prompt_id === promptId)) {
+    const a = data.analyses.get(r.id);
     if (!a || a.error_flag) continue;
     const j = parseJudge(a.judge_json);
     for (const c of j?.competitors ?? []) {
@@ -74,8 +109,8 @@ function winnersForPrompt(promptId: number): string[] {
     .map(([name, n]) => `${name} (${n} mentions)`);
 }
 
-function paaForPrompt(promptId: number): string[] {
-  const org = getStore().getOrganic(promptId);
+function paaForPrompt(data: ContentData, promptId: number): string[] {
+  const org = data.organic.get(promptId);
   if (!org) return [];
   try {
     const paa = JSON.parse(org.paa) as Array<{ question?: string }>;
@@ -85,8 +120,8 @@ function paaForPrompt(promptId: number): string[] {
   }
 }
 
-function demandForSubtopics(subtopics: string[]): DemandTermView | null {
-  const snap = loadDemandSnapshot();
+function demandForSubtopics(data: ContentData, subtopics: string[]): DemandTermView | null {
+  const snap = data.demand;
   return snap.terms.find((t) => subtopics.includes(t.subtopic) && snap.fetched) ?? null;
 }
 
@@ -111,8 +146,10 @@ export async function generateRecommendations(): Promise<{
   error: string | null;
 }> {
   const store = getStore();
-  const config = store.getConfig();
-  const metrics = computeMetrics();
+  const config = await store.getConfig();
+  const metrics = await computeMetrics();
+  const data = await loadContentData();
+  const promptList = Array.from(data.prompts.values());
   const briefs: ContentBrief[] = [];
   const seen = new Set<number>();
 
@@ -125,11 +162,11 @@ export async function generateRecommendations(): Promise<{
   }) => {
     if (seen.has(opts.prompt_id) && opts.prompt_id > 0) return;
     if (opts.prompt_id > 0) seen.add(opts.prompt_id);
-    const promptRow = opts.prompt_id ? store.getPrompt(opts.prompt_id) : null;
+    const promptRow = opts.prompt_id ? data.prompts.get(opts.prompt_id) : null;
     const subtopics = promptRow?.subtopics?.length ? promptRow.subtopics : [opts.subtopic];
     const fact = pickFact(config, subtopics);
-    const demand = demandForSubtopics(subtopics);
-    const paa = opts.prompt_id ? paaForPrompt(opts.prompt_id) : [];
+    const demand = demandForSubtopics(data, subtopics);
+    const paa = opts.prompt_id ? paaForPrompt(data, opts.prompt_id) : [];
     const outline =
       paa.length > 0
         ? paa.map((q) => ({ heading: q, note: "Answer in two sentences. Repeat the lead fact. Name EPIC." }))
@@ -145,7 +182,7 @@ export async function generateRecommendations(): Promise<{
       subtopic: opts.subtopic,
       diagnosis: opts.diagnosis,
       diagnosis_plain: diagnosisPlain(opts.diagnosis),
-      who_is_winning: opts.prompt_id ? winnersForPrompt(opts.prompt_id) : [],
+      who_is_winning: opts.prompt_id ? winnersForPrompt(data, opts.prompt_id) : [],
       demand: demand
         ? {
             term: demand.term,
@@ -185,7 +222,7 @@ export async function generateRecommendations(): Promise<{
         prompt_id: row.prompt_id,
         prompt: row.text,
         audience: row.audience,
-        subtopic: (store.getPrompt(row.prompt_id)?.subtopics[0] as string) || "grid_technology",
+        subtopic: (data.prompts.get(row.prompt_id)?.subtopics[0] as string) || "grid_technology",
         diagnosis: "citation",
       });
       continue;
@@ -194,13 +231,13 @@ export async function generateRecommendations(): Promise<{
       prompt_id: row.prompt_id,
       prompt: row.text,
       audience: row.audience,
-      subtopic: (store.getPrompt(row.prompt_id)?.subtopics[0] as string) || "research_partnerships",
+      subtopic: (data.prompts.get(row.prompt_id)?.subtopics[0] as string) || "research_partnerships",
       diagnosis,
     });
   }
 
   for (const cell of metrics.gapMatrix.cells.filter((c) => c.flagged)) {
-    const sample = store.listPrompts().find((p) => p.audience === cell.audience && p.subtopics.includes(cell.subtopic));
+    const sample = promptList.find((p) => p.audience === cell.audience && p.subtopics.includes(cell.subtopic));
     if (!sample) continue;
     pushBrief({
       prompt_id: sample.id,

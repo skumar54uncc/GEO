@@ -1,26 +1,16 @@
-import { tryOpenSqlite } from "./sqlite";
-import { openJsonStore } from "./json";
+import { getDb } from "./pg/client";
+import { PgStore } from "./pg/store";
 import type { Store } from "./types";
 
-const globalForStore = globalThis as unknown as { __unccStore?: Store; __unccStoreNote?: string };
+const globalForStore = globalThis as unknown as { __geoStore?: Store };
 
 export function getStore(): Store {
-  if (globalForStore.__unccStore) return globalForStore.__unccStore;
-  const sqlite = tryOpenSqlite();
-  if (sqlite) {
-    globalForStore.__unccStore = sqlite;
-    globalForStore.__unccStoreNote = "sqlite";
-    return sqlite;
-  }
-  const json = openJsonStore();
-  globalForStore.__unccStore = json;
-  globalForStore.__unccStoreNote = "json";
-  return json;
+  if (!globalForStore.__geoStore) globalForStore.__geoStore = new PgStore(getDb());
+  return globalForStore.__geoStore;
 }
 
 export function storeBackend(): string {
-  getStore();
-  return globalForStore.__unccStoreNote ?? "unknown";
+  return "postgres";
 }
 
 export { hashParams } from "./types";

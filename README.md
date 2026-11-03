@@ -1,43 +1,54 @@
-# UNC Charlotte Energy AI Visibility Tracker
+# UNC Charlotte AI Visibility Platform
 
-Local measurement instrument for how often and how prominently UNC Charlotte appears in AI answers about energy, and why.
+Local measurement instrument for how AI answer engines describe UNC Charlotte, and why. Campaigns (the original Energy work is the first one) each own their prompts, engines, regions, and personas.
 
-This is not a marketing page. Correctness first. The archive of raw answers, raw judge JSON, and raw SerpAPI JSON is the asset.
+This is not a marketing page. Correctness first. The archive of raw answers, raw judge JSON, and raw provider JSON is the asset, and it is immutable.
+
+Plan and rules: `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`. Phase prompts: `docs/prompts/`. Changes: `docs/CHANGELOG.md`.
 
 ## Stack
 
-Next.js 14 App Router, TypeScript, Tailwind, Recharts. SQLite via `better-sqlite3` (JSON file store if the native module fails). Fireworks (OpenAI-compatible) for the judge. SerpAPI for Google AI Overview, organic results, PAA, and related searches.
+Next.js 14 App Router, TypeScript, Tailwind, shadcn-style UI, Recharts. Postgres 16 with pgvector (local), Drizzle ORM, pg-boss worker. Fireworks for the judge. SerpAPI for Google AI Overview, organic results, PAA, related searches.
 
-## Setup
+Everything runs on this machine. The app and Postgres listen on 127.0.0.1 only.
+
+## Setup (macOS, no admin rights needed)
+
+1. Node 20: any install works (this Mac uses `~/.local/node`; add `~/.local/node/bin` to PATH).
+2. Postgres: [Postgres.app](https://postgresapp.com) with PostgreSQL 16 (includes pgvector). Open it and click Initialize. Docker users can run `docker compose up -d` instead.
+3. Configure and start:
 
 ```bash
-cp .env.example .env.local
-# Set FIREWORKS_API_KEY, JUDGE_MODEL (exact dated Fireworks ID), CONTENT_MODEL, SERPAPI_API_KEY
+cp .env.example .env.local      # then fill FIREWORKS_API_KEY, JUDGE_MODEL, CONTENT_MODEL, SERPAPI_API_KEY
 npm install
-npm run dev
+npm run db:up                   # creates the database, checks pgvector, applies migrations
+npm run migrate:sqlite          # dry run: shows what would move from data/tracker.db
+npm run migrate:sqlite -- --apply
+npm run dev                     # http://127.0.0.1:3000
+npm run worker                  # in a second terminal: background jobs
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Sign in with your email. The first person to sign in becomes admin; later people start as viewer. Change roles with `npm run user:role -- someone@charlotte.edu editor`. Set `ALLOWED_LOGIN_DOMAINS=charlotte.edu` to restrict sign in.
 
-`JUDGE_MODEL` should be the exact dated ID from the Fireworks dashboard. Recommended: DeepSeek V4 Pro.
+## Everyday commands
 
-## MVP path (1–6)
-
-1. Data layer seeds 50 prompts plus alias / competitor / subtopic / asset lists.
-2. SerpAPI credit guard and cache: estimate before every batch, refuse over cap or balance, cache by full parameter set, `no_cache=false`, no retry loops.
-3. Google AIO two-step fetch, back to back per prompt, plus organic diagnostic from the same first call.
-4. Manual capture for ChatGPT, Gemini, Claude, Perplexity (3 runs each, location note required).
-5. Judge JSON contract with one repair call; Analyze screen for hand-check / override.
-6. Dashboard: visibility with Wilson 95% CI and denominator, share of voice, visibility by surface, run consistency, gap matrix, cited domains, competitor leaderboard, organic-versus-AI table.
+| Command | What it does |
+|---|---|
+| `npm run dev` | App on 127.0.0.1:3000 |
+| `npm run worker` | pg-boss worker (`health.ping`, hourly `schedule.tick`) |
+| `npm run worker:ping` | Sends a health ping and waits for the worker to process it |
+| `npm run db:backup` | `pg_dump` into `backups/` (also copy `data/raw/`) |
+| `npm run db:restore -- <file> [db]` | Restore a dump, optionally into another local database |
+| `npm run typecheck` / `npm run lint` / `npm test` | Checks. Tests use `TEST_DATABASE_URL`, which is wiped on every run |
 
 ## Non-negotiables
 
-- Do not fake the four chat assistants. They are paste-only.
-- Google AIO is location-pinned to the United States. Manual runs carry a location note (default Charlotte NC, incognito). The dashboard states the difference.
+- Never fake engine answers. Every answer records its runner (UI provider, SERP provider, API with search, API without browsing, manual paste) and fidelity.
+- Stored answers, raw payloads, frozen prompt sets, and the audit log cannot be changed: application code refuses and Postgres triggers reject it. Re-saving a captured run with different text returns 409.
 - “Charlotte” alone is the city and does not count as the university.
-- Every rate shows its denominator. Consistency sits beside visibility.
-- One bad judge or SerpAPI call never crashes a batch.
+- Every rate shows its denominator and a 95% interval. Consistency sits beside visibility.
+- Paid calls go through the cost guard: estimate first, refuse over cap or balance, cache by full parameters, no retry loops. One bad call never crashes a batch.
 
 ## Data
 
-SQLite file: `data/tracker.db` (gitignored). JSON fallback: `data/store.json`.
+Postgres database `geo` (local). Large raw payloads in `data/raw/` named by sha256. The original SQLite file `data/tracker.db` is kept untouched as the migration source. Nothing in `data/`, `backups/`, or `.env.local` is committed.

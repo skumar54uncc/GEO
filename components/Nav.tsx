@@ -7,6 +7,9 @@ import { usePathname, useRouter } from "next/navigation";
 const LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/campaigns", label: "Campaigns" },
+  { href: "/onboarding", label: "Onboarding" },
+  { href: "/audit", label: "Audit" },
+  { href: "/bots", label: "Bot hits" },
   { href: "/capture", label: "Capture" },
   { href: "/serpapi", label: "SerpAPI" },
   { href: "/demand", label: "Demand" },

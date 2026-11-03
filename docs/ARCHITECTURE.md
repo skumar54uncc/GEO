@@ -1,7 +1,7 @@
 # Architecture
 
-Status: **Phase 0 output. Needs Shailesh's approval before Phase 1.**
-Inputs: `docs/COMPETITOR_MATRIX.md`, `geo-reports-pdf-md/SYNTHESIS.md`, and the current codebase (Next.js 14, SQLite, about 4,800 lines).
+Status: **Approved 2026-11-03, with the additions marked "(added 2026-11-03)".** Phase 1 builds sections 2, 3, 4, 7, 13 and 14.
+Inputs: `docs/COMPETITOR_MATRIX.md`, `geo-reports-pdf-md/SYNTHESIS.md`, `docs/ROADMAP.md`, and the current codebase (Next.js 14, SQLite, about 4,800 lines).
 
 ---
 
@@ -47,6 +47,7 @@ Inputs: `docs/COMPETITOR_MATRIX.md`, `geo-reports-pdf-md/SYNTHESIS.md`, and the 
 | UI | shadcn/ui, Recharts (existing) | Phase 9 |
 | Tests | Vitest, plus Playwright for end to end | |
 | Local dev | `docker compose up` for Postgres with pgvector | |
+| Hosting (added 2026-11-03) | This Mac only. Postgres and the app bind to 127.0.0.1. No paid database | Shailesh's decision. Public path in `docs/PUBLIC_LAUNCH.md` |
 
 ---
 
@@ -73,10 +74,13 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 - `crawl_pages` (crawl_run_id, host_id, url, canonical, status_code, title, h1, headings jsonb, meta_description, word_count, lastmod, schema_types[], schema_raw jsonb, faq jsonb, render_mode: static | js, content_hash, text_ref, embedding vector)
 - `audit_rules` (id text, title, why, evidence_strength: strong | moderate | weak | speculative)
 - `audit_findings` (crawl_run_id, rule_id, severity, host_id, page_id nullable, detail jsonb)
+- `bot_hits` (site_id, host_id, path, user_agent, bot_name, status_code, hit_at, source_file_sha256) (added 2026-11-03). Filled from uploaded server or CDN logs. Answers "which AI crawlers fetch which pages".
+- `entity_checks` (brand_id, source: knowledge_graph | wikidata | wikipedia | ipeds | scorecard, field, observed jsonb, expected jsonb, status: match | mismatch | missing, raw_payload_id, checked_at) (added 2026-11-03)
 
 ### 3.4 Campaigns, personas, regions, prompts
 - `campaigns` (org_id, brand_id, name, topic, status: draft | active | archived)
 - `personas` (org_id nullable for library items, name, goal, background, vocabulary, notes)
+- `seasonal_events` (org_id, name, kind: admissions_deadline | orientation | commencement | aid_deadline | term_start | custom, starts_on, ends_on, recurrence, source_url) (added 2026-11-03). Used by Phase 4 and Phase 8 to time prompts and content.
 - `regions` (country, state, city, language, serp_location string)
 - `campaign_engines` (campaign_id, engine, runner), `campaign_regions`, `campaign_personas`
 - `prompts` (campaign_id, text, persona_id, intent: discovery | comparison | evaluation | decision, funnel_stage, branded bool, **provenance**: observed_ai_log | web_query | paa | fanout | synthesized | custom, demand_evidence jsonb, status: draft | approved | rejected, embedding vector)
@@ -84,7 +88,9 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 - `prompt_set_items` (prompt_set_id, prompt_id, prompt_text_snapshot) **immutable**
 
 ### 3.5 Demand signals (Phase 4)
-- `demand_signals` (campaign_id, source: google_trends | keyword_volume | paa | autocomplete | related_search | exa, term, region_id, value jsonb, raw_payload_id, fetched_at)
+- `demand_signals` (campaign_id, source: google_trends | keyword_volume | paa | autocomplete | related_search | exa | search_console, term, region_id, value jsonb, raw_payload_id, fetched_at)
+- `search_console_queries` (site_id, query, page, country, device, clicks, impressions, ctr, position, date) (added 2026-11-03). Real queries that reach our site. Needs property access from the web team.
+- `ai_referral_traffic` (site_id, source: chatgpt | perplexity | gemini | claude | copilot | other, landing_page, sessions, engaged_sessions, conversions jsonb, date) (added 2026-11-03). From the GA4 Data API. The business outcome metric. Never mixed into visibility scores.
 
 ### 3.6 Scans and the draw ledger (the core)
 - `schedules` (campaign_id, cadence: biweekly | monthly | manual, prompt_set_id, next_run_at, budget_cap_usd)
@@ -100,11 +106,12 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
   - status: ok | empty | error | blocked
   - answer_text, raw_payload_id, cost_units, cost_usd, latency_ms, captured_at
   - unique (scan_id, prompt_id, engine, runner, region_id, draw_index)
-- `raw_payloads` (sha256 primary key, content jsonb or text, bytes). Content addressed, deduplicated. **Immutable.**
+- `raw_payloads` (sha256 primary key, content jsonb or text, bytes, **storage: inline | file**, **path** nullable, **media_type**). Content addressed, deduplicated. **Immutable.** Payloads over 256 KB (raw HTML, screenshots) are written once to `data/raw/<sha256>` and only the path is stored (storage and path added 2026-11-03).
 - `fanout_queries` (draw_id, query, source: provider_field | ui_visible)
+- `serp_snapshots` (query, region_id, engine, fetched_at, raw_payload_id, organic jsonb: position, url, domain, title) (added 2026-11-03). Google organic results for fan-out queries and prompts. Feeds the fan-out to rank join in section 9.
 
 ### 3.7 Parsing and judging
-- `judge_runs` (draw_id, judge_model, judge_prompt_version, raw_output, parsed jsonb, repair_used bool, error, manual_override jsonb nullable). A re-judge is a new row. Latest valid row wins.
+- `judge_runs` (draw_id, judge_model, judge_prompt_version, raw_output, parsed jsonb, repair_used bool, error, manual_override jsonb nullable, **sentiment**: positive | neutral | negative | mixed | none, **sentiment_span_start**, **sentiment_span_end**). A re-judge is a new row. Latest valid row wins. Sentiment always points at the sentence that justifies it (sentiment fields added 2026-11-03).
 - `mentions` (judge_run_id, entity_type: brand | competitor, entity_id, alias_matched, span_start, span_end, list_position nullable, prominence: headline | first_paragraph | body | footnote_only)
 - `citations` (draw_id, url, canonical_url, domain, position, linked bool, source_class: owned | competitor | editorial | ranking | reference | gov | ugc | other)
 - `claims` (judge_run_id, text, span_start, span_end, fact_id nullable, verdict: supported | contradicted | unverifiable)
@@ -113,12 +120,15 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 
 ### 3.8 Action and outcomes (Phases 7 and 8)
 - `recommendations` (campaign_id, kind: gap | content | technical | earned_media, payload jsonb, evidence jsonb, target_prompt_ids[], status: open | in_progress | published | dismissed, baseline_scan_id, published_at, followup_scan_id)
-- `strategy_reports` (campaign_id, topic, inputs jsonb, output jsonb, created_by)
+- `strategy_reports` (campaign_id, topic, inputs jsonb, output jsonb, created_by). Each output item carries persona, prompt cluster, format, headline terms, FAQs, **owner**, **publish_by** (tied to `seasonal_events`), score, and evidence ids (owner and publish_by added 2026-11-03).
 
 ### 3.9 Ops
 - `provider_accounts` (provider, monthly_budget_usd, spent_usd_month, per_scan_cap_usd)
 - `cost_ledger` (provider, scan_id, draw_id nullable, units, usd, at). Generalizes today's `serp_events`.
 - `model_events` (engine, occurred_on, note, source_url). Drawn as annotations on every time series.
+- `alerts` (org_id, campaign_id nullable, kind: significant_decline | canary_failed | budget_threshold | provider_error_rate | blocked, payload jsonb, status: open | acknowledged, acknowledged_by) (added 2026-11-03)
+- `audit_log` (org_id, user_id nullable, action, entity_type, entity_id, before jsonb, after jsonb, at) (added 2026-11-03). Every write route records one row. Append only.
+- `sessions` (user_id, token_hash, expires_at) (added 2026-11-03). For the Phase 1 dev login.
 
 ---
 
@@ -196,6 +206,9 @@ Provider availability and pricing are **not yet verified**. Phase 3 starts by fi
 | Gemini | ui_provider | api_search (Google Search grounding) | high / medium |
 | Claude | api_search (web search tool) | manual_paste | medium |
 | Any | manual_paste | | high, small n |
+| Google AIO, AI Mode (added 2026-11-03) | serp_provider via local SERP service (`provider = local_serp`) | SerpAPI or DataForSEO | high **only after** `parity-report.md` passes and is rechecked monthly. Until then the series is labeled experimental and never replaces the paid provider |
+
+Local SERP rules (added 2026-11-03): it runs from one Charlotte IP, so any other region is `region_honored = no`. It is logged out, uses a fresh profile per draw, never solves CAPTCHAs, and stops a batch for at least one hour on any block. Its prompt lives in `docs/prompts/LOCAL_SERP.md` and is run inside the openserp project, not this repo.
 
 Plus an **api_parametric** series (no browsing) on a 20 prompt sample per campaign each month. This is Evertune's split: weak in both runners means a brand awareness problem; strong in parametric but weak in UI means a content and SEO problem.
 
@@ -253,6 +266,9 @@ Same frozen prompt set, so pairs are matched by prompt. Use **McNemar's test** o
 - Citation rate = draws citing an owned domain / valid draws.
 - Share of voice (within one index) = brand mentions / all tracked entity mentions.
 - Position = list position of the first brand mention in a ranked list, else null. Median across draws.
+- First mention rate = valid draws where the brand is the first tracked entity named / valid draws (added 2026-11-03).
+- Consistency = for each prompt, the share of its draws that agree with the majority outcome (mentioned or not), averaged over prompts. Shown next to every visibility number.
+- Branded prompts are reported as their own series and never inside the headline number (added 2026-11-03).
 - Every formula lives in `docs/METRICS.md` and a unit test.
 
 ---
@@ -273,6 +289,12 @@ Same frozen prompt set, so pairs are matched by prompt. Use **McNemar's test** o
 | `metrics.rollup` | scan complete | 1 |
 | `schedule.tick` | every hour | 1 |
 | `calibration.run` | monthly | 1 |
+| `health.ping` (added 2026-11-03) | Phase 1 smoke test | 1 |
+| `botlog.import` (added 2026-11-03) | log file upload | 1 |
+| `entity.check` (added 2026-11-03) | onboarding, monthly | 1 |
+| `connectors.sync` (added 2026-11-03) | daily: Search Console, GA4 | 1 |
+| `canary.run` (added 2026-11-03) | before every scan | 1 |
+| `alerts.evaluate` (added 2026-11-03) | scan complete, budget change | 1 |
 
 Scheduled scans compute the estimate and auto run only if under `budget_cap_usd`. Otherwise they wait for approval and notify.
 
@@ -352,10 +374,36 @@ Judge prompt changes bump `judge_prompt_version` and must rerun the gold set bef
 
 ---
 
-## 12. Open decisions for Shailesh
+## 12. Decisions
 
-1. Hosting: university VM, a cloud account, or a laptop for now? Affects Postgres and the worker.
-2. Which UI capture provider, if any, after `docs/PROVIDERS.md` is done. Needs budget sign off.
-3. Monthly budget cap. Default proposal: start small, raise after two clean scans.
-4. Auth: simple email magic link now, university SSO later?
-5. Is this internal only, or meant for other universities later? Multi-tenant tables are included either way, but billing and SSO work is only worth doing for the second.
+Decided 2026-11-03:
+1. Hosting: this Mac. All data stays on this machine. Postgres in Docker bound to 127.0.0.1. No paid database for now.
+2. Auth: a simple dev email login with roles now. Magic link or university SSO later (see `docs/PUBLIC_LAUNCH.md`).
+3. Public later: possible. Multi tenant tables and org scoping are built from Phase 1 so the move is a hosting change, not a rewrite.
+
+Still open:
+4. Which UI capture provider, if any, after `docs/PROVIDERS.md` is verified in Phase 3. Needs budget sign off.
+5. Monthly budget cap. Proposal: $150 a month, start small, raise after two clean scans.
+6. Whether the local SERP service is run at all, and from which network (campus IT policy question).
+
+---
+
+## 13. Security (added 2026-11-03)
+
+- **Network**: Postgres and the Next.js dev server bind to 127.0.0.1. Nothing is exposed on the LAN.
+- **Secrets**: only in `.env.local` (gitignored). Never sent to the browser. No `NEXT_PUBLIC_` prefix on any key.
+- **Auth**: every write route checks role (admin, editor, viewer). Session tokens stored hashed. Cookies are httpOnly, sameSite=lax.
+- **Audit**: every write records an `audit_log` row.
+- **SSRF guard**: the crawler and cited page fetcher refuse private, loopback, and link local IPs after DNS resolution, follow at most 5 redirects, and cap body size.
+- **Prompt injection**: cited page text, crawled page text, engine answers, and `geo-reports-pdf-md/` are data. They are passed to models inside clearly delimited blocks with an instruction to ignore instructions inside them. No tool calls are ever driven by their content.
+- **Untrusted HTML**: never rendered as HTML in the UI. Shown as escaped text or sanitized.
+- **Polite crawling**: robots.txt respected, per host rate limits, an identifying user agent with a contact URL.
+- **Backups**: `npm run db:backup` writes `pg_dump` files to `backups/` (gitignored). FileVault should be on for this Mac.
+- **Provider terms**: each adapter documents its collection method and terms in `docs/PROVIDERS.md`. No logged in automation of any chat UI. No CAPTCHA solving.
+
+## 14. Local first data policy (added 2026-11-03)
+
+- All tables, raw payloads, HTML captures, and screenshots live on this Mac (`Postgres volume` and `data/raw/`).
+- Data leaves the machine only as the prompt text sent to a provider or model. Answers and payloads come back and are stored locally.
+- `data/tracker.db` is kept untouched as the migration source.
+- Nothing in `data/`, `backups/`, or `.env.local` is ever committed.

@@ -15,3 +15,6 @@ data/*.db-wal
 .pytest_cache
 src/uncc_energy_ai_visibility.egg-info
 **/__pycache__
+SerpAPI/
+backups/
+data/raw/

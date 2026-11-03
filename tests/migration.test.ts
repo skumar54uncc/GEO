@@ -162,6 +162,12 @@ function buildFixture(): string {
   });
   store.putTrend("electric grid::US", "TIMESERIES", JSON.stringify({ interest_over_time: { averages: [] } }));
   store.putAutocomplete("grid research", JSON.stringify({ suggestions: [{ value: "grid research universities" }] }));
+  // The store stays open in WAL mode. Checkpoint now so a later close (for example at garbage
+  // collection) cannot rewrite the main file and change its hash mid test.
+  const Database = require("better-sqlite3");
+  const conn = new Database(file);
+  conn.pragma("wal_checkpoint(TRUNCATE)");
+  conn.close();
   return file;
 }
 

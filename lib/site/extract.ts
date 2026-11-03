@@ -36,11 +36,23 @@ export function countWords(text: string): number {
   return m ? m.length : 0;
 }
 
+const BLOCK_SELECTOR =
+  "p, div, li, ul, ol, h1, h2, h3, h4, h5, h6, td, th, tr, section, article, header, footer, nav, aside, main, a, button, label, option, dt, dd, figcaption, blockquote, pre, form, span";
+
+/** Text with a space at element boundaries, so "<p>Charlotte</p><p>Discover</p>" is two words. */
+function spacedText($: cheerio.CheerioAPI): string {
+  $("br, hr").replaceWith(" ");
+  $(BLOCK_SELECTOR).each((_, el) => {
+    $(el).append(" ");
+  });
+  return clean($("body").length ? $("body").text() : $.root().text());
+}
+
 /** Visible text: scripts, styles, templates and hidden inputs removed, whitespace collapsed. */
 export function visibleText(html: string): string {
   const $ = cheerio.load(html);
   $("script, style, noscript, template, svg, iframe, head").remove();
-  return clean($("body").length ? $("body").text() : $.root().text());
+  return spacedText($);
 }
 
 function collectTypes(node: unknown, out: Set<string>, depth = 0): void {
@@ -216,7 +228,7 @@ export function extractPage(html: string, pageUrl: string): ExtractedPage {
   const h1All = headingTexts("h1");
 
   $("script, style, noscript, template, svg, iframe").remove();
-  const text = clean($("body").length ? $("body").text() : $.root().text());
+  const text = spacedText($);
 
   return {
     title: clean($("title").first().text()) || null,

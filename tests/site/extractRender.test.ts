@@ -37,6 +37,12 @@ describe("extractPage", () => {
     expect(extractPage(fixture("about.html", PORT), `${URL_BASE}/about/`).schemaTypes).toEqual(["Organization"]);
   });
 
+  it("keeps words in adjacent elements apart", () => {
+    const html = "<html><body><h2>UNC Charlotte</h2><p>Discover<br>more</p><a>Events</a><a>News</a></body></html>";
+    expect(extractPage(html, `${URL_BASE}/`).text).toBe("UNC Charlotte Discover more Events News");
+    expect(visibleText(html)).toBe("UNC Charlotte Discover more Events News");
+  });
+
   it("counts schema parse errors instead of throwing", () => {
     const p = extractPage('<html><head><script type="application/ld+json">{bad json</script></head><body>x</body></html>', `${URL_BASE}/`);
     expect(p.schemaParseErrors).toBe(1);

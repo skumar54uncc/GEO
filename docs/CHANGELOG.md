@@ -1,5 +1,116 @@
 # Changelog
 
+## 2026-11-03: Phase 2, Onboarding and site audit
+
+You can now enter a root URL (charlotte.edu), choose which discovered hosts to include, crawl them, confirm the entity profile and peers, and read an AI readiness audit filtered by host, severity and rule, with a page drilldown. New screens: Onboarding, Audit, Bot hits.
+
+Added:
+- Discovery (`crawl.discover`, `lib/site/discovery.ts`): robots.txt, sitemaps (indexes and .gz), links on the home page and on sitemap pages, and certificate transparency from crt.sh (cached). Every host records how it was found. Hosts start excluded when they do not resolve, fail or error at the root, redirect elsewhere, are sign-in portals, or look like dev, test or staging servers (that last rule is an addition beyond the spec). Your include and exclude choices survive rediscovery. The root host and the host it redirects to are always checked first. A cap (`DISCOVERY_MAX_HOST_CHECKS`) limits how many hosts get a request; the rest are listed as "not checked".
+- SSRF guard (`lib/site/net/ssrf.ts`): checks DNS and refuses private, loopback, link-local, carrier NAT and IPv4-mapped addresses. It connects to the address it validated, follows at most 5 redirects (each checked), and caps the body.
+- Crawl (`crawl.page`, `lib/site/crawl.ts`): Crawlee with Playwright. robots.txt is enforced for our own token, with Crawl-delay honored. At most 4 requests per host at once, a per-minute rate limit, and the user agent `UNCCGEOAudit/0.2 (+CRAWLER_CONTACT_URL)`. Crawls refuse to start without a contact. Every browser request is answered from a guarded Node fetch, with redirects followed in Node. The browser runs with no DNS and a dead proxy, so nothing it does can reach a private address. Each page stores canonical, status, title, H1, H2/H3, meta description, word counts (raw and rendered), lastmod, visible dates, JSON-LD types and raw blocks, FAQ blocks, outbound links, render mode and content hash. Page text goes to the raw store. A failed page is recorded with its reason and never stops the run.
+- Entities (`lib/site/entities.ts`): deterministic extraction of name, aliases, colleges, programs, research centers, rankings claims and locations, each with its source URL. Rankings claims are labeled as the site's own words, not verified. "Charlotte" alone is stored with requires_context. The optional LLM step (Fireworks, through the cost guard and cache) can only group and relabel existing items; answers that add facts are rejected. Confirming a name or alias writes `brands` or `brand_aliases`.
+- Peers (`lib/site/peers.ts`): College Scorecard. It finds the school by name and website, then suggests schools with the same Carnegie class, region and control, ranked by program overlap (CIP 4-digit code plus credential level). Every suggestion lists its reasons. Accepting one creates a competitor with its IPEDS unit id. Manual peers are supported.
+- Entity consistency (`entity.check`, `lib/site/entityCheck.ts`): Knowledge Graph, Wikidata, Wikipedia infobox, IPEDS (Urban Institute directory) and Scorecard, compared with the profile you confirm. Results are match, mismatch or missing, with the source's date where it gives one. A source with no key is reported as not checked and never stored as missing.
+- Audit (`audit.run`, `lib/site/audit/`): 23 rules, each with why and evidence strength. They cover AI crawler access for 48 tracked agents per host (blocking a search or user-fetch bot is high; blocking a training bot is info), robots.txt availability, CollegeOrUniversity, Organization sameAs, program, course, event and FAQPage schema, FAQ blocks, staleness, unknown freshness, JS-only content, thin pages, duplicate titles and H1s, missing meta descriptions, broken canonicals, PageSpeed, llms.txt (speculative, "low evidence of impact"), and entity mismatches. Every run is a new `audit_runs` row with a sha256 over the sorted findings.
+- PageSpeed (`lib/site/pagespeed.ts`): runs once per crawl for the home page plus the most linked pages on each host. It is checked against the cost guard as a batch, at $0 per call but counted. Later audit reruns reuse the stored results.
+- AI bot hits (`lib/site/botlog.ts`, Bot hits screen): upload combined, common or Cloudflare JSON logs. The file is hashed and parsed inside the request. Only AI bot lines are kept (by user agent, matched against the vendored ai.robots.txt list of 202 agents). IPs and query strings are dropped. Importing the same file twice adds nothing.
+- `lib/site/providerCall.ts`: one path for every external API, combining cache by full params, budget check, ledger row and raw store. No retries. Provider accounts are seeded for pagespeed, scorecard, google_kg, crtsh, wikidata, wikipedia, urban_ipeds and fireworks.
+- Tests: 9 new test files, 119 new tests (169 in total). They cover discovery on fixture robots and sitemaps, the crt.sh parser on a stored real response, the SSRF guard (private IPs, metadata IP, names resolving private, redirect chains, unfollowed redirects), render mode, every audit rule, all three log formats, entity extraction including noise seen on charlotte.edu, peer scoring and entity checks on stored real Scorecard, Wikidata, Wikipedia and IPEDS responses, and an end to end run on a local multi-host fixture site: onboard, discover, exclude a host, crawl with Playwright, extract, audit twice, then report.
+- `scripts/inspect-entities.ts` (read only).
+
+Changed:
+- Schema: see ARCHITECTURE 3.11. The `entity_checks` table now exists; Phase 1 had only its enums.
+- Nav: Onboarding, Audit, Bot hits.
+- `tests/migration.test.ts`: the SQLite fixture is checkpointed before hashing. A full-suite run failed once on its "file unchanged" or "20 answers" hash check. The cause was most likely the fixture's WAL being flushed into the main file when the open connection was garbage collected. Both full runs since the fix pass.
+
+Verification gate (run 2026-11-03 on this Mac):
+1. `typecheck` passes. `lint` passes; the one warning in `app/analyze/page.tsx` predates Phase 1. `npm test` passes 169 tests in 17 files, in two full runs after the migration test fix.
+2. Live run on charlotte.edu, crawler contact mailto:skumar54@charlotte.edu.
+   - Discovery found 1,391 hosts: 1,319 names from crt.sh, 31 hosts linked from the home page, and 2,109 sitemap URLs from 70 sitemap files (the file cap was reached). To avoid anything that looks like a scan, the run capped host checks at 60. 62 hosts were requested (the cap plus 2 redirect targets), 55 were included by default, and 1,329 are listed as "not checked". Checked hosts that were excluded: 4 redirect elsewhere, `my.charlotte.edu` is a sign-in portal, `campusevents` timed out, and `ninercentral` fails TLS verification.
+   - Crawl `844ae994`, 4 pages per host across 55 hosts: 199 pages, 7 failed pages (timeouts and redirects to off-site sign-in hosts), 2 URLs skipped by robots.txt.
+   - Entities proposed: 1 name, 4 aliases ("Charlotte" alone needs context), 21 colleges, 12 programs, 12 research centers, 3 rankings claims, 1 location.
+   - Peers: Scorecard matched unit id 199139 (Carnegie basic code 16, Southeast) and proposed 12 peers.
+   - Audit: 408 findings. 0 critical, 53 high, 1 medium, 200 low, 154 info.
+   - The host list, entity profile, peers and audit report (with page drilldown) render in the browser.
+3. Rerunning the audit on crawl `844ae994` gave 408 findings with the identical fingerprint `5162ac16e524d152…` both times.
+4. All 408 findings carry why and evidence strength (0 missing).
+5. Every page (`/`, `/campaigns`, `/capture`, `/analyze`, `/serpapi`, `/demand`, `/recommend`, `/config`, `/onboarding`, `/audit`, `/bots`, `/login`) returns 200. The dashboard still reads 80.0% (32 of 40; 95% Wilson CI 65.2% to 89.5%). `data/tracker.db` is unchanged (sha256 04bfc5e4…8cc8).
+
+Findings by host and severity (high, medium, low, info; blank means 0; no host had a critical finding):
+
+| Host | High | Medium | Low | Info |
+|---|---|---|---|---|
+| 49erfinish | | | 3 | 1 |
+| academics | | | 3 | 1 |
+| admissions | | | 6 | 1 |
+| alumni | | | 3 | 1 |
+| assessment | | | 5 | 2 |
+| aux | | | 5 | 1 |
+| belkcollege | | | 1 | 2 |
+| cci | | | 5 | 2 |
+| chancellor | | | 2 | 1 |
+| chess | | | 2 | 2 |
+| coaa | | | 1 | 1 |
+| dining | | | 4 | 1 |
+| directory | | | 7 | 5 |
+| dpl | | | 1 | 2 |
+| education | | | 3 | 2 |
+| emergency | | | 3 | 1 |
+| engineering | | | 2 | 2 |
+| facilities | | | 4 | 2 |
+| facultygovernance | | | 5 | 2 |
+| finance | | | 6 | 2 |
+| giving | | | 3 | 1 |
+| gradadmissions | | | 6 | 1 |
+| graduateschool | | | 5 | 2 |
+| greeklife | | | 6 | 4 |
+| health | | | 2 | 1 |
+| honorscollege | | | 3 | 1 |
+| housing | | | 5 | 3 |
+| hr | | | 4 | 2 |
+| incidentreport | | | 4 | 2 |
+| inside | | | 4 | 2 |
+| ir | | | 8 | 2 |
+| jobs | 25 | | | 24 |
+| lc | | | 1 | 1 |
+| legal | | | | 1 |
+| library | | | | 1 |
+| maps | | | | 3 |
+| myhealth | | | 8 | 2 |
+| ncresidency | | | 5 | 2 |
+| ninerengage | 3 | | | 5 |
+| ninernet | | | 8 | 4 |
+| ombuds | | | 5 | 2 |
+| oneit | | | 3 | 3 |
+| online | | | 2 | 3 |
+| pats | | | 3 | 2 |
+| professional | | | 2 | 3 |
+| provost | | | 4 | 2 |
+| registrar | | | 5 | 2 |
+| research | | | 5 | 2 |
+| sac | | | 6 | 4 |
+| safety | | | 5 | 2 |
+| safetyandsecurity | | | 5 | 2 |
+| science | | | 2 | 2 |
+| services.help | 25 | | | 24 |
+| staffcouncil | | | 6 | 2 |
+| www | | 1 | 4 | 1 |
+| All hosts | 53 | 1 | 200 | 154 |
+
+What the high findings are: `jobs.charlotte.edu` and `services.help.charlotte.edu` have `User-agent: * / Disallow: /`, so every tracked AI search and user-fetch bot is blocked (25 high and 23 info for training bots on each host, plus the llms.txt note). The three `ninerengage.charlotte.edu` pages have no text in their raw HTML (0 words raw versus 152 rendered, for the home page). The one medium finding: the `www.charlotte.edu` home page marks itself as a generic `Organization` with no `sameAs`, not as `CollegeOrUniversity`.
+
+Still unverified or limited:
+- PageSpeed was not run: `PAGESPEED_API_KEY` is not set. Knowledge Graph is "not checked": `GOOGLE_KG_API_KEY` is not set. Scorecard used `DEMO_KEY` (about 10 calls an hour).
+- The live entity check was not run, because it needs a profile you confirm. The candidates are proposals; nothing on charlotte.edu was confirmed on your behalf. The 12 peer suggestions are also unreviewed.
+- Scorecard still reports Carnegie basic code 16 (high research activity), while the site states UNC Charlotte was designated R1 in February 2025. Peers chosen by Scorecard's class may be based on outdated data.
+- The LLM grouping step was not run on live data. Fireworks' price per token is not recorded (unknown), so only its unit cap applies.
+- Only 62 of 1,391 hosts were checked in this run. Raise `DISCOVERY_MAX_HOST_CHECKS` (default 1,500) once campus IT is comfortable with one request to the root of every crt.sh name.
+- `ninercentral.charlotte.edu` fails TLS verification in Node (likely a missing intermediate certificate; browsers may still load it). It stays excluded until you include it.
+- Bot hits were tested on sample lines only; no real server log has been uploaded. User agents are claims and are not verified, since no IPs are kept.
+- AI bot categories (search, user_fetch, training) are this repo's reading of the ai.robots.txt `function` field, fetched 2026-11-03. Evidence strengths are our judgment, not measured effects.
+- An earlier crawl, `55aa53fa` (193 pages, 398 findings), ran before the redirect fix and is kept as history. Crawl `844ae994` predates the fix that puts spaces between adjacent elements' text, so word counts may shift slightly on the next crawl.
+- The gate account `gate-phase2@example.test` remains as an editor. No admin exists, so the first real sign-in still becomes admin.
+
 ## 2026-11-03: Phase 1, Foundation
 
 The app now runs on local Postgres 16 with pgvector (Postgres.app on this Mac), Drizzle, and a pg-boss worker. Every original screen works on migrated data.

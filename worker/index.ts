@@ -10,7 +10,7 @@ async function main() {
   boss.on("error", (err) => console.error("[worker] pg-boss error", err));
   await boss.start();
   await registerJobs(boss);
-  console.log("[worker] started: health.ping, schedule.tick (hourly, log only)");
+  console.log("[worker] started: health.ping, schedule.tick (hourly, log only), crawl.discover, crawl.page, audit.run, entity.check");
 
   const stop = async () => {
     console.log("[worker] stopping");

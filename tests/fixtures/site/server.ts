@@ -62,6 +62,7 @@ export function routesFor(host: string, url: string, port: number): Route {
       if (p === "/sitemap-pages.xml") return { type: "application/xml", body: fixture("sitemap-pages.xml", port) };
       if (p === "/sitemap-admissions.xml.gz") return { type: "application/x-gzip", body: zlib.gzipSync(fixture("sitemap-admissions.xml", port)) };
       if (p === "/admin/secret/") return simple("Admin secret");
+      if (p === "/sso-redirect/") return { status: 302, location: "http://10.0.0.7/login" };
       if (map[p]) return page(map[p]);
       return { status: 404, type: "text/html", body: "<html><head><title>Not found</title></head><body><h1>Not found</h1></body></html>" };
     }

@@ -26,6 +26,8 @@ export type DiscoveryDeps = {
   maxSitemapUrls: number;
   sitemapPagesToScan: number;
   concurrency: number;
+  /** Timeout for the one root request per host. Short, because many CT names are firewalled. */
+  hostProbeTimeoutMs?: number;
 };
 
 export function defaultFetcher(userAgent: string, policy: NetPolicy = {}) {
@@ -58,7 +60,8 @@ export function liveDiscoveryDeps(db: Db, orgId: string, overrides: Partial<Disc
     maxSitemapFiles: 60,
     maxSitemapUrls: 50_000,
     sitemapPagesToScan: 10,
-    concurrency: 8,
+    concurrency: 12,
+    hostProbeTimeoutMs: 8000,
     ...overrides,
   };
 }
@@ -212,14 +215,11 @@ export async function discoverSite(db: Db, siteId: string, deps: DiscoveryDeps):
     const ct = await deps.ctLookup(rootDomain);
     for (const h of ct.hosts) add(h, "ct_log");
 
-    // check hosts: discovery order first, then alphabetical
-    const ordered = Array.from(hosts.entries()).sort((a, b) => {
-      const ra = Math.min(...Array.from(a[1].via).map((v) => VIA_ORDER.indexOf(v)));
-      const rb = Math.min(...Array.from(b[1].via).map((v) => VIA_ORDER.indexOf(v)));
-      return ra - rb || a[0].localeCompare(b[0]);
-    });
+    // check hosts: the root and where it lands first, then by how each was found, then alphabetical
+    const rank = (host: string, info: HostInfo) =>
+      host === rootHost ? -2 : host === homeFinalHost ? -1 : Math.min(...Array.from(info.via).map((v) => VIA_ORDER.indexOf(v)));
+    const ordered = Array.from(hosts.entries()).sort((a, b) => rank(a[0], a[1]) - rank(b[0], b[1]) || a[0].localeCompare(b[0]));
     const toCheck = ordered.slice(0, deps.maxHostChecks);
-    const notChecked = ordered.slice(deps.maxHostChecks);
 
     const existing = await db.select().from(siteHosts).where(eq(siteHosts.siteId, siteId));
     const existingByHost = new Map(existing.map((h) => [h.host, h]));
@@ -246,7 +246,7 @@ export async function discoverSite(db: Db, siteId: string, deps: DiscoveryDeps):
 
     await mapPool(toCheck, deps.concurrency, async ([host, info]) => {
       const origin = hostOrigin(host, rootUrl);
-      const probe = await deps.fetch(`${origin}/`, { accept: "text/html", maxBytes: 2 * 1024 * 1024 });
+      const probe = await deps.fetch(`${origin}/`, { accept: "text/html", maxBytes: 2 * 1024 * 1024, timeoutMs: deps.hostProbeTimeoutMs ?? 8000 });
       const html = probe.ok ? bodyText(probe) : null;
       const check = classifyHost(host, rootDomain, {
         status: probe.status,
@@ -256,12 +256,12 @@ export async function discoverSite(db: Db, siteId: string, deps: DiscoveryDeps):
         blocked: probe.blocked,
         error: probe.error,
       });
-      // A redirect target under the root domain is a host too.
+      // A redirect target under the root domain is always checked, even past the cap.
       if (check.excludeReason?.startsWith("redirects to ") && probe.finalUrl) {
         const target = new URL(probe.finalUrl).hostname.toLowerCase();
-        if (isUnderDomain(target, rootDomain) && !hosts.has(target)) {
-          hosts.set(target, { via: new Set(["link"]) });
-          toCheck.push([target, hosts.get(target)!]);
+        if (isUnderDomain(target, rootDomain)) {
+          if (!hosts.has(target)) hosts.set(target, { via: new Set(["link"]) });
+          if (!toCheck.some(([h]) => h === target)) toCheck.push([target, hosts.get(target)!]);
         }
       }
       const patch: Partial<typeof siteHosts.$inferInsert> = {
@@ -291,6 +291,8 @@ export async function discoverSite(db: Db, siteId: string, deps: DiscoveryDeps):
       await upsert(host, info, patch);
     });
 
+    const checked = new Set(toCheck.map(([h]) => h));
+    const notChecked = Array.from(hosts.entries()).filter(([h]) => !checked.has(h));
     for (const [host, info] of notChecked) {
       await upsert(host, info, { included: false, excludeReason: `not checked: over the ${deps.maxHostChecks} host check cap` });
     }

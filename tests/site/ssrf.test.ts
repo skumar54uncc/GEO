@@ -126,6 +126,13 @@ describe("guardedFetch", () => {
     expect(res.redirects).toHaveLength(5);
   });
 
+  it("can hand a redirect back unfollowed, for the browser to follow through the guard", async () => {
+    const res = await guardedFetch(`http://public.fixture.test:${port}/to-private-ip`, { userAgent: UA, policy, followRedirects: false });
+    expect(res.status).toBe(302);
+    expect(res.blocked).toBeNull();
+    expect(res.headers.location).toBe("http://10.0.0.5/secret");
+  });
+
   it("caps the body", async () => {
     const res = await guardedFetch(`http://public.fixture.test:${port}/big`, { userAgent: UA, policy, maxBytes: 1000 });
     expect(res.truncated).toBe(true);

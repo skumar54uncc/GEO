@@ -145,6 +145,23 @@ Needed to keep the legacy screens and data lossless. Schema source of truth: `li
 - Nullable where the legacy data cannot say: `draws.prompt_set_id` (ad hoc capture of a prompt in no frozen set), `scans.prompt_set_id`, `citations.linked`, `prompts.intent`.
 - Embedding columns are `vector` without a fixed dimension, plus `embedding_model`, so the model can be chosen in Phase 4 without a migration.
 
+### 3.11 Implementation additions (Phase 2, 2026-11-03)
+
+Migration `drizzle/0002_phase2_site_audit.sql`. Code in `lib/site/`.
+- `entity_checks` table created (Phase 1 had only its enums). Append only; the latest row per (source, field) is current.
+- `sites`: status (new | discovering | discovered | failed), discovery summary jsonb, discovery error, updated_at.
+- `site_hosts`: `discovered_via_all[]` (every way a host was found; `discovered_via` keeps the first), `included_by_user` (rediscovery never overrides a person's choice), resolves, root status and final URL, login_portal, exclude_reason, robots status and raw store ref, sitemap counts and a raw store ref to the host's sitemap entries, llms.txt status, checked_at.
+- `crawl_runs`: page_cap_per_host, host_ids[], hosts_done[], user_agent, error, created_by. The last host to finish completes the run.
+- `crawl_pages`: raw_word_count (render mode evidence), outbound_links jsonb, visible_dates[], robots_meta, content_type, fetch_error. A failed page is a row with fetch_error; it never stops the run.
+- `audit_runs` (crawl_run_id, rules_version, finding_count, findings_sha256). `audit_findings.audit_run_id`. A rerun adds a new audit run; the sha256 over the sorted findings proves reruns are identical. Freshness is measured against the crawl's finish time, never "now".
+- `entity_candidates` (kind: name | alias | college | program | research_center | ranking_claim | location; source_url and source_urls on every item; method: schema | title | heading | navigation | text; group_label from the LLM step; requires_context; status: proposed | confirmed | rejected). Confirming a name sets `brands.name`; confirming an alias writes `brand_aliases` with its requires_context flag. Other kinds stay here for later phases.
+- `brands.profile` jsonb: the user confirmed values entity checks compare against. `competitors.reasons`.
+- `peer_suggestions` (ipeds_unitid, reasons, score, status, competitor_id). Accepting creates a `competitors` row with source ipeds_suggested.
+- `pagespeed_results` (one PageSpeed run per crawl, reused by every audit rerun).
+- `bot_log_imports` (file sha256, format, line counts). `bot_hits.host`. Only AI bot lines are stored; IPs and query strings are dropped.
+- Job notes: `botlog.import` runs inside the upload request rather than as a queued job, so the uploaded file (which contains visitor IPs) never touches disk. Phase 2 jobs are sent with `retryLimit: 0`.
+- AI user agents come from a vendored copy of the ai.robots.txt list (`lib/site/data/ai-robots.json`, MIT). 48 of them are tracked by the robots.txt audit, each with a category: search, user_fetch, or training.
+
 ---
 
 ## 4. Migration from SQLite

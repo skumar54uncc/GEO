@@ -99,7 +99,7 @@ describe("end to end: onboard, discover, crawl, audit, report", () => {
       const deps: CrawlDeps = {
         userAgent: ua,
         policy: fixturePolicy,
-        browserArgs: ["--host-resolver-rules=MAP *.fixture.test 127.0.0.1, MAP fixture.test 127.0.0.1"],
+        browserArgs: [],
         maxConcurrency: 4,
         maxRequestsPerMinute: 600,
         navigationTimeoutSecs: 20,
@@ -126,6 +126,10 @@ describe("end to end: onboard, discover, crawl, audit, report", () => {
       expect(byPath["www.fixture.test/programs/computer-science/"]).toMatchObject({ renderMode: "static", title: "Computer Science, B.S. | UNC Charlotte" });
       expect(byPath["www.fixture.test/programs/computer-science/"].lastmod?.toISOString().slice(0, 10)).toBe("2021-01-15");
       expect(byPath["www.fixture.test/gone/"].statusCode).toBe(404);
+      // The browser's redirect to a private address is refused by the guard and recorded, not followed.
+      expect(byPath["www.fixture.test/sso-redirect/"].fetchError).toMatch(/blocked by SSRF guard: address 10\.0\.0\.7 is not public/);
+      // The fixture server never saw a request it did not answer for itself, and the browser made none of its own.
+      expect(during.every((r) => r.host.endsWith("fixture.test"))).toBe(true);
       expect(byPath["admissions.fixture.test/apply/"]).toBeTruthy();
       expect(byPath["www.fixture.test/admin/secret/"]).toBeUndefined();
       expect(byPath["www.fixture.test/"].textRef).toBeTruthy();

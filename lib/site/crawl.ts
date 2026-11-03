@@ -136,7 +136,6 @@ export async function crawlHost(db: Db, crawlRunId: string, hostId: string, deps
   let pages = 0;
   let errors = 0;
   const raw = new Map<string, { html: string; status: number; contentType: string }>();
-
   const insertPage = async (values: Partial<typeof crawlPages.$inferInsert> & { url: string }) => {
     const res = await db
       .insert(crawlPages)
@@ -156,14 +155,37 @@ export async function crawlHost(db: Db, crawlRunId: string, hostId: string, deps
       useSessionPool: false,
       navigationTimeoutSecs: deps.navigationTimeoutSecs,
       requestHandlerTimeoutSecs: 90,
-      browserPoolOptions: { useFingerprints: false },
       launchContext: {
         userAgent: deps.userAgent,
-        launchOptions: { headless: true, args: deps.browserArgs },
+        // The browser gets no network of its own: no DNS and a dead proxy. Every request it makes is
+        // answered by the route handler below from a guarded Node fetch, so nothing reaches a private address.
+        launchOptions: {
+          headless: true,
+          args: ["--host-resolver-rules=MAP * ~NOTFOUND", "--proxy-server=http://127.0.0.1:9", "--proxy-bypass-list=<-loopback>", ...deps.browserArgs],
+        },
       },
+      browserPoolOptions: { useFingerprints: false },
       preNavigationHooks: [
         async ({ page, request }) => {
-          let hops = 0;
+          // Resolve redirects in Node first (each hop guarded), then navigate straight to the final URL.
+          const pre = await guardedFetch(request.url, {
+            userAgent: deps.userAgent,
+            policy: deps.policy,
+            maxBytes: 10 * 1024 * 1024,
+            accept: "text/html,application/xhtml+xml",
+          });
+          if (pre.blocked) throw new Error(`blocked by SSRF guard: ${pre.blocked}`);
+          if (pre.status === null) throw new Error(`fetch failed: ${pre.error}`);
+          const final = normalizeUrl(pre.finalUrl) ?? pre.finalUrl;
+          const finalHost = new URL(final).hostname;
+          if (finalHost !== host.host) throw new Error(`redirected to another host: ${finalHost}`);
+          const preType = pre.headers["content-type"] ?? "";
+          if (preType && !/html/i.test(preType)) throw new Error(`not an HTML page (${preType.split(";")[0]})`);
+          raw.set(final, { html: pre.body.toString("utf8"), status: pre.status, contentType: preType });
+          if (final !== (normalizeUrl(request.url) ?? request.url)) {
+            request.userData.redirectedFrom = request.url;
+            request.url = final;
+          }
           await page.route("**/*", async (route) => {
             const req = route.request();
             const url = req.url();
@@ -178,30 +200,26 @@ export async function crawlHost(db: Db, crawlRunId: string, hostId: string, deps
               return route.abort();
             }
             if (TRACKERS.test(reqHost)) return route.abort();
-            const isDoc = req.isNavigationRequest() && req.frame() === page.mainFrame();
-            if (isDoc && ++hops > 6) return route.abort("blockedbyclient");
-            const res = await guardedFetch(url, {
-              userAgent: deps.userAgent,
-              policy: deps.policy,
-              maxRedirects: 0,
-              maxBytes: 10 * 1024 * 1024,
-              accept: req.headers()["accept"] ?? "*/*",
-            });
-            if (res.blocked || res.status === null) return route.abort(res.blocked ? "blockedbyclient" : "failed");
-            const headers = { ...res.headers };
-            delete headers["content-encoding"];
-            delete headers["content-length"];
-            delete headers["transfer-encoding"];
-            if (isDoc && (res.status < 300 || res.status >= 400)) {
-              raw.set(normalizeUrl(url) ?? url, {
-                html: res.body.toString("utf8"),
-                status: res.status,
-                contentType: headers["content-type"] ?? "",
-              });
+            const isMainDoc = req.isNavigationRequest() && req.frame() === page.mainFrame() && (normalizeUrl(url) ?? url) === final;
+            let status: number;
+            let headers: Record<string, string>;
+            let body: Buffer;
+            if (isMainDoc) {
+              status = pre.status!;
+              headers = { ...pre.headers };
+              body = pre.body;
+            } else {
+              // Redirects are followed here, never handed to the browser: Playwright does not route
+              // the follow-up request of a fulfilled redirect.
+              const res = await guardedFetch(url, { userAgent: deps.userAgent, policy: deps.policy, maxBytes: 10 * 1024 * 1024, accept: req.headers()["accept"] ?? "*/*" });
+              if (res.blocked || res.status === null) return route.abort(res.blocked ? "blockedbyclient" : "failed");
+              status = res.status;
+              headers = { ...res.headers };
+              body = res.body;
             }
-            return route.fulfill({ status: res.status, headers, body: res.body });
+            for (const h of ["content-encoding", "content-length", "transfer-encoding", "location"]) delete headers[h];
+            return route.fulfill({ status, headers, body });
           });
-          request.userData.startedAt = Date.now();
         },
       ],
       requestHandler: async ({ page, request, response }) => {
@@ -261,7 +279,7 @@ export async function crawlHost(db: Db, crawlRunId: string, hostId: string, deps
       failedRequestHandler: async ({ request }, error) => {
         errors++;
         const n = normalizeUrl(request.url) ?? request.url;
-        await insertPage({ url: n, statusCode: raw.get(n)?.status ?? null, fetchError: error.message.slice(0, 500) });
+        await insertPage({ url: n, statusCode: raw.get(n)?.status ?? null, fetchError: error.message.split("\n")[0].slice(0, 500) });
       },
     },
     config,

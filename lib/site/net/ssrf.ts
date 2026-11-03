@@ -24,6 +24,8 @@ export type FetchOptions = {
   userAgent: string;
   accept?: string;
   maxRedirects?: number;
+  /** false: return a 3xx response as is (the browser follows it, and each hop is guarded again). */
+  followRedirects?: boolean;
   maxBytes?: number;
   timeoutMs?: number;
   policy?: NetPolicy;
@@ -251,7 +253,7 @@ export async function guardedFetch(rawUrl: string, opts: FetchOptions): Promise<
       return fail({ error: err instanceof Error ? err.message : String(err) });
     }
     const location = res.headers["location"];
-    if (res.status >= 300 && res.status < 400 && location) {
+    if (res.status >= 300 && res.status < 400 && location && opts.followRedirects !== false) {
       if (hop >= maxRedirects) {
         return fail({ status: res.status, headers: res.headers, blocked: `more than ${maxRedirects} redirects` });
       }

@@ -91,9 +91,11 @@ The Phase 3 gate dry run (3 prompts x 6 engines x 3 draws = 54 draws) is estimat
 | Crawler, cited page fetch, audit, stats, database | Yes | Built locally in Phase 2 |
 | ChatGPT, Gemini, Perplexity, Claude answers | No | A local model's answer is not what users see |
 
-## 6. Known issue to fix in Phase 3
+## 6. Known issue to fix in Phase 3 (fixed 2026-11-03)
 
-Today the AI Overview capture stores one draw per prompt and caches by params. Repeated draws must not reuse the cache, or the 3 draws are copies of one answer. The fix: include `draw_index` in the cache key and send `no_cache=true` for measurement draws. SerpAPI confirms that cached searches are free and served when all parameters match, for up to 1 hour [V], so without `no_cache` the copies are real.
+Fixed: legacy measurement calls now send `no_cache=true` and a draw index in the cache key, skip the local cache, and the estimate assumes two uncached calls per prompt (`lib/serpapi.ts`). The new SerpAPI adapter does the same.
+
+Before the fix, the AI Overview capture stored one draw per prompt and cached by params. Repeated draws must not reuse the cache, or the 3 draws are copies of one answer. The fix: include `draw_index` in the cache key and send `no_cache=true` for measurement draws. SerpAPI confirms that cached searches are free and served when all parameters match, for up to 1 hour [V], so without `no_cache` the copies are real.
 
 ## 7. Terms, collection notes, and approval
 
@@ -113,3 +115,13 @@ Today the AI Overview capture stores one draw per prompt and caches by params. R
 | DataForSEO LLM Responses (parametric sample) | Yes | Project owner | 2026-11-03 |
 
 Adapters are built against documented sample responses first. Keys are added before the live gate run.
+
+## 8. Implementation notes (Phase 3, 2026-11-03)
+
+- **DataForSEO runs in live mode only.** The standard queue (post a task, poll `tasks_ready`, then `task_get`) is not built, because its status codes and polling behavior have not been checked against a real response. Cost impact for the default campaign (300 draws per engine per scan): ChatGPT, Gemini and AI Mode at $0.004 each, and AI Overview at 2 × $0.002, come to $4.80 per scan instead of $1.44 on the standard queue [V math]. That is about $6.70 more per month at 2 scans. Switch after the live gate, once one standard task has been observed end to end.
+- **Unknown price means refused.** Token-billed adapters (Anthropic, OpenAI, Perplexity, Gemini) are priced only for the model names in `lib/capture/pricing.ts` (`TOKEN_RATES`). Any other model gives an "unknown" estimate and the cost guard refuses the call. To add a model, copy its rate from the provider's pricing page into `TOKEN_RATES` with the date checked.
+- **Estimates are upper bounds** from `TOKEN_ASSUMPTIONS` (for example Claude: 3 searches, 25k input and 1.2k output tokens). The actual cost of each draw comes from the provider's usage fields and is what the ledger records.
+- **Parametric series** through DataForSEO LLM Responses: the model per engine is set by `DATAFORSEO_PARAMETRIC_MODEL_<ENGINE>`; there is no default. Its estimate assumes the model's tokens at $10 / $50 per MTok, an upper bound, because DataForSEO bills the model's own token cost [V] and the rate depends on the model chosen.
+- **Bright Data** uses the Perplexity dataset `gd_m7dhdot1vw9a7gc1n` from the docs sample. When the scrape returns 202 (still running), the adapter polls the snapshot (a free GET) for at most 8 minutes, then records an error draw.
+- **Budgets.** Default caps per provider (monthly / per scan, USD): DataForSEO 20 / 10, Bright Data 5 / 2, OpenAI 20 / 10, Anthropic 60 / 30, Perplexity 10 / 5, Gemini 20 / 10. Admins edit them on Settings > Providers. Monthly spend is summed from this UTC month's ledger rows.
+- **Gate dry run.** 3 prompts × 6 primary routes × 3 draws, plus 1 canary per route, is 60 draws. Upper bound with `claude-sonnet-5-5`: DataForSEO 4 × $0.04, Bright Data $0.015, Claude about $0.92; about $1.10 in total [E: upper bound assumptions above]. Run it with `npm run capture:dry-run`.

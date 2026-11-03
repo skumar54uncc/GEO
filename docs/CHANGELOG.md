@@ -1,5 +1,59 @@
 # Changelog
 
+## 2026-11-03: Phase 3, Capture layer (code complete; live gate waits for keys)
+
+The platform can now capture answers from ChatGPT, Gemini, Perplexity, Claude, Google AI Overview and Google AI Mode through the providers approved in `docs/PROVIDERS.md` section 7. Every draw records its runner, fidelity, region honored, model build (or "unknown"), cost and latency, and every paid call goes through the cost guard. All adapters are built and tested against the providers' documented sample responses. No live provider call has been made yet, because no capture keys are set.
+
+Added:
+- Adapters (`lib/capture/adapters/`):
+  - DataForSEO: LLM Scraper for the ChatGPT and Gemini UI, AI Mode, organic results with `load_async_ai_overview`, and LLM Responses for the parametric series.
+  - Bright Data for the Perplexity UI.
+  - Anthropic, OpenAI, Perplexity Agent API and Gemini grounding, all with web search.
+  - SerpAPI with `no_cache=true` and `page_token` follow-up.
+  - Local SERP, which stays experimental until `parity-report.md` passes and is under 35 days old.
+  - `capture` never throws. Network errors, 4xx and 5xx responses, malformed JSON and timeouts all become error draws, and missing keys or models become blocked draws. AI Overview state is recorded as shown, not shown, failed or blocked.
+- Routing (`lib/capture/registry.ts`): primary, fallback, parametric and parity route per engine (ARCHITECTURE 5.2).
+- Pipeline (`lib/capture/run.ts`, `batch.ts`):
+  - Order of work: estimate, cost guard, capture, raw payload, draw row, ledger row, citations, fan-out queries, organic snapshot.
+  - The cache key includes scan, draw index and attempt. Draws are idempotent per cell.
+  - Up to 2 draws run at once per provider.
+  - "Retry failed draws" shows its cost first and adds new attempts; the failed rows stay.
+- Canaries (`lib/capture/canary.ts`): one fixed prompt per route before every scan. A failed canary raises an alert and removes that route from the scan.
+- Calibration (`lib/capture/calibration.ts`): 20 prompts per engine on the primary and fallback runners. Mention agreement is reported with n and a Wilson interval; citation domain Jaccard with n and a 95% interval.
+- Fan-out (`lib/capture/fanout.ts`): organic results for new fan-out queries, budgeted and approved first.
+- Judge v2 (`lib/judge/aliases.ts`, `v2.ts`):
+  - Mentions, spans, list position and prominence come from deterministic alias matching. "Charlotte" alone never counts as the university.
+  - The LLM gives only sentiment with a quoted sentence, claims and named sources. It gets one repair call, and both raw outputs are stored.
+  - Prompt version `v2-2026-11-03`.
+- Screens:
+  - Settings > Providers: key status, routes, last canary, this month's spend, and limits that admins can edit.
+  - Capture test: pick prompt, route and region; see the estimate; approve that exact amount; run one draw; see parsed results and the raw payload.
+- API routes: `/api/providers`, `/api/capture/test`, `/api/capture/batch`, `/api/capture/retry` and `/api/capture/fanout`. Worker queues: `scan.run`, `capture.retry`, `fanout.run` and `judge.run`, all with no automatic retries.
+- `npm run capture:dry-run` (`scripts/dry-run.ts`): plans 3 prompts × 6 primary routes × 3 draws in Charlotte and prints the estimate. It runs only with `--approve <scan id> --usd <exact total>`.
+- Tests: 7 new test files, 79 new tests, 248 in total. They cover each adapter against recorded fixtures (including network error, 4xx, 5xx and malformed JSON), the cache key per draw index, budget refusals, idempotent cells, retries, canaries, the alias matcher on "Charlotte" city traps, the judge repair path, calibration math, routes and the dry run.
+
+Changed:
+- Schema: migration `0003_phase3_capture.sql`; details in ARCHITECTURE 3.12.
+- Legacy SerpAPI AI Overview capture: measurement calls send `no_cache=true` and skip the local cache. Each draw gets its own index, and the estimate assumes 2 uncached calls per prompt (PROVIDERS section 6).
+- Cost guard:
+  - The monthly budget now sums this UTC month's ledger rows. The old counter was never reset, so it would have refused everything from the second month on.
+  - USD estimates and per-scan caps are supported.
+  - Identical refusal messages are listed once.
+- Nav: Capture test, Providers. Only the most specific link is highlighted.
+- `.env.example`: all Phase 3 variables, with where to get each key.
+
+Known limits:
+- DataForSEO runs in live mode only, which costs $4.80 per default scan instead of $1.44 on the standard queue. The standard queue is not built yet because its polling has not been checked against a real response (PROVIDERS section 8).
+- Token-billed models are priced only for the names in `lib/capture/pricing.ts`. Any other model is refused as "unknown price".
+- Third-party UI providers still need the procurement review of their collection method before production data (PROVIDERS section 7).
+
+Verification gate (2026-11-03 on this Mac):
+1. `typecheck` passes. `lint` passes; the one warning in `app/analyze/page.tsx` predates Phase 1. `npm test` passes 248 tests in 24 files.
+2. Live dry run: **not run yet**. `npm run capture:dry-run` plans and prints the estimate, then refuses: DataForSEO, Bright Data and Anthropic keys and `ANTHROPIC_MODEL` are not set. Upper-bound estimate once they are set: about $1.10 with `claude-sonnet-5-5` (PROVIDERS section 8).
+3. Distinct raw payloads per draw are tested with fake adapters. It still needs confirming in the live run.
+4. Runner, fidelity, region honored and model build on every draw are tested. It still needs confirming in the live run.
+5. Legacy draws still render: every page returns 200, the dashboard still reads 80.0% (32 of 40; 95% Wilson CI 65.2% to 89.5%), and `data/tracker.db` is unchanged (sha256 04bfc5e4…).
+
 ## 2026-11-03: Phase 2, Onboarding and site audit
 
 You can now enter a root URL (charlotte.edu), choose which discovered hosts to include, crawl them, confirm the entity profile and peers, and read an AI readiness audit filtered by host, severity and rule, with a page drilldown. New screens: Onboarding, Audit, Bot hits.

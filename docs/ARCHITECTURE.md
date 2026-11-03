@@ -162,6 +162,19 @@ Migration `drizzle/0002_phase2_site_audit.sql`. Code in `lib/site/`.
 - Job notes: `botlog.import` runs inside the upload request rather than as a queued job, so the uploaded file (which contains visitor IPs) never touches disk. Phase 2 jobs are sent with `retryLimit: 0`.
 - AI user agents come from a vendored copy of the ai.robots.txt list (`lib/site/data/ai-robots.json`, MIT). 48 of them are tracked by the robots.txt audit, each with a category: search, user_fetch, or training.
 
+### 3.12 Implementation additions (Phase 3, 2026-11-03)
+
+Migration `drizzle/0003_phase3_capture.sql`. Code in `lib/capture/` and `lib/judge/`.
+- `draws.attempt` (default 1). The unique cell is now (scan_id, prompt_id, engine, runner, region_id, draw_index, **attempt**). A retry of a failed draw is a new row with attempt + 1; the failed row stays.
+- `draws.error`, `draws.experimental` (local SERP before its parity report passes), `draws.params_hash` (the cache key: full params including scan, draw index and attempt).
+- `scans.kind`: scan | capture_test | dry_run | calibration | canary.
+- `canary_runs` (engine, runner, provider, draw_id, ok, reason). One canary per route before each scan, in its own scan of kind canary with a fixed prompt tagged `system:canary`. A failure inserts a `canary_failed` alert and removes that route from the scan.
+- `calibration_runs` (month, engine, primary and fallback runner, n_prompts, mention_pairs, mention_agreement, jaccard_pairs, citation_jaccard_mean, details). Mention agreement carries a Wilson interval; citation domain Jaccard a normal 95% interval; both in `details` with n.
+- `citations.title`, `span_start`, `span_end`. `regions.latitude`, `longitude`, `timezone`.
+- Monthly budget: the guard sums this UTC month's `cost_ledger.usd` for the provider. `provider_accounts.spent_usd_month` is still incremented but no longer read, because nothing reset it.
+- Judge v2 (`judge_prompt_version = v2-2026-11-03`): mentions, spans, list position and prominence come from deterministic alias matching (longest match wins, acronyms case sensitive, aliases needing context are dropped). The LLM gives only sentiment with a quoted sentence, claims and named sources; spans are found by exact quote search. At most one repair call; both raw outputs are stored. A draw with no tracked entity is judged without a model call (`judge_model = deterministic`).
+- Google surfaces captured through DataForSEO also write a `serp_snapshots` row (engine `google:dataforseo`) with the organic results.
+
 ---
 
 ## 4. Migration from SQLite
@@ -240,6 +253,19 @@ Provider availability and pricing are **not yet verified**. Phase 3 starts by fi
 | Claude | api_search (web search tool) | manual_paste | medium |
 | Any | manual_paste | | high, small n |
 | Google AIO, AI Mode (added 2026-11-03) | serp_provider via local SERP service (`provider = local_serp`) | SerpAPI or DataForSEO | high **only after** `parity-report.md` passes and is rechecked monthly. Until then the series is labeled experimental and never replaces the paid provider |
+
+As built in Phase 3 (2026-11-03, approved in `docs/PROVIDERS.md` section 7; routes in `lib/capture/registry.ts`):
+
+| Engine | Primary | Fallback | Parametric | Parity |
+|---|---|---|---|---|
+| ChatGPT | ui_provider, DataForSEO LLM Scraper | api_search, OpenAI | api_parametric, DataForSEO LLM Responses | |
+| Gemini | ui_provider, DataForSEO LLM Scraper | api_search, Gemini grounding | api_parametric, DataForSEO LLM Responses | |
+| Perplexity | ui_provider, Bright Data | api_search, Perplexity Agent API | api_parametric, DataForSEO LLM Responses | |
+| Claude | api_search, Anthropic | none | api_parametric, DataForSEO LLM Responses | |
+| Google AI Overview | serp_provider, DataForSEO organic with `load_async_ai_overview` | none | | SerpAPI (free tier), local SERP |
+| Google AI Mode | serp_provider, DataForSEO AI Mode | none | | SerpAPI (free tier), local SERP |
+
+Region honored, as coded: a provider told the location natively at the region's own granularity is yes; approximate location (the API user_location fields) is unknown; coarser than the region, or none, is no.
 
 Local SERP rules (added 2026-11-03): it runs from one Charlotte IP, so any other region is `region_honored = no`. It is logged out, uses a fresh profile per draw, never solves CAPTCHAs, and stops a batch for at least one hour on any block. Its prompt lives in `docs/prompts/LOCAL_SERP.md` and is run inside the openserp project, not this repo.
 
@@ -328,6 +354,11 @@ Same frozen prompt set, so pairs are matched by prompt. Use **McNemar's test** o
 | `connectors.sync` (added 2026-11-03) | daily: Search Console, GA4 | 1 |
 | `canary.run` (added 2026-11-03) | before every scan | 1 |
 | `alerts.evaluate` (added 2026-11-03) | scan complete, budget change | 1 |
+| `scan.run` (Phase 3) | scan approved | 1 job; inside it, 2 draws at once per provider, providers in parallel. Runs canaries first, then calibration stats for calibration scans, then sends `judge.run` |
+| `capture.retry` (Phase 3) | "retry failed draws", after the cost is shown and approved | 1 |
+| `fanout.run` (Phase 3) | user action, approved estimate | 1 |
+
+Phase 3 runs canaries inside `scan.run` rather than as a separate `canary.run` job, and draws inside `scan.run` rather than one `scan.draw.<provider>` job per draw. All Phase 3 jobs are sent with `retryLimit: 0`; paid calls are never retried automatically.
 
 Scheduled scans compute the estimate and auto run only if under `budget_cap_usd`. Otherwise they wait for approval and notify.
 

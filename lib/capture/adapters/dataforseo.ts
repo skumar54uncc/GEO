@@ -130,6 +130,31 @@ export function parseDataForSeo(req: CaptureRequest, json: unknown, latencyMs: n
   };
 }
 
+/** Plain Google organic results for a fan out query (no AI Overview). One live SERP call. */
+export async function fetchOrganic(
+  deps: AdapterDeps,
+  query: string,
+  region: { serpLocation: string | null; language: string | null },
+): Promise<{ ok: boolean; rows: OrganicRow[]; raw: unknown; costUsd: number | null; error: string | null }> {
+  const { env, fetch: fetchImpl } = depsOf(deps);
+  const missing = missingVars(env(), ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"]);
+  if (missing.length) return { ok: false, rows: [], raw: null, costUsd: 0, error: `Missing ${missing.join(", ")}` };
+  if (!region.serpLocation) return { ok: false, rows: [], raw: null, costUsd: 0, error: "Region has no serp_location" };
+  const e = env();
+  const res = await httpJson(fetchImpl, `${BASE}/v3/serp/google/organic/live/advanced`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${Buffer.from(`${e.DATAFORSEO_LOGIN}:${e.DATAFORSEO_PASSWORD}`).toString("base64")}`, "Content-Type": "application/json" },
+    body: JSON.stringify([{ keyword: query, location_name: region.serpLocation, language_code: region.language || "en", device: "desktop" }]),
+    timeoutMs: 120_000,
+  });
+  if (!res.ok) return { ok: false, rows: [], raw: res.json ?? res.text, costUsd: res.status === 0 ? null : 0, error: res.error };
+  const task = asRecord(asArray(asRecord(res.json)?.tasks)[0]);
+  const cost = num(task?.cost);
+  if (num(task?.status_code) !== 20000) return { ok: false, rows: [], raw: res.json, costUsd: cost ?? 0, error: `DataForSEO task ${num(task?.status_code) ?? "?"}: ${str(task?.status_message) ?? "unknown"}` };
+  const items = asArray(asRecord(asArray(task?.result)[0])?.items);
+  return { ok: true, rows: parseOrganic(items), raw: res.json, costUsd: cost ?? DATAFORSEO.organic.live, error: null };
+}
+
 export function createDataForSeoAdapter(deps: AdapterDeps = {}): ProviderAdapter {
   const { env, fetch: fetchImpl } = depsOf(deps);
 

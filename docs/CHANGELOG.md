@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04: Perplexity primary moved to DataForSEO (medium fidelity)
+
+Bright Data’s site is blocked by campus OneIT, and DataForSEO’s LLM Scraper still covers only ChatGPT and Gemini. Perplexity’s primary route is now DataForSEO Live Perplexity LLM Responses (`DATAFORSEO_PERPLEXITY_MODEL`, e.g. `sonar`), runner `api_search`, fidelity **medium**. These draws are never labeled UI. Bright Data adapter remains in the repo but is not an approved primary. Cursor terminals get Node on PATH via `.vscode/settings.json` and `~/.zshenv`.
+
 ## 2026-11-03: Phase 3, Capture layer (code complete; live gate waits for keys)
 
 The platform can now capture answers from ChatGPT, Gemini, Perplexity, Claude, Google AI Overview and Google AI Mode through the providers approved in `docs/PROVIDERS.md` section 7. Every draw records its runner, fidelity, region honored, model build (or "unknown"), cost and latency, and every paid call goes through the cost guard. All adapters are built and tested against the providers' documented sample responses. No live provider call has been made yet, because no capture keys are set.

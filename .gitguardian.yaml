@@ -1,0 +1,4 @@
+# Capture fixtures are documented provider sample responses, not live credentials.
+# Opaque page_token / tracking fields are redacted to REDACTED_FIXTURE_TOKEN.
+paths-ignore:
+  - "tests/fixtures/capture/**"

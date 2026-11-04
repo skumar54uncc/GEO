@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04: Fixture redaction + CI Chromium (GitGuardian / Vitest)
+
+Capture fixtures now use `REDACTED_FIXTURE_TOKEN` / redacted SerpAPI archive URLs instead of high-entropy sample page tokens that GitGuardian flagged on commit `47bd056` (documented provider samples, not live keys). Added `scripts/redact-fixtures.ts` and `.gitguardian.yaml` ignoring `tests/fixtures/capture/**`. CI installs Chromium before tests so the Phase 2 crawl e2e does not fail empty-page assertions on `ubuntu-latest`.
+
 ## 2026-11-04: Claude primary moved to DataForSEO; `draws.search_used` added
 
 Approved: Claude primary = DataForSEO LLM Responses with `web_search: true`, country and city from the region (US / Charlotte). Runner `api_search`, fidelity medium. Anthropic remains as the calibration fallback only. Added nullable `draws.search_used` (migration `0004`) so Phase 5 can count api_search draws that actually searched. Paid-call retries stay manual only (`retryLimit: 0` on jobs; `planRetry` / `runRetry` require an approved estimate).

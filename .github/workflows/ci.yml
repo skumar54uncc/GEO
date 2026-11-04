@@ -31,6 +31,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Chromium is required by the Phase 2 crawl e2e (Crawlee/Playwright). Without this, CI
+      # can finish the crawl with empty/partial pages and fail entity + js_only assertions.
+      - run: npx playwright install chromium --with-deps
       - run: npm run db:up
       - run: npm run typecheck
       - run: npm run lint

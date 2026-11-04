@@ -278,7 +278,7 @@
                     "type": "chat_gpt_products_element",
                     "product_id": "gid://shopify/p/7JnWm9ccvIQ5SklKKTC9zt",
                     "merchants": "Walmart + others",
-                    "id_to_token_map": "eyJlaSI6IlV1U3VhZEMwRDdPcnA4NFBxS2ZfLUFZIiwicHJvZHVjdGlkIjoiIiwiY2F0YWxvZ2lkIjoiMTM4NjA4ODc0MDQ2NzE1MzYzMzkiLCJoZWFkbGluZU9mZmVyRG9jaWQiOiIxNjU2NTYzMDQzOTM5NzQ5Mjk0NiIsImltYWdlRG9jaWQiOiIxMTM0NDIwOTE2MzQ2ODQwNTI1NyIsInJkcyI6IlBDXzEyNTEzNzI4NjY1Mjg3MjYzMjQ5fFBST0RfUENfMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJxdWVyeSI6IlNhbXN1bmcrR2FsYXh5K0ExNSIsImdwY2lkIjoiMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJtaWQiOiI1NzY0NjI4MjA2MzgyMzU5ODQiLCJwdnQiOiJoZyIsInV1bGUiOiJ3K0NBSVFJQ0loVkdGc2JHRm9ZWE56WldVc1JteHZjbWxrWVN4VmJtbDBaV1FnVTNSaGRHVnoiLCJnbCI6InVzIiwiaGwiOiJlbiJ9",
+                    "id_to_token_map": "REDACTED_FIXTURE_TOKEN",
                     "title": "Albert Einstein Tongue Out Hoodie",
                     "rating": null,
                     "price": 34.95,
@@ -302,7 +302,7 @@
                         "query": "cheap+smartphones+under+200+unlocked+android",
                         "mid": null,
                         "pvt": "hg",
-                        "uule": "w+CAIQICIhVGFsbGFoYXNzZWUsRmxvcmlkYSxVbml0ZWQgU3RhdGVz",
+                        "uule": "w+REDACTED_FIXTURE_TOKEN",
                         "gl": "us",
                         "hl": "en"
                       }
@@ -312,13 +312,13 @@
                     "type": "chat_gpt_products_element",
                     "product_id": "gid://shopify/p/5ymP4aadqvedAsJ3PeFyvU",
                     "merchants": "Walmart + others",
-                    "id_to_token_map": "eyJlaSI6IlV1U3VhZEMwRDdPcnA4NFBxS2ZfLUFZIiwicHJvZHVjdGlkIjoiIiwiY2F0YWxvZ2lkIjoiMTM4NjA4ODc0MDQ2NzE1MzYzMzkiLCJoZWFkbGluZU9mZmVyRG9jaWQiOiIxNjU2NTYzMDQzOTM5NzQ5Mjk0NiIsImltYWdlRG9jaWQiOiIxMTM0NDIwOTE2MzQ2ODQwNTI1NyIsInJkcyI6IlBDXzEyNTEzNzI4NjY1Mjg3MjYzMjQ5fFBST0RfUENfMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJxdWVyeSI6IlNhbXN1bmcrR2FsYXh5K0ExNSIsImdwY2lkIjoiMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJtaWQiOiI1NzY0NjI4MjA2MzgyMzU5ODQiLCJwdnQiOiJoZyIsInV1bGUiOiJ3K0NBSVFJQ0loVkdGc2JHRm9ZWE56WldVc1JteHZjbWxrWVN4VmJtbDBaV1FnVTNSaGRHVnoiLCJnbCI6InVzIiwiaGwiOiJlbiJ9",
+                    "id_to_token_map": "REDACTED_FIXTURE_TOKEN",
                     "title": "Funny Albert Einstein Quotes Hoodie: 'The measure of intelligence…'",
                     "rating": null,
                     "price": 49.95,
                     "currency": "USD",
                     "tag": "Features iconic quote, comfy and cozy (~$50)",
-                    "url": "https://www.printyourwear.com/products/funny-albert-einstein-quotes-hoodie-the-measure-of-intelligence-is-the-ability-to-change-code?variant=51537394270526&utm_source=chatgpt.com",
+                    "url": "https://www.printyourwear.com/products/REDACTED_FIXTURE_TOKEN?variant=51537394270526&utm_source=chatgpt.com",
                     "domain": "www.printyourwear.com",
                     "images": [
                       "https://cdn.shopify.com/s/files/1/0721/2993/7726/files/ts09-17032502_hoodie-pyw__black.jpg?v=1750566345"
@@ -336,7 +336,7 @@
                         "query": "cheap+smartphones+under+200+unlocked+android",
                         "mid": null,
                         "pvt": "hg",
-                        "uule": "w+CAIQICIhVGFsbGFoYXNzZWUsRmxvcmlkYSxVbml0ZWQgU3RhdGVz",
+                        "uule": "w+REDACTED_FIXTURE_TOKEN",
                         "gl": "us",
                         "hl": "en"
                       }
@@ -346,7 +346,7 @@
                     "type": "chat_gpt_products_element",
                     "product_id": "gid://shopify/p/ZsqO4vxv0ViJXZxt74ePy",
                     "merchants": "Walmart + others",
-                    "id_to_token_map": "eyJlaSI6IlV1U3VhZEMwRDdPcnA4NFBxS2ZfLUFZIiwicHJvZHVjdGlkIjoiIiwiY2F0YWxvZ2lkIjoiMTM4NjA4ODc0MDQ2NzE1MzYzMzkiLCJoZWFkbGluZU9mZmVyRG9jaWQiOiIxNjU2NTYzMDQzOTM5NzQ5Mjk0NiIsImltYWdlRG9jaWQiOiIxMTM0NDIwOTE2MzQ2ODQwNTI1NyIsInJkcyI6IlBDXzEyNTEzNzI4NjY1Mjg3MjYzMjQ5fFBST0RfUENfMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJxdWVyeSI6IlNhbXN1bmcrR2FsYXh5K0ExNSIsImdwY2lkIjoiMTI1MTM3Mjg2NjUyODcyNjMyNDkiLCJtaWQiOiI1NzY0NjI4MjA2MzgyMzU5ODQiLCJwdnQiOiJoZyIsInV1bGUiOiJ3K0NBSVFJQ0loVkdGc2JHRm9ZWE56WldVc1JteHZjbWxrWVN4VmJtbDBaV1FnVTNSaGRHVnoiLCJnbCI6InVzIiwiaGwiOiJlbiJ9",
+                    "id_to_token_map": "REDACTED_FIXTURE_TOKEN",
                     "title": "Einstein E=McKushed Hoodie (StonerDays)",
                     "rating": null,
                     "price": 59.99,
@@ -355,7 +355,7 @@
                     "url": "https://shop.stonerdays.com/products/einstein-e-mckushed-hoodie?variant=14032863133805&utm_source=chatgpt.com",
                     "domain": "shop.stonerdays.com",
                     "images": [
-                      "https://cdn.shopify.com/s/files/1/1373/4937/products/einstein-emckushed-hoodie-pullover-hoodieHoodiesforCannabisLovers.jpg?v=1725503584"
+                      "https://cdn.shopify.com/s/files/1/1373/4937/products/REDACTED_FIXTURE_TOKEN.jpg?v=1725503584"
                     ],
                     "product_ids": [
                       {
@@ -370,7 +370,7 @@
                         "query": "cheap+smartphones+under+200+unlocked+android",
                         "mid": null,
                         "pvt": "hg",
-                        "uule": "w+CAIQICIhVGFsbGFoYXNzZWUsRmxvcmlkYSxVbml0ZWQgU3RhdGVz",
+                        "uule": "w+REDACTED_FIXTURE_TOKEN",
                         "gl": "us",
                         "hl": "en"
                       }

@@ -65,21 +65,21 @@
                 "sections": [
                   {
                     "type": "text",
-                    "text": "The amusement park industry in France remains a significant and dynamic sector as of 2024. In 2023, the industry achieved a turnover of approximately €2.5 billion, with major parks like Disneyland Paris, Parc Astérix, Puy du Fou, and Futuroscope accounting for 60% of the total attendance. ([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai))nnNotably, in 2024, Parc Astérix welcomed a record 2.84 million visitors, earning it the title of the best amusement park in France for the third consecutive year. ([ouest-france.fr](https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai)) Similarly, Nigloland attracted 750,000 visitors, placing it among the top five parks in the country. ([parc-attraction-loisirs.fr](https://www.parc-attraction-loisirs.fr/2024/11/12/chiffre-frequentation-2024-nigloland/?utm_source=openai))nnThe Compagnie des Alpes, a leading operator in the sector, reported that its leisure parks generated €570.1 million in revenue in 2023/2024, surpassing the performance of its ski resorts. ([lechotouristique.com](https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai))nnThese developments underscore the continued relevance and growth of the amusement park industry in France, driven by strong consumer demand and ongoing investments in new attractions and experiences. ",
+                    "text": "The amusement park industry in France remains a significant and dynamic sector as of 2024. In 2023, the industry achieved a turnover of approximately €2.5 billion, with major parks like Disneyland Paris, Parc Astérix, Puy du Fou, and Futuroscope accounting for 60% of the total attendance. ([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/REDACTED_FIXTURE_TOKEN.html?id=1950717847221315%5C&utm_source=openai))nnNotably, in 2024, Parc Astérix welcomed a record 2.84 million visitors, earning it the title of the best amusement park in France for the third consecutive year. ([ouest-france.fr](https://www.ouest-france.fr/tourisme/REDACTED_FIXTURE_TOKEN?utm_source=openai)) Similarly, Nigloland attracted 750,000 visitors, placing it among the top five parks in the country. ([parc-attraction-loisirs.fr](https://www.parc-attraction-loisirs.fr/2024/11/12/chiffre-frequentation-2024-nigloland/?utm_source=openai))nnThe Compagnie des Alpes, a leading operator in the sector, reported that its leisure parks generated €570.1 million in revenue in 2023/2024, surpassing the performance of its ski resorts. ([lechotouristique.com](https://www.lechotouristique.com/article/REDACTED_FIXTURE_TOKEN?utm_source=openai))nnThese developments underscore the continued relevance and growth of the amusement park industry in France, driven by strong consumer demand and ongoing investments in new attractions and experiences. ",
                     "annotations": [
                       {
                         "title": "Entre créations et tensions, le marché des parcs de loisirs en Occitanie joue les montagnes russes",
-                        "url": "https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai",
+                        "url": "https://www.latribune.fr/entreprises/tourisme/2024-09-13/REDACTED_FIXTURE_TOKEN.html?id=1950717847221315%5C&utm_source=openai",
                         "start_index": 290,
                         "end_index": 516,
-                        "text": "([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/entre-creations-et-tensions-le-marche-des-parcs-de-loisirs-en-occitanie-joue-les-montagnes-russes-1006293.html?id=1950717847221315%5C&utm_source=openai))"
+                        "text": "([latribune.fr](https://www.latribune.fr/entreprises/tourisme/2024-09-13/REDACTED_FIXTURE_TOKEN.html?id=1950717847221315%5C&utm_source=openai))"
                       },
                       {
                         "title": "Le Parc Astérix est élu meilleur parc d’attractions de France : découvrez ses nouveaux projets",
-                        "url": "https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai",
+                        "url": "https://www.ouest-france.fr/tourisme/REDACTED_FIXTURE_TOKEN?utm_source=openai",
                         "start_index": 680,
                         "end_index": 884,
-                        "text": "([ouest-france.fr](https://www.ouest-france.fr/tourisme/le-parc-asterix-est-elu-meilleur-parc-dattractions-de-france-decouvrez-ses-nouveaux-projets-710f3c5a-a5bb-11ef-b03c-14608f7369cf?utm_source=openai))"
+                        "text": "([ouest-france.fr](https://www.ouest-france.fr/tourisme/REDACTED_FIXTURE_TOKEN?utm_source=openai))"
                       },
                       {
                         "title": "Parc Nigloland : bons chiffres en 2024 et nouveauté annoncée pour 2025",
@@ -90,10 +90,10 @@
                       },
                       {
                         "title": "Compagnie des Alpes : pour la première fois, les parcs de loisirs dépassent les domaines skiables",
-                        "url": "https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai",
+                        "url": "https://www.lechotouristique.com/article/REDACTED_FIXTURE_TOKEN?utm_source=openai",
                         "start_index": 1313,
                         "end_index": 1492,
-                        "text": "([lechotouristique.com](https://www.lechotouristique.com/article/compagnie-des-alpes-pour-la-premiere-fois-les-parcs-de-loisirs-depassent-les-domaines-skiables?utm_source=openai))"
+                        "text": "([lechotouristique.com](https://www.lechotouristique.com/article/REDACTED_FIXTURE_TOKEN?utm_source=openai))"
                       }
                     ]
                   }
@@ -112,7 +112,7 @@
               },
               {
                 "title": "Pourquoi la France continue d’attirer toujours plus de parcs",
-                "url": "https://www.24matins.fr/pourquoi-la-france-continue-dattirer-toujours-plus-de-parcs-1419544",
+                "url": "https://www.24matins.fr/REDACTED_FIXTURE_TOKEN",
                 "date": "2026-10-10 00:00:00 +00:00",
                 "snippet": "Le *SNELAC* recense pourtant un marché encore en progression, avec environ **650 parcs de loisirs** et **70 millions de visiteurs** attendus en 2025, contre seulement 3 millions en 1980.n...n*Disneyland Paris* reste de loin le poids lourd, avec 16 millions de visiteurs pour ses deux parcs.n*Le Parc ..."
               },

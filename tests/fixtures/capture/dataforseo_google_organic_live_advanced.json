@@ -57,7 +57,7 @@
                 {
                   "type": "refinement_chips_element",
                   "title": "Remote",
-                  "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+remote&uds=ADvngMjcH0KdF7qGWtwTBrP0nt7drlQNXJ_q6WhUnfcnlFQAOVqvQ09aiEx7jUP4Wb5sg6FzKTGyEoBQg36hfgreicnnhtBQv8H25iRkUIMWBSqTcu0nGLObB57jKDn4sIHqgjkv6AqtXzA0gTV6n6-p1_aOUPMmYdgJOPy5xybgxI0ZY3-OZUg&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQxKsJegQIHRAB&ictx=0",
+                  "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+remote&uds=REDACTED_FIXTURE_TOKEN&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQxKsJegQIHRAB&ictx=0",
                   "domain": "www.google.com",
                   "options": null
                 },
@@ -70,13 +70,13 @@
                     {
                       "type": "refinement_chips_option",
                       "title": "Yesterday",
-                      "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+since+yesterday&uds=ADvngMjcH0KdF7qGWtwTBrP0nt7d1cxhUU_4I1tnZ_YIEcACz8ZYvzwewv2vtaifFRGAtrClbFOcrHbTAbAeXm1jREcC6VS1VsCvY-sITnX4ozb-ILgfWEVwq_Z5ROUTUSIPShEnKXD5sUUbZbocrG609xSmt2d98g8y8m1lGjX2kp2G7tWTnMoyaYhx7tPHFsc1SlxiTTuylOmQpyaET98nEnMhDFUw8hSQnpfQcpEDEdBLwrOxN3gOZC4RtcHuKTyeCrFRnaDjQ17dNosh1yiBWrSXB9e1dQF-1Pt17wXCHwRUCH6wH0DbAN-oCNd7lMT2v24eI8rDkLQP3kTLpzGMUZReaWIAPw&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQkbEKegQIDxAD",
+                      "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+since+yesterday&uds=REDACTED_FIXTURE_TOKEN&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQkbEKegQIDxAD",
                       "domain": "www.google.com"
                     },
                     {
                       "type": "refinement_chips_option",
                       "title": "Last 3 days",
-                      "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+in+the+last+3+days&uds=ADvngMjcH0KdF7qGWtwTBrP0nt7dLQVdkfQJDu14-gF_eQoKa39tQdXyMUfu3HnnM3Pu4g5hOzwEez_H8t-yULnPJEgal7YGml0mtSaIuH3YeuIhPq5mBSo_ECo7hOJVwSRGkksXQg-RdTy8GhoT8Qm-ZFkyAQnSLmnlmv0Rm042YAlQ6JFqnfOW0VIOgTeTdYm6SLpzQ3a6YSvEf2tau3pEKxnGWKleL613vj0tLBWg4Jhsa0trdMkFPHDQYhc2caGQ8cmSYU4cqdB2Eq3PsNGgjgebvt7_7bbvjixC19O4L9ZB02rwY0EP30_mYAeTG9lYAx8ZJvGDslVLp0DHS93P8ynaiA7Bbw&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQkbEKegQIDxAE",
+                      "url": "https://www.google.com/search?num=100&sca_esv=427163c40a0d98b7&hl=en&gl=US&glp=1&q=bristol+temp+agencies+in+the+last+3+days&uds=REDACTED_FIXTURE_TOKEN&sa=X&ved=2ahUKEwjEjMPzrvyIAxVgpIkEHYTyBqEQkbEKegQIDxAE",
                       "domain": "www.google.com"
                     }
                   ]
@@ -222,7 +222,7 @@
                     "date": "2 hours ago",
                     "amp_version": false,
                     "timestamp": "2020-09-11 14:42:55 +00:00",
-                    "url": "https://news.sky.com/story/uk-takes-charge-of-coalition-gulf-mission-to-protect-ships-from-iran-11921404",
+                    "url": "https://news.sky.com/story/REDACTED_FIXTURE_TOKEN",
                     "image_url": null,
                     "badges": null
                   },
@@ -234,7 +234,7 @@
                     "date": "6 hours ago",
                     "amp_version": false,
                     "timestamp": "2020-09-11 14:42:55 +00:00",
-                    "url": "https://www.jpost.com/International/Iranian-factory-makes-Israeli-and-American-flags-to-burn-615902",
+                    "url": "https://www.jpost.com/International/REDACTED_FIXTURE_TOKEN",
                     "image_url": null,
                     "badges": null
                   },
@@ -246,7 +246,7 @@
                     "date": "7 hours ago",
                     "amp_version": false,
                     "timestamp": "2020-09-11 14:42:55 +00:00",
-                    "url": "https://www.reuters.com/article/us-iran-flags/iranian-factory-makes-us-and-israeli-flags-to-burn-idUSKBN1ZT065",
+                    "url": "https://www.reuters.com/article/us-iran-flags/REDACTED_FIXTURE_TOKEN",
                     "image_url": null,
                     "badges": null
                   }
@@ -656,7 +656,7 @@
                     "description": "13% off n",
                     "hotel_identifier": "CgoIuuav9KbOg9kvEAE",
                     "domain": "www.google.com",
-                    "url": "https://www.google.com/travel/hotels/New%20York/entity/CgoIuuav9KbOg9kvEAE?g2lb=2502548,2503781,4258168,4270442,4306835,4317915,4328159,4371334,4401769,4419364,4429192,4463666,4464737,4472151,4482194,4482438,4486153,4491350,4495816,4500614,4501241,4509286,4511370,4270859,4284970,4291517&hl=en-US&gl=us&ap=aAE&grf=ErAMCiwIDhIoEiZyJCoiCgcI5Q8QAxgNEgcI5Q8QAxgOIAAwHkDKAkoHCOUPEAMYAhILCCkoAToF0gICCAESCggNKAE6BGoCCAESCggHKAE6BDoCIAESCggCKAE6BBICCAESDAgKEAIoAToEWgIIBhIMCAoQAigBOgRaAggJEgwIChACKAE6BFoCCAgSDAgKEAIoAToEWgIIChIMCAoQAigBOgRaAggCEgwIChACKAE6BFoCCAESDAgKEAIoAToEWgIIAxIMCAoQAigBOgRaAggHEgoIBCgBOgQiAhABEgsIKCgBOgXKAgIIARILCBMoAjoFmgECCAESBAgfKAMaQggKEgYKBFoCCAYSBgoEWgIICRIGCgRaAggIEgYKBFoCCAoSBgoEWgIIAhIGCgRaAggBEgYKBFoCCAMSBgoEWgIIBxoCCAIaAggNGgIIBBoLCBMSBwoFmgECCAEaAggOGkIIBxIOCgw6CgoDCJYBGgNVU0QSDgoMOgoKAwj6ARoDVVNEEg4KDDoKCgMIrAIaA1VTRBIOCgw6CgoDCN4CGgNVU0QaiQkIHxIJCgWCAgIIISACEgsKB4ICBAgIGCEgARILCgeCAgQIVBghIAESCgoGggIDCPABIAESCQoFggICCBIgEhIMCgiCAgUImwEYEiAIEgsKB4ICBAhoGBIgBhILCgeCAgQIaRgSIAESCQoFggICCBQgHBILCgeCAgQIcBgUIAISCwoHggIECB0YFCABEgsKB4ICBAgbGBQgChILCgeCAgQIMBgUIAISCwoHggIECFIYFCAEEgsKB4ICBAhOGBQgAhILCgeCAgQIFxgUIAQSCgoGggIDCJwBIAESCgoGggIDCKECIAISCQoFggICCBwgPhILCgeCAgQIchgcIAESCwoHggIECAcYHCACEgsKB4ICBAhRGBwgCBILCgeCAgQIWBgcIAISCwoHggIECHMYHCAPEgsKB4ICBAhHGBwgDhILCgeCAgQIXxgcIAMSCwoHggIECDYYHCAHEgsKB4ICBAgkGBwgARILCgeCAgQITRgcIAMSDAoIggIFCJ0CGBwgARILCgeCAgQIKRgcIAESCQoFggICCCUgEhILCgeCAgQIdRglIAESDAoIggIFCKACGCUgAhILCgeCAgQIdxglIAISCwoHggIECHgYJSACEgsKB4ICBAh5GCUgBhILCgeCAgQIehglIAESCwoHggIECHYYJSABEgkKBYICAghkIAESCQoFggICCBEgLRILCgeCAgQIKhgRIAQSDAoIggIFCJoCGBEgBBILCgeCAgQIQBgRIAsSCwoHggIECDgYESAQEgsKB4ICBAhXGBEgBBILCgeCAgQIAhgRIAISCwoHggIECH8YESACEgsKB4ICBAgrGBEgARIJCgWCAgIILiBtEgwKCIICBQiAARguIAISCwoHggIECDwYLiAFEgsKB4ICBAg7GC4gAxILCgeCAgQIVhguIBESDAoIggIFCIACGC4gAhILCgeCAgQIOhguIBMSDAoIggIFCIcBGC4gBhILCgeCAgQIGhguIAESCwoHggIECEgYLiABEgsKB4ICBAg9GC4gBxIMCgiCAgUIgQEYLiAEEgwKCIICBQiDARguIAMSCwoHggIECEsYLiAMEgsKB4ICBAgDGC4gARILCgeCAgQIDBguIAUSCwoHggIECFMYLiAGEgsKB4ICBAgoGC4gAxIMCgiCAgUIiQEYLiADEgsKB4ICBAgnGC4gAxIKCgaCAgMIrgEgARINCgmCAgYIswEYrgEgARIKCgaCAgMIqQEgARINCgmCAgYIqwEYqQEgARIKCgaCAgMI4QIgARIMCgiCAgUIYxjhAiABEgkKBYICAghQIAYSCwoHggIECBkYUCABEgsKB4ICBAhMGFAgBRIJCgWCAgIIBCABEgoKBoICAwijASACEg0KCYICBgikARijASACEgkKBYICAgg1ICASCwoHggIECBMYNSAJEgsKB4ICBAgLGDUgCRILCgeCAgQIMRg1IAESCwoHggIECDIYNSAEEgsKB4ICBAhdGDUgAxIMCgiCAgUInAIYNSABEgsKB4ICBAgQGDUgAhILCgeCAgQIRBg1IAMiAiAB&q=place+to+stay+in+new+york&rp=ELrmr_SmzoPZLxDPoIis7IK7xScQqaXNmf6b0YyyARC6we3X-MPQ_vgBOAFAAEgCogEMTmV3IFlvcmssIE5ZwAEDyAEA&ictx=1",
+                    "url": "https://www.google.com/travel/hotels/New%20York/entity/CgoIuuav9KbOg9kvEAE?g2lb=2502548,2503781,4258168,4270442,4306835,4317915,4328159,4371334,4401769,4419364,4429192,4463666,4464737,4472151,4482194,4482438,4486153,4491350,4495816,4500614,4501241,4509286,4511370,4270859,4284970,4291517&hl=en-US&gl=us&ap=aAE&grf=REDACTED_FIXTURE_TOKEN&q=place+to+stay+in+new+york&rp=REDACTED_FIXTURE_TOKEN&ictx=1",
                     "is_paid": false,
                     "rating": {
                       "rating_type": "Max5",
@@ -951,7 +951,7 @@
                       {
                         "type": "link_element",
                         "title": "Born",
-                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+born&stick=H4sIAAAAAAAAAOPgE-LSz9U3MCwrTi_K0xLLTrbSL0jNL8hJBVJFxfl5Vkn5RXmLWLlTczPzUnMVQDwAjiIGizQAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQ6BMoADCEAXoECBUQAg",
+                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+born&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                         "domain": null,
                         "description": null,
                         "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/span[1]/a[1]"
@@ -959,7 +959,7 @@
                       {
                         "type": "link_element",
                         "title": "Saint Joseph, MO",
-                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Saint+Joseph,+Missouri&stick=H4sIAAAAAAAAAOPgE-LSz9U3MCwrTi_KU-IEs41NC8y1xLKTrfQLUvMLclKBVFFxfp5VUn5R3iJWseDEzLwSBa_84tSCDB0F38zi4vzSoswdrIwAB8H08E0AAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQmxMoATCEAXoECBUQAw",
+                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Saint+Joseph,+Missouri&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                         "domain": null,
                         "description": null,
                         "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/span[2]/a[1]"
@@ -979,7 +979,7 @@
                     "link": {
                       "type": "link_element",
                       "title": "View 25+ more",
-                      "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+songs&stick=H4sIAAAAAAAAAONgFuLSz9U3MCwrTi_KU0Jia4llJ1vp55YWZybrJxaVZBaXWBXn56UXL2LlSc3NzEvNVQBzd7AyAgDxd6QwRAAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQMTCJAXoECA8QDQ",
+                      "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+songs&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQMTCJAXoECA8QDQ",
                       "domain": null,
                       "description": null,
                       "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[4]/div[1]/div[1]/div[1]/div[1]/div[3]/a[1]"
@@ -989,7 +989,7 @@
                         "type": "knowledge_graph_list_element",
                         "title": "Lose Yourself",
                         "subtitle": "8 Mile: Music from and Inspired by the Motion Picture · 2002",
-                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+lose+yourself&stick=H4sIAAAAAAAAAONgFuLSz9U3MCwrTi_KU-LRT9c3LDYwLSxMjy_SEvQtLc5MdiwqySwuCckPzs9LX8QqkpqbmZeaq5CTX5yqUJlfWlScmpMGAGgNlUFGAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQri4wiQF6BAgPEAQ",
+                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+lose+yourself&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                         "domain": "www.google.com",
                         "image_url": "https://api.dataforseo.com/cdn/i/11091052-1535-0139-0000-8a86b1567f1a:20",
                         "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[4]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]"
@@ -998,7 +998,7 @@
                         "type": "knowledge_graph_list_element",
                         "title": "Love the Way You Lie",
                         "subtitle": "Recovery · 2010",
-                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+love+the+way+you+lie&stick=H4sIAAAAAAAAAONgFuLSz9U3MCwrTi_KU-LRT9c3LDYwLSoyqTDUEvQtLc5MdiwqySwuCckPzs9LX8QqnZqbmZeaq5CTX5aqUJKRqlCeWKlQmV-qkJOZCgDBoMK9TQAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQri4wiQF6BAgPEAc",
+                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=eminem+love+the+way+you+lie&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                         "domain": "www.google.com",
                         "image_url": "https://api.dataforseo.com/cdn/i/11091052-1535-0139-0000-8a86b1567f1a:21",
                         "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[4]/div[1]/div[1]/div[1]/div[1]/div[2]/div[2]"
@@ -1018,7 +1018,7 @@
                     "link": {
                       "type": "link_element",
                       "title": "View 15+ more",
-                      "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Eminem&stick=H4sIAAAAAAAAAONgFuLSz9U3MCwrTi_KU0Jia0llJ1vpF6TmF-SkAqmi4vw8q-LMlNTyxMriRaxsrrmZeam5O1gZATU92aRCAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQzTooATCLAXoECBgQAg",
+                      "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Eminem&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                       "domain": null,
                       "description": null,
                       "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[6]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/a[1]"
@@ -1028,7 +1028,7 @@
                         "type": "knowledge_graph_carousel_element",
                         "title": "Hailie Jade",
                         "subtitle": "Daughter",
-                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Hailie+Jade&stick=H4sIAAAAAAAAAONgFuLSz9U3MCwrTi_KU-IEsZNSMoxTtPgCUouK8_OCM1NSyxMrixexcnskZuZkpip4Jaak7mBlBABrZrx2OgAAAA&sa=X&ved=2ahUKEwi7tOX4ivXsAhUswzgGHYjvB5sQxA0wiwF6BAgYEAU",
+                        "url": "https://www.google.com/search?num=100&hl=en&gl=US&q=Hailie+Jade&stick=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                         "domain": "www.google.com",
                         "image_url": "https://api.dataforseo.com/cdn/i/11091052-1535-0139-0000-8a86b1567f1a:28",
                         "xpath": "/html[1]/body[1]/div[7]/div[2]/div[10]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[6]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]"
@@ -1153,7 +1153,7 @@
                         "type": "knowledge_graph_hotels_booking_element",
                         "source": "Booking.com",
                         "description": null,
-                        "url": "https://www.booking.com/hotel/fr/ha-tel-clairefontaine.html?checkin%3D2023-11-05%26checkout%3D2023-11-06%26group_adults%3D2%26req_adults%3D2%26show_room%3D37123902_326752899_0_2_0%26lang%3Den%26selected_currency%3DGBP%26exrt%3D0.86239755%26ext_price_total%3D137.78%26ext_price_tax%3D15.47%26xfc%3DEUR%26hca%3Dm%26group_children%3D0%26req_children%3D0%26%26ts%3D1697031480%26no_rooms%3D1%26edgtid%3D9-gq9poOScaxUj_fwIt9IA%26efpc%3DFWsAoVm3ah8%26utm_source%3Dmetagha%26utm_medium%3Dlocaluniversal%26utm_campaign%3DGB%26utm_term%3Dhotel-371239%26utm_content%3Ddev-desktop_los-1_bw-25_dow-Sunday_defdate-1_room-0_gstadt-2_rateid-public_aud-0_gacid-6623578758_mcid-10_ppa-0_clrid-0_ad-1_gstkid-0_checkin-20231105%26aid%3D356930%26label%3Dmetagha-link-LUGB-hotel-371239_dev-desktop_los-1_bw-25_dow-Sunday_defdate-1_room-0_gstadt-2_rateid-public_aud-0_gacid-6623578758_mcid-10_ppa-0_clrid-0_ad-1_gstkid-0_checkin-20231105_lp-1006886_r-3067383881391334316%26gclid%3D%7Bgclid%7D",
+                        "url": "https://www.booking.com/hotel/fr/ha-tel-clairefontaine.html?checkin%3D2023-11-05%26checkout%3D2023-11-06%26group_adults%3D2%26req_adults%3D2%26show_room%3D37123902_326752899_0_2_0%26lang%3Den%26selected_currency%3DGBP%26exrt%3D0.86239755%26ext_price_total%3D137.78%26ext_price_tax%3D15.47%26xfc%3DEUR%26hca%3Dm%26group_children%3D0%26req_children%3D0%26%26ts%3D1697031480%26no_rooms%3D1%26edgtid%3D9-gq9poOScaxUj_fwIt9IA%26efpc%3DFWsAoVm3ah8%26utm_source%3Dmetagha%26utm_medium%3Dlocaluniversal%26utm_campaign%3DGB%26utm_term%3Dhotel-371239%26utm_content%REDACTED_FIXTURE_TOKEN%26aid%3D356930%26label%REDACTED_FIXTURE_TOKEN%26gclid%3D%7Bgclid%7D",
                         "domain": "www.booking.com",
                         "price": {
                           "current": 138,
@@ -1266,12 +1266,12 @@
                 "position": "left",
                 "xpath": "/html[1]/body[1]/div[7]/div[3]/div[10]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]",
                 "title": "Flights from Kharkiv (HRK) to Lviv (LWO)",
-                "url": "https://www.google.com.ua/flights?num=100&hl=en&gl=UA&source=flun&lite=0&uitype=cuAA&tfs=CAEQAhopEgoyMDE5LTExLTE0ag0IAhIJL20vMDgyc3k5cgwIAhIIL20vMGQ3X24aKRIKMjAxOS0xMS0xN2oMCAISCC9tLzBkN19ucg0IAhIJL20vMDgyc3k5ekBDaWRIZVRZNWQwSkhMUzB0TFMwdExTMHRZMlZ4YmpJMlFVRkJRVUZHTTBaUVRVVkVkMGhLUVVFU0EyNVFVUT09&sa=X&ved=2ahUKEwjOjKfSrdrlAhXkILkGHYO_DF8QuRUwAHoECGIQAw",
+                "url": "https://www.google.com.ua/flights?num=100&hl=en&gl=UA&source=flun&lite=0&uitype=cuAA&tfs=REDACTED_FIXTURE_TOKEN&sa=X&ved=2ahUKEwjOjKfSrdrlAhXkILkGHYO_DF8QuRUwAHoECGIQAw",
                 "items": [
                   {
                     "type": "google_flights_element",
                     "description": "SkyUp 1h 50m Non-stop from UAH 1,944 ",
-                    "url": "https://www.google.com.ua/flights?num=100&hl=en&gl=UA&source=flun&lite=0&uitype=cuAA&tfs=CAEQAhotEgoyMDE5LTExLTE0MgJQUWoNCAISCS9tLzA4MnN5OXIMCAISCC9tLzBkN19uGi0SCjIwMTktMTEtMTcyAlBRagwIAhIIL20vMGQ3X25yDQgCEgkvbS8wODJzeTl6QENpZEhlVFk1ZDBKSExTMHRMUzB0TFMwdFkyVnhiakkyUVVGQlFVRkdNMFpRVFVWRWQwaEtRVUVTQTI1UVVRPT0&sa=X&ved=2ahUKEwjOjKfSrdrlAhXkILkGHYO_DF8Q1RUoADAAegQIYhAQ"
+                    "url": "https://www.google.com.ua/flights?num=100&hl=en&gl=UA&source=flun&lite=0&uitype=cuAA&tfs=REDACTED_FIXTURE_TOKEN&sa=X&ved=REDACTED_FIXTURE_TOKEN"
                   }
                 ],
                 "rectangle": {
@@ -1488,13 +1488,13 @@
                     "type": "images_element",
                     "alt": "Image result for google pixel 5",
                     "url": "https://www.amazon.com/Google-Pixel-Resistant-Smartphone-Ultrawide/dp/B08H8X23ZB",
-                    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSG-CP4bWXtOqg-HgdQ8O6eDq93H49ThLZXfz8e7BLlVw&s"
+                    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:REDACTED_FIXTURE_TOKEN&s"
                   },
                   {
                     "type": "images_element",
                     "alt": "Image result for google pixel 5",
                     "url": "https://store.google.com/product/pixel_5",
-                    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXHy0fH_sPtwzA6HBYjCYVa9qjmNdPyikdHcpQJ-2Y&s"
+                    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:REDACTED_FIXTURE_TOKEN&s"
                   }
                 ],
                 "related_image_searches": null,
@@ -1576,7 +1576,7 @@
                 "position": "left",
                 "xpath": "/html[1]/body[1]/div[8]/div[3]/div[10]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[1]/g-card[1]/div[1]/div[1]",
                 "title": "Jobs Near New York, NY",
-                "url": "https://www.google.com/search?q=seo+jobs+nyc&num=100&hl=en-US&gl=US&gws_rd=cr&ie=UTF-8&oe=UTF-8&uule=w+CAIQIFISCQs2MuSEtepUEUK33kOSuTsc&ibp=htl;jobs&sa=X&ved=2ahUKEwiV1J_Gl4jmAhUiAmMBHY6HA-wQiYsCKAB6BAgSEAM",
+                "url": "https://www.google.com/search?q=seo+jobs+nyc&num=100&hl=en-US&gl=US&gws_rd=cr&ie=UTF-8&oe=UTF-8&uule=w+CAIQIFISCQs2MuSEtepUEUK33kOSuTsc&ibp=htl;jobs&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                 "items": [
                   {
                     "type": "jobs_element",
@@ -1612,13 +1612,13 @@
                     "type": "events_element",
                     "title": "Metallica Tribute Show",
                     "snippet": "sÃ¡b., 19:00nPrague Congress Centre, 5. kvÄ›tna 1640/65nPrague 4-Nusle, TchÃ©quia",
-                    "url": "https://www.google.com.br/search?q=shows+em+praga&num=100&gws_rd=cr&ie=UTF-8&oe=UTF-8&hl=pt-BR&gl=BR&uule=w+CAIQIFISCaORW-QYPVqTEX9d2Ati0-gk&ibp=htl;events&rciv=evn&sa=X&ved=2ahUKEwiXxsSc6MbnAhVmKLkGHTuZASQQ5bwDMAB6BAgPEAE#fpstate=tldetail&htidocid=wHvEAt0DuBX7XOr6JpA8-A%3D%3D&htivrt=events"
+                    "url": "https://www.google.com.br/search?q=shows+em+praga&num=100&gws_rd=cr&ie=UTF-8&oe=UTF-8&hl=pt-BR&gl=BR&uule=w+CAIQIFISCaORW-QYPVqTEX9d2Ati0-gk&ibp=htl;events&rciv=evn&sa=X&ved=REDACTED_FIXTURE_TOKEN#fpstate=tldetail&htidocid=wHvEAt0DuBX7XOr6JpA8-A%3D%3D&htivrt=events"
                   },
                   {
                     "type": "events_element",
                     "title": "Maluma Official Afterparty - Prague",
                     "snippet": "qui., 27 â€“ sex., 28 de fev.nDupleX, The Rooftop Venue, VÃ¡clavskÃ© nÃ¡m. 831/21nNew Town, TchÃ©quia",
-                    "url": "https://www.google.com.br/search?q=shows+em+praga&num=100&gws_rd=cr&ie=UTF-8&oe=UTF-8&hl=pt-BR&gl=BR&uule=w+CAIQIFISCaORW-QYPVqTEX9d2Ati0-gk&ibp=htl;events&rciv=evn&sa=X&ved=2ahUKEwiXxsSc6MbnAhVmKLkGHTuZASQQ5bwDMAF6BAgQEAE#fpstate=tldetail&htidocid=H6X_mJy9t1p7DU8JJpA8-A%3D%3D&htivrt=events"
+                    "url": "https://www.google.com.br/search?q=shows+em+praga&num=100&gws_rd=cr&ie=UTF-8&oe=UTF-8&hl=pt-BR&gl=BR&uule=w+CAIQIFISCaORW-QYPVqTEX9d2Ati0-gk&ibp=htl;events&rciv=evn&sa=X&ved=REDACTED_FIXTURE_TOKEN#fpstate=tldetail&htidocid=H6X_mJy9t1p7DU8JJpA8-A%3D%3D&htivrt=events"
                   }
                 ],
                 "rectangle": {
@@ -1686,7 +1686,7 @@
                   {
                     "type": "top_sights_element",
                     "title": "Phipps Conservatory and Botanical Gardens4.8(6,300)Botanical gardens & Victorian greenhouse",
-                    "url": "https://www.google.com/travel/things-to-do/see-all?g2lb=2502548,4258168,4270442,4306835,4317915,4322823,4328159,4371335,4401769,4403882,4419364,4424916,4425793,4428791,4432151,4432284,4270859,4284970,4291517,4412693&hl=en&gl=us&un=1&dest_mid=/m/068p2&dest_state_type=sattd&dest_src=ts&poi_mid=/m/077lw0&sa=X&ved=2ahUKEwij75zu5NnrAhURqXEKHUGZBbIQ69EBKAAwAHoECAoQKQ",
+                    "url": "https://www.google.com/travel/things-to-do/see-all?g2lb=2502548,4258168,4270442,4306835,4317915,4322823,4328159,4371335,4401769,4403882,4419364,4424916,4425793,4428791,4432151,4432284,4270859,4284970,4291517,4412693&hl=en&gl=us&un=1&dest_mid=/m/068p2&dest_state_type=sattd&dest_src=ts&poi_mid=/m/077lw0&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                     "description": "Botanical gardens & Victorian greenhouse",
                     "rating": {
                       "rating_type": "Max5",
@@ -1698,7 +1698,7 @@
                   {
                     "type": "top_sights_element",
                     "title": "The Andy Warhol Museum4.6(2,958)Warhol's works & the art he inspired",
-                    "url": "https://www.google.com/travel/things-to-do/see-all?g2lb=2502548,4258168,4270442,4306835,4317915,4322823,4328159,4371335,4401769,4403882,4419364,4424916,4425793,4428791,4432151,4432284,4270859,4284970,4291517,4412693&hl=en&gl=us&un=1&dest_mid=/m/068p2&dest_state_type=sattd&dest_src=ts&poi_mid=/m/04n7k0b&sa=X&ved=2ahUKEwij75zu5NnrAhURqXEKHUGZBbIQ69EBKAEwAHoECAoQKw",
+                    "url": "https://www.google.com/travel/things-to-do/see-all?g2lb=2502548,4258168,4270442,4306835,4317915,4322823,4328159,4371335,4401769,4403882,4419364,4424916,4425793,4428791,4432151,4432284,4270859,4284970,4291517,4412693&hl=en&gl=us&un=1&dest_mid=/m/068p2&dest_state_type=sattd&dest_src=ts&poi_mid=/m/04n7k0b&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                     "description": "Warhol's works & the art he inspired",
                     "rating": {
                       "rating_type": "Max5",
@@ -2039,7 +2039,7 @@
                 "items": [
                   {
                     "type": "questions_and_answers_element",
-                    "url": "https://www.sarthaks.com/8816/predict-the-products-of-electrolysis-in-each-of-the-following",
+                    "url": "https://www.sarthaks.com/8816/REDACTED_FIXTURE_TOKEN",
                     "question_text": "Predict the products of electrolysis in each of the following:",
                     "answer_text": "Answer: We havenn(i) AgNO3 ionizes in aqueous solutions to form Ag+ and NO3- ions.nnOn electrolysis, either Ag+ ions or H2O molecules can be reduced ...",
                     "source": "Sarthaks eConnect",
@@ -2111,7 +2111,7 @@
                   "is_price_range": false,
                   "displayed_price": "579.21 USD"
                 },
-                "url": "https://www.google.com/finance?num=100&hl=en&gl=US&gws_rd=cr&ie=UTF-8&oe=UTF-8&uule=w+CAIQIFISCQs2MuSEtepUEUK33kOSuTsc&sa=X&ved=2ahUKEwjvzarM89nsAhXs73MBHaYZCH4Q6M8CMAB6BAgCEAQ",
+                "url": "https://www.google.com/finance?num=100&hl=en&gl=US&gws_rd=cr&ie=UTF-8&oe=UTF-8&uule=w+CAIQIFISCQs2MuSEtepUEUK33kOSuTsc&sa=X&ved=REDACTED_FIXTURE_TOKEN",
                 "domain": "www.google.com",
                 "rectangle": {
                   "x": 176,
@@ -2267,13 +2267,13 @@
                 "position": "left",
                 "xpath": "/html[1]/body[1]/div[7]/div[1]/div[9]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]",
                 "title": "GOOGLE SCREENED|Personal Injury Lawyers nearby",
-                "url": "https://www.google.com/search?q=san+diego+personal+injury+lawyer&num=100&hl=en&gl=US&sabvi=Cjd4Y2F0OnNlcnZpY2VfYXJlYV9idXNpbmVzc19wZXJzb25hbF9pbmp1cnlfbGF3eWVyOmVuLVVT&sab=ChMIg4jfgciM8AIVgs3ICh2edA8hEhYIBBAAGgwIuPqdkwIQy8fIugkgACoAEhYIBBAAGgwIrrX5rAIQvua_vgkgACoAEhUIBBAAGgsIpf3TGhCzlK66CSAAKgAYyJDJqawNGJL3h-_3DBiDyr60uQ0",
+                "url": "https://www.google.com/search?q=san+diego+personal+injury+lawyer&num=100&hl=en&gl=US&sabvi=REDACTED_FIXTURE_TOKEN&sab=REDACTED_FIXTURE_TOKEN",
                 "domain": "www.google.com",
                 "items": [
                   {
                     "type": "local_services_element",
                     "title": "i Accident Lawyer",
-                    "url": "https://www.google.com/search?gsas=1&sabplaceid=ChIJSx6SrQ9T2YARed8V_f0hOg0&q=san+diego+personal+injury+lawyer&cs=0&sabpi=ChIIuPqdkwIQy8fIugkY_8evoCUSN3hjYXQ6c2VydmljZV9hcmVhX2J1c2luZXNzX3BlcnNvbmFsX2luanVyeV9sYXd5ZXI6ZW4tVVMahAEvYWNsaz9zYT1MJmFpPURDaGNTRXdpRGlOLUJ5SXp3QWhXQ3pjZ0tIWjUwRHlFWUFCQVFHZ0p4ZFEmbGFiZWw9Z2xzX21lc3NhZ2VfY2xpY2tfZnJlZSZzaWc9QU9ENjRfMEZYY0pXVkEwZ0xxNTczbU50VFg0UGt1MlV0dyZhZHVybD0ify9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBS0dnSnhkUSZsYWJlbD1wcm9maWxlX3ZpZXdfZnJlZSZzaWc9QU9ENjRfMFotTjRyb0JaS01aQUgwdTdHclNqS2ZfSTdSQSZhZHVybD0qfi9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBT0dnSnhkUSZsYWJlbD1jYWxsX2J1dHRvbl9mcmVlJnNpZz1BT0Q2NF8yVVVLQ3dpTk9ueDk1MzVoaU1EY0VEZGFocENRJmFkdXJsPTKBAS9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBR0dnSnhkUSZsYWJlbD1nbHNfY2FsbF9jbGlja19mcmVlJnNpZz1BT0Q2NF8wQlBNZzBSaG9PVjNlTm42MTFORE0teW54ekFRJmFkdXJsPTqBAS9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBVEdnSnhkUSZsYWJlbD1nbHNfYm9va19jbGlja19mcmVlJnNpZz1BT0Q2NF8xd1VmQVlfd3p5LVhSUzJQVHEwblhwVnFValJnJmFkdXJsPUITCIOI34HIjPACFYLNyAodnnQPIUgEUAE",
+                    "url": "https://www.google.com/search?gsas=1&sabplaceid=ChIJSx6SrQ9T2YARed8V_f0hOg0&q=san+diego+personal+injury+lawyer&cs=0&sabpi=REDACTED_FIXTURE_TOKEN",
                     "domain": "www.google.com",
                     "description": "20 years in business",
                     "rating": {
@@ -2282,12 +2282,12 @@
                       "votes_count": 302,
                       "rating_max": 5
                     },
-                    "profile_image_url": "https://lh3.googleusercontent.com/uzK7ihdygT9vLtKkhg387zYt2F1YKSXruQGteu8qcwrQuihexS3-B-KmgwWhh2w=fcrop64=1,5a1713919eba8d98"
+                    "profile_image_url": "https://lh3.googleusercontent.com/REDACTED_FIXTURE_TOKENfcrop64=1,5a1713919eba8d98"
                   },
                   {
                     "type": "local_services_element",
                     "title": "Hamparyan Personal Injury Lawyers, San Diego APC",
-                    "url": "https://www.google.com/search?gsas=1&sabplaceid=ChIJSx6SrQ9T2YARed8V_f0hOg0&q=san+diego+personal+injury+lawyer&cs=0&sabpi=ChIIrrX5rAIQvua_vgkY_8evoCUSN3hjYXQ6c2VydmljZV9hcmVhX2J1c2luZXNzX3BlcnNvbmFsX2luanVyeV9sYXd5ZXI6ZW4tVVMahAEvYWNsaz9zYT1MJmFpPURDaGNTRXdpRGlOLUJ5SXp3QWhXQ3pjZ0tIWjUwRHlFWUFCQVJHZ0p4ZFEmbGFiZWw9Z2xzX21lc3NhZ2VfY2xpY2tfZnJlZSZzaWc9QU9ENjRfMWVRbGlWTGdUSU1KbGo5UThNUk9EdzJ4bEhlQSZhZHVybD0ify9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBSkdnSnhkUSZsYWJlbD1wcm9maWxlX3ZpZXdfZnJlZSZzaWc9QU9ENjRfMWwta3p0X0JRY0JOQ0FSdDlwTEFTMlJwVHRuUSZhZHVybD0qfi9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBTkdnSnhkUSZsYWJlbD1jYWxsX2J1dHRvbl9mcmVlJnNpZz1BT0Q2NF8yN3czUzZBMGZCVGJLYk1Zc1JIbldHR2p0NnlBJmFkdXJsPTKBAS9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBRkdnSnhkUSZsYWJlbD1nbHNfY2FsbF9jbGlja19mcmVlJnNpZz1BT0Q2NF8yU2Q0dzNfV3V0NmxpTnV5THI1VjNlZTBpd2FBJmFkdXJsPTqBAS9hY2xrP3NhPUwmYWk9RENoY1NFd2lEaU4tQnlJendBaFdDemNnS0haNTBEeUVZQUJBVkdnSnhkUSZsYWJlbD1nbHNfYm9va19jbGlja19mcmVlJnNpZz1BT0Q2NF8yUm1jUDZxS3ZoV3F1UkFJdkhMSllXbGRxaUR3JmFkdXJsPUITCIOI34HIjPACFYLNyAodnnQPIUgEUAI",
+                    "url": "https://www.google.com/search?gsas=1&sabplaceid=ChIJSx6SrQ9T2YARed8V_f0hOg0&q=san+diego+personal+injury+lawyer&cs=0&sabpi=REDACTED_FIXTURE_TOKEN",
                     "domain": "www.google.com",
                     "description": "9 years in business",
                     "rating": {
@@ -2296,7 +2296,7 @@
                       "votes_count": 62,
                       "rating_max": 5
                     },
-                    "profile_image_url": "https://lh3.googleusercontent.com/GKIL8cPY1NGPlxycDLvn7r7362_MqHFIgUQLvFTQW8sWAJx6InAscqv4sfWQ8Q=fcrop64=1,3e2300babb62bc82"
+                    "profile_image_url": "https://lh3.googleusercontent.com/REDACTED_FIXTURE_TOKENfcrop64=1,3e2300babb62bc82"
                   }
                 ],
                 "rectangle": null
@@ -2404,7 +2404,7 @@
                     }
                   },
                   {
-                    "type": "product_considerations_ai_overview_expanded_element",
+                    "type": "REDACTED_FIXTURE_TOKEN",
                     "items": [
                       {
                         "type": "ai_overview_element",
@@ -2477,7 +2477,7 @@
                   {
                     "type": "refine_products_element",
                     "title": "Cetaphil",
-                    "image_url": "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcS84AsxZONw-aiKToU1Q7-TUsEFEpG96g28fjkEyidMgk0PpxH4lxQaAIdlU-mxz2Pi8szaxQPXp5RXPjI3-fn0GasO1TNOVDq3iImdTag0U6Zqrd-0Uo9k",
+                    "image_url": "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:REDACTED_FIXTURE_TOKEN",
                     "keyword": "cetaphil moisturizer",
                     "refine_type": "By brand",
                     "xpath": "/html[1]/body[1]/div[7]/div[1]/div[12]/div[1]/div[2]/div[2]/div[1]/div[1]/div[53]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[2]/div[1]/a[1]"
@@ -2485,7 +2485,7 @@
                   {
                     "type": "refine_products_element",
                     "title": "CeraVe",
-                    "image_url": "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcTW6hoAbaLm72hQ08wcSKJvQIwSk-GQ5SgTX8LHdc9bzNnGbKsIkb9YRx_2qmNkGEDqIVdBMuP70IwPbTLLLGrrs3-cLqXo5TMsqrOkAIKrnIuA_aMokXSquw",
+                    "image_url": "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:REDACTED_FIXTURE_TOKEN",
                     "keyword": "cerave krem nawilżający",
                     "refine_type": "By brand",
                     "xpath": "/html[1]/body[1]/div[7]/div[1]/div[12]/div[1]/div[2]/div[2]/div[1]/div[1]/div[53]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[2]/div[1]/a[2]"
@@ -2493,7 +2493,7 @@
                   {
                     "type": "refine_products_element",
                     "title": "NIVEA",
-                    "image_url": "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcTUo88orjhtJ1jFgIcDYLxM0XmSv2yu3myniy8LWUVmXGjTkk57YAa7CMii26IOn0m7YsoSgaEoWneyKSoe1aAxGpHV55Rxihr_9makM3jdKws2NUJTXE59",
+                    "image_url": "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:REDACTED_FIXTURE_TOKEN",
                     "keyword": "nivea moisturizer",
                     "refine_type": "By brand",
                     "xpath": "/html[1]/body[1]/div[7]/div[1]/div[12]/div[1]/div[2]/div[2]/div[1]/div[1]/div[53]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[2]/div[1]/a[3]"
@@ -2519,7 +2519,7 @@
                     "type": "perspectives_element",
                     "title": "The best October Prime Day deals under $25",
                     "description": "Amazon's Prime Big Deal Days is almost history, but there are some great ndeals left for less than $25. We've rounded up the best of them...",
-                    "url": "https://www.theverge.com/23907931/amazon-october-prime-day-best-cheap-deals-under-25-2023",
+                    "url": "https://www.theverge.com/23907931/REDACTED_FIXTURE_TOKEN",
                     "domain": "www.theverge.com",
                     "date": "13 hours ago",
                     "source": "Antonio G. Di Benedetto",
@@ -2550,7 +2550,7 @@
                   {
                     "type": "discussions_and_forums_element",
                     "title": "what are the best dog breeds for first time owners? - Reddit",
-                    "url": "https://www.reddit.com/r/dogs/comments/wo6i31/what_are_the_best_dog_breeds_for_first_time_owners/",
+                    "url": "https://www.reddit.com/r/dogs/comments/wo6i31/REDACTED_FIXTURE_TOKEN/",
                     "domain": "www.reddit.com",
                     "source": "www.reddit.com",
                     "description": null,
@@ -2572,7 +2572,7 @@
                   {
                     "type": "compare_sites_element",
                     "title": "THE 5 BEST Hilton Hotels in Paris, France - Tripadvisor",
-                    "url": "https://www.tripadvisor.com/Hotels-g187147-zfb9204-Paris_Ile_de_France-Hotels.html",
+                    "url": "https://www.tripadvisor.com/REDACTED_FIXTURE_TOKEN.html",
                     "domain": "www.tripadvisor.com",
                     "image_url": "https://api.dataforseo.com/cdn/i/05301217-0696-0066-1000-85c9a8a4b16f:0",
                     "source": "Tripadvisor"
@@ -2614,7 +2614,7 @@
                     "position": "left",
                     "title": null,
                     "text": "The BMW M4 F82 is a high-performance coupe known for its aggressive styling and powerful engine. Key specs include a 3.0-liter twin-turbo inline-six engine producing 425 hp (or 444 hp with the Competition Package), a 6-speed manual or 7-speed M DCT transmission, and rear-wheel drive.",
-                    "markdown": "![BMW M4 Coupe (F82) Specs, Performance & Photos - 2014, 2015 ...](data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAHEAjQMBIgACEQEDEQH.)",
+                    "markdown": "![BMW M4 Coupe (F82) Specs, Performance & Photos - 2014, 2015 ...](data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/REDACTED_FIXTURE_TOKEN/REDACTED_FIXTURE_TOKEN//AABEIAHEAjQMBIgACEQEDEQH.)",
                     "links": [
                       {
                         "type": "link_element",

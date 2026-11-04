@@ -51,6 +51,7 @@ export function parseGemini(req: CaptureRequest, json: unknown, latencyMs: numbe
     fanoutQueries: queries,
     modelBuild: str(root.modelVersion) ?? `requested:${requestedModel}`,
     regionHonored: regionHonored(req.region, req.region.latitude !== null && req.region.longitude !== null ? "coordinates" : "none", "approximate"),
+    searchUsed: queries.length > 0 || citations.length > 0,
     raw: json,
     costUnits: queries.length,
     costUsd: tokens === null || !usage ? null : roundUsd(tokens + queries.length * SEARCH_CALL_USD.gemini),

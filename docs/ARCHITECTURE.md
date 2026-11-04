@@ -174,6 +174,7 @@ Migration `drizzle/0003_phase3_capture.sql`. Code in `lib/capture/` and `lib/jud
 - Monthly budget: the guard sums this UTC month's `cost_ledger.usd` for the provider. `provider_accounts.spent_usd_month` is still incremented but no longer read, because nothing reset it.
 - Judge v2 (`judge_prompt_version = v2-2026-11-03`): mentions, spans, list position and prominence come from deterministic alias matching (longest match wins, acronyms case sensitive, aliases needing context are dropped). The LLM gives only sentiment with a quoted sentence, claims and named sources; spans are found by exact quote search. At most one repair call; both raw outputs are stored. A draw with no tracked entity is judged without a model call (`judge_model = deterministic`).
 - Google surfaces captured through DataForSEO also write a `serp_snapshots` row (engine `google:dataforseo`) with the organic results.
+- `draws.search_used` (nullable boolean, migration `0004`): true when an api_search draw used web search; false when parametric / search did not run; null for UI, SERP and manual. Phase 5 metrics count api_search only when true.
 
 ---
 
@@ -261,7 +262,7 @@ As built in Phase 3 (2026-11-03, approved in `docs/PROVIDERS.md` section 7; rout
 | ChatGPT | ui_provider, DataForSEO LLM Scraper | api_search, OpenAI | api_parametric, DataForSEO LLM Responses | |
 | Gemini | ui_provider, DataForSEO LLM Scraper | api_search, Gemini grounding | api_parametric, DataForSEO LLM Responses | |
 | Perplexity | api_search, DataForSEO LLM Responses (`sonar`; medium, not UI). Bright Data UI deferred (campus block) | api_search, Perplexity Agent API | api_parametric, DataForSEO LLM Responses | |
-| Claude | api_search, Anthropic | none | api_parametric, DataForSEO LLM Responses | |
+| Claude | api_search, DataForSEO LLM Responses (`web_search` true, country + city; medium, not UI) | api_search, Anthropic (calibration only) | api_parametric, DataForSEO LLM Responses | |
 | Google AI Overview | serp_provider, DataForSEO organic with `load_async_ai_overview` | none | | SerpAPI (free tier), local SERP |
 | Google AI Mode | serp_provider, DataForSEO AI Mode | none | | SerpAPI (free tier), local SERP |
 

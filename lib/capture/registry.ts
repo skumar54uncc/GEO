@@ -15,8 +15,8 @@ export type ProviderId = (typeof PROVIDER_IDS)[number];
 export type Route = { engine: Engine; runner: Runner; provider: ProviderId };
 
 /**
- * Approved routes (docs/PROVIDERS.md section 7). Primary measures what users see; fallback is a separate
- * series used when the primary is down, never averaged with it.
+ * Approved routes (docs/PROVIDERS.md section 7). Primary is the measurement series; fallback is a
+ * separate series (calibration or outage), never averaged with primary. API series are never labeled UI.
  */
 export const ROUTES: Record<Engine, { primary: Route; fallback: Route | null; parametric: Route | null; parity: Route[] }> = {
   chatgpt: {
@@ -40,8 +40,9 @@ export const ROUTES: Record<Engine, { primary: Route; fallback: Route | null; pa
     parity: [],
   },
   claude: {
-    primary: { engine: "claude", runner: "api_search", provider: "anthropic" },
-    fallback: null,
+    // Approved 2026-11-04: DataForSEO LLM Responses with web_search (medium). Anthropic kept for calibration only.
+    primary: { engine: "claude", runner: "api_search", provider: "dataforseo" },
+    fallback: { engine: "claude", runner: "api_search", provider: "anthropic" },
     parametric: { engine: "claude", runner: "api_parametric", provider: "dataforseo" },
     parity: [],
   },

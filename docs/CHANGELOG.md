@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04: Claude primary moved to DataForSEO; `draws.search_used` added
+
+Approved: Claude primary = DataForSEO LLM Responses with `web_search: true`, country and city from the region (US / Charlotte). Runner `api_search`, fidelity medium. Anthropic remains as the calibration fallback only. Added nullable `draws.search_used` (migration `0004`) so Phase 5 can count api_search draws that actually searched. Paid-call retries stay manual only (`retryLimit: 0` on jobs; `planRetry` / `runRetry` require an approved estimate).
+
 ## 2026-11-04: Perplexity primary moved to DataForSEO (medium fidelity)
 
 Bright Data’s site is blocked by campus OneIT, and DataForSEO’s LLM Scraper still covers only ChatGPT and Gemini. Perplexity’s primary route is now DataForSEO Live Perplexity LLM Responses (`DATAFORSEO_PERPLEXITY_MODEL`, e.g. `sonar`), runner `api_search`, fidelity **medium**. These draws are never labeled UI. Bright Data adapter remains in the repo but is not an approved primary. Cursor terminals get Node on PATH via `.vscode/settings.json` and `~/.zshenv`.

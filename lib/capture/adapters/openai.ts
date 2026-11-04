@@ -65,6 +65,7 @@ export function parseOpenAi(req: CaptureRequest, json: unknown, latencyMs: numbe
     fanoutQueries: fanout,
     modelBuild: str(root.model) ?? `requested:${requestedModel}`,
     regionHonored: regionHonored(req.region, passedGranularity(req), "approximate"),
+    searchUsed: searches > 0 || citations.length > 0 || fanout.length > 0,
     raw: json,
     costUnits: searches,
     costUsd: tokens === null || !usage ? null : roundUsd(tokens + searches * SEARCH_CALL_USD.openai),

@@ -55,6 +55,7 @@ export function parseAnthropic(req: CaptureRequest, json: unknown, latencyMs: nu
     fanoutQueries: fanout,
     modelBuild: str(root.model) ?? `requested:${requestedModel}`,
     regionHonored: regionHonored(req.region, passedGranularity(req), "approximate"),
+    searchUsed: searches > 0 || citations.length > 0,
     error: toolErrors.length ? `web search errors: ${toolErrors.join(", ")}` : undefined,
   };
 }

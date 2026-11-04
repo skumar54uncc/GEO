@@ -795,6 +795,8 @@ export const draws = pgTable(
     // Local SERP draws before parity passes, and any series not yet validated.
     experimental: boolean("experimental").notNull().default(false),
     paramsHash: text("params_hash"),
+    // Null = not applicable (UI, SERP, manual). api_search series: true when the provider searched the web.
+    searchUsed: boolean("search_used"),
     createdAt: createdAt(),
   },
   (t) => [

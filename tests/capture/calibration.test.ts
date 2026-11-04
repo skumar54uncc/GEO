@@ -48,7 +48,13 @@ describe("calibration math", () => {
     expect(samplePrompts(ids, 20, "2026-11")).toEqual(samplePrompts([...ids].reverse(), 20, "2026-11"));
     expect(samplePrompts(ids, 20, "2026-11")).not.toEqual(samplePrompts(ids, 20, "2026-12"));
     const routes = calibrationRoutes(["chatgpt", "claude", "google_ai_mode"]);
-    expect(routes.map((r) => `${r.engine}:${r.runner}`)).toEqual(["chatgpt:ui_provider", "chatgpt:api_search"]);
+    // Claude primary and Anthropic fallback share api_search; they still calibrate by provider.
+    expect(routes.map((r) => `${r.engine}:${r.runner}:${r.provider}`)).toEqual([
+      "chatgpt:ui_provider:dataforseo",
+      "chatgpt:api_search:openai",
+      "claude:api_search:dataforseo",
+      "claude:api_search:anthropic",
+    ]);
   });
 });
 

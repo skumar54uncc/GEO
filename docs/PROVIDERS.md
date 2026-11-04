@@ -109,7 +109,8 @@ Before the fix, the AI Overview capture stored one draw per prompt and cached by
 | Bright Data AI scrapers (Perplexity UI) | Deferred: OneIT blocks brightdata.com on campus. Adapter remains in code for later. Not an approved primary route. | Project owner | 2026-11-04 |
 | DataForSEO Perplexity LLM Responses (`sonar`) as Perplexity primary | Yes. Runner `api_search`, fidelity **medium**. Not the perplexity.ai UI. Country via `web_search_country_iso_code` only. | Project owner | 2026-11-04 |
 | DataForSEO Google AI Mode and Organic with AI Overview | Yes. Primary for both Google surfaces. SerpAPI drops to the free tier for parity checks; legacy SerpAPI draws keep rendering | Project owner | 2026-11-03 |
-| Anthropic web search (Claude primary) | Yes | Project owner | 2026-11-03 |
+| Anthropic web search (Claude) | Calibration / fallback only (same runner as primary, different provider) | Project owner | 2026-11-04 |
+| DataForSEO Claude LLM Responses with `web_search` | Yes. Claude primary. Runner `api_search`, fidelity **medium**. Country + city (e.g. US / Charlotte). Not claude.ai UI. | Project owner | 2026-11-04 |
 | OpenAI web search (ChatGPT fallback) | Yes | Project owner | 2026-11-03 |
 | Perplexity Agent API (Perplexity fallback) | Yes | Project owner | 2026-11-03 |
 | Gemini Search grounding (Gemini fallback) | Yes | Project owner | 2026-11-03 |

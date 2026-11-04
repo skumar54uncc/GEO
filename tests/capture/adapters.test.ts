@@ -38,6 +38,7 @@ const ENV = {
   DATAFORSEO_PASSWORD: "p",
   DATAFORSEO_PARAMETRIC_MODEL_CHATGPT: "gpt-4.1-mini",
   DATAFORSEO_PERPLEXITY_MODEL: "sonar",
+  DATAFORSEO_CLAUDE_MODEL: "claude-sonnet-5-5",
   BRIGHTDATA_API_KEY: "k",
   OPENAI_API_KEY: "k",
   OPENAI_SEARCH_MODEL: "gpt-6-sol",
@@ -117,6 +118,15 @@ describe("DataForSEO parsing (documented samples)", () => {
     expect(r.citations[0].url).toContain("latribune.fr");
     expect(r.fanoutQueries.length).toBeGreaterThan(0);
     expect(r.regionHonored).toBe("no");
+    expect(r.searchUsed).toBe(true);
+  });
+
+  it("Claude api_search: web_search used, Charlotte city honored when city is sent", () => {
+    const r = parseDataForSeo(req("claude", "api_search"), fixture("dataforseo_chatgpt_llm_responses_live.json").response, 10);
+    expect(r.status).toBe("ok");
+    expect(r.searchUsed).toBe(true);
+    expect(r.regionHonored).toBe("yes");
+    expect(r.citations.length).toBeGreaterThan(0);
   });
 
   it("Perplexity api_search refuses without DATAFORSEO_PERPLEXITY_MODEL", async () => {

@@ -186,6 +186,7 @@ async function insertDraw(
     error: result.error ?? null,
     experimental: plan.experimental ?? false,
     paramsHash: hash,
+    searchUsed: result.searchUsed ?? null,
   });
 
   if (opts.ledger) {

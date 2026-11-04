@@ -69,6 +69,11 @@ export interface CaptureResult {
   organic?: Array<{ position: number; url: string; domain: string; title: string | null }>;
   /** Google AI Overview only. Same meaning as status ok, empty, error, blocked; named for the AIO report. */
   aioState?: AioState;
+  /**
+   * Whether the provider used web search for this answer. Null when not applicable (UI scrape, SERP, manual).
+   * Phase 5 metrics count api_search draws only when this is true.
+   */
+  searchUsed?: boolean | null;
 }
 
 export type AioState = "shown" | "not_shown" | "failed" | "blocked";
@@ -98,6 +103,7 @@ export function errorResult(error: string, opts: { raw?: unknown; latencyMs?: nu
     fanoutQueries: [],
     modelBuild: "unknown",
     regionHonored: "unknown",
+    searchUsed: null,
     raw: opts.raw ?? null,
     costUnits: opts.costUnits ?? 0,
     costUsd: opts.costUsd === undefined ? 0 : opts.costUsd,

@@ -27,9 +27,14 @@ export const PARAMETRIC_MODEL_ENV: Partial<Record<Engine, string>> = {
 };
 
 /**
- * Model for Perplexity via LLM Responses with web search (medium fidelity, not the perplexity.ai UI).
- * Docs examples use `sonar`. No default: unset means that route is refused.
+ * Models for LLM Responses with web search (medium fidelity, not the consumer UI).
+ * No defaults: unset means that route is refused.
  */
+export const SEARCH_MODEL_ENV: Partial<Record<Engine, string>> = {
+  perplexity: "DATAFORSEO_PERPLEXITY_MODEL",
+  claude: "DATAFORSEO_CLAUDE_MODEL",
+};
+/** @deprecated use SEARCH_MODEL_ENV.perplexity */
 export const PERPLEXITY_SEARCH_MODEL_ENV = "DATAFORSEO_PERPLEXITY_MODEL";
 
 /** One endpoint call per draw. Live mode only: one POST, no polling, no retries. */
@@ -38,8 +43,10 @@ function endpointFor(engine: Engine, runner: Runner): string | null {
   if (runner === "ui_provider" && engine === "gemini") return "/v3/ai_optimization/gemini/llm_scraper/live/advanced";
   if (runner === "serp_provider" && engine === "google_ai_mode") return "/v3/serp/google/ai_mode/live/advanced";
   if (runner === "serp_provider" && engine === "google_aio") return "/v3/serp/google/organic/live/advanced";
-  // Perplexity has no DataForSEO UI scraper. LLM Responses with sonar-family search is api_search (medium).
-  if (runner === "api_search" && engine === "perplexity") return `/v3/ai_optimization/perplexity/llm_responses/live`;
+  // Claude and Perplexity primaries: LLM Responses with web search (medium). Not the consumer UI.
+  if (runner === "api_search" && LLM_SE[engine] && SEARCH_MODEL_ENV[engine]) {
+    return `/v3/ai_optimization/${LLM_SE[engine]}/llm_responses/live`;
+  }
   if (runner === "api_parametric" && LLM_SE[engine]) return `/v3/ai_optimization/${LLM_SE[engine]}/llm_responses/live`;
   return null;
 }
@@ -123,11 +130,23 @@ export function parseDataForSeo(req: CaptureRequest, json: unknown, latencyMs: n
 
   if (req.runner === "api_parametric" || req.runner === "api_search") {
     const parsed = parseLlmResponseText(result);
-    // Country ISO on web search is coarser than a city region, so Charlotte draws get region_honored = no.
-    const honored =
-      req.runner === "api_search"
-        ? regionHonored(region, req.region.country ? "country" : "none", "native")
-        : ("no" as const);
+    const webFlag = result.web_search;
+    const searchUsed =
+      req.runner === "api_parametric"
+        ? false
+        : typeof webFlag === "boolean"
+          ? webFlag
+          : parsed.citations.length > 0 || parsed.fanoutQueries.length > 0;
+    // Claude accepts country + city on web search; Perplexity accepts country only.
+    const passed =
+      req.runner !== "api_search"
+        ? ("none" as const)
+        : req.engine === "claude" && req.region.city
+          ? ("city" as const)
+          : req.region.country
+            ? ("country" as const)
+            : ("none" as const);
+    const honored = req.runner === "api_search" ? regionHonored(region, passed, "native") : ("no" as const);
     return {
       ...base,
       status: parsed.text ? "ok" : "empty",
@@ -136,6 +155,7 @@ export function parseDataForSeo(req: CaptureRequest, json: unknown, latencyMs: n
       fanoutQueries: req.runner === "api_parametric" ? [] : parsed.fanoutQueries,
       modelBuild: str(result.model_name) ?? "unknown",
       regionHonored: honored,
+      searchUsed,
     };
   }
 
@@ -201,12 +221,17 @@ export function createDataForSeoAdapter(deps: AdapterDeps = {}): ProviderAdapter
       if (req.engine === "google_aio") b.load_async_ai_overview = true;
       return b;
     }
-    if (req.runner === "api_search" && req.engine === "perplexity") {
-      const model = env()[PERPLEXITY_SEARCH_MODEL_ENV];
-      if (!model) return { error: `Missing ${PERPLEXITY_SEARCH_MODEL_ENV}`, missing: true };
+    if (req.runner === "api_search" && SEARCH_MODEL_ENV[req.engine]) {
+      const modelEnv = SEARCH_MODEL_ENV[req.engine]!;
+      const model = env()[modelEnv];
+      if (!model) return { error: `Missing ${modelEnv}`, missing: true };
       const b: Record<string, unknown> = { user_prompt: req.prompt, model_name: model };
-      // Docs: sonar-family search is on by default; country localizes sources. City/state are not accepted here.
       if (req.region.country) b.web_search_country_iso_code = req.region.country;
+      // Claude docs: web_search + optional city. Perplexity sonar searches by default; city is not in its schema.
+      if (req.engine === "claude") {
+        b.web_search = true;
+        if (req.region.city) b.web_search_city = req.region.city;
+      }
       return b;
     }
     const modelEnv = PARAMETRIC_MODEL_ENV[req.engine];
@@ -228,7 +253,10 @@ export function createDataForSeoAdapter(deps: AdapterDeps = {}): ProviderAdapter
       if (req.runner === "serp_provider") return { units: 1, usd: DATAFORSEO.organic.live * 2, note: "includes load_async_ai_overview" };
       // LLM Responses: task fee plus the model's own tokens; upper bound until the response reports money_spent.
       const t = TOKEN_ASSUMPTIONS.parametric;
-      const note = req.runner === "api_search" ? "Perplexity via DataForSEO LLM Responses (medium fidelity, not the UI)" : "token cost assumed at $10/$50 per MTok upper bound";
+      const note =
+        req.runner === "api_search"
+          ? `${req.engine} via DataForSEO LLM Responses with web search (medium fidelity, not the UI)`
+          : "token cost assumed at $10/$50 per MTok upper bound";
       return { units: 1, usd: roundUsd(DATAFORSEO.llmResponsesTask.live + (t.input * 10 + t.output * 50) / 1_000_000), note };
     },
     async capture(req) {

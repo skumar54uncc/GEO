@@ -44,11 +44,13 @@ export function meanJaccard(values: Array<number | null>): MeanWithCi {
   return { n, mean, ciLow: Math.max(0, mean - half), ciHigh: Math.min(1, mean + half) };
 }
 
-/** Engines with a fallback runner to compare against. */
+/** Engines with a distinct fallback (different runner or provider) to compare against. */
 export function calibrationRoutes(engines: Engine[]): Route[] {
   return engines.flatMap((e) => {
     const r = ROUTES[e];
-    return r.fallback && r.fallback.runner !== r.primary.runner ? [r.primary, r.fallback] : [];
+    if (!r.fallback) return [];
+    const same = r.fallback.runner === r.primary.runner && r.fallback.provider === r.primary.provider;
+    return same ? [] : [r.primary, r.fallback];
   });
 }
 
@@ -103,14 +105,17 @@ export async function computeCalibration(db: Db, opts: { orgId: string; scanId: 
     const r = ROUTES[engine];
     if (!r.fallback) continue;
     const ok = (d: (typeof all)[number]) => d.status === "ok";
-    const pick = (runner: string, promptId: string, src = rows) => src.filter((d) => d.engine === engine && d.runner === runner && d.promptId === promptId && ok(d)).sort((a, b) => b.attempt - a.attempt)[0];
+    const pick = (runner: string, promptId: string, src = rows, provider?: string) =>
+      src
+        .filter((d) => d.engine === engine && d.runner === runner && d.promptId === promptId && ok(d) && (provider ? d.provider === provider : true))
+        .sort((a, b) => b.attempt - a.attempt)[0];
     const mentionPairs: Array<[boolean, boolean]> = [];
     const jac: Array<number | null> = [];
     const manualPairs: Array<[boolean, boolean]> = [];
     const perPrompt = [];
     for (const promptId of spec.promptIds) {
-      const p = pick(r.primary.runner, promptId);
-      const f = pick(r.fallback.runner, promptId);
+      const p = pick(r.primary.runner, promptId, rows, r.primary.provider);
+      const f = pick(r.fallback.runner, promptId, rows, r.fallback.provider);
       const m = pick("manual_paste", promptId, manual);
       if (p && f) {
         const pair: [boolean, boolean] = [mentioned(p.answerText), mentioned(f.answerText)];

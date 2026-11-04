@@ -32,7 +32,9 @@ export const ROUTES: Record<Engine, { primary: Route; fallback: Route | null; pa
     parity: [],
   },
   perplexity: {
-    primary: { engine: "perplexity", runner: "ui_provider", provider: "brightdata" },
+    // Bright Data (true UI) is blocked on campus. DataForSEO has no Perplexity UI scraper; sonar via
+    // LLM Responses is the approved medium-fidelity primary. Never label these draws as UI.
+    primary: { engine: "perplexity", runner: "api_search", provider: "dataforseo" },
     fallback: { engine: "perplexity", runner: "api_search", provider: "perplexity" },
     parametric: { engine: "perplexity", runner: "api_parametric", provider: "dataforseo" },
     parity: [],

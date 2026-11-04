@@ -49,9 +49,11 @@ describe("dry run", () => {
 
   it("plans 3 prompts × 6 primary routes × 3 draws in Charlotte, approved prompts first, and calls nothing", async () => {
     const { db, orgId, campaignId } = await setup();
-    const adapters = { dataforseo: fake("dataforseo", 0.004), brightdata: fake("brightdata", 0.0015), anthropic: fake("anthropic", 0.02) };
+    const adapters = { dataforseo: fake("dataforseo", 0.004), anthropic: fake("anthropic", 0.02) };
     const { scanId, estimate } = await planDryRun(db, { orgId, campaignId, adapters });
     expect(estimate.cells).toHaveLength(6);
+    expect(estimate.cells.find((c) => c.engine === "perplexity")?.provider).toBe("dataforseo");
+    expect(estimate.cells.find((c) => c.engine === "perplexity")?.runner).toBe("api_search");
     expect(estimate.cells.every((c) => c.draws === 3 * 3 + 1)).toBe(true);
     expect(estimate.refusals).toEqual([]);
     const approved = await db.select({ id: prompts.id }).from(prompts).where(eq(prompts.status, "approved"));
@@ -64,7 +66,7 @@ describe("dry run", () => {
 
   it("refuses a run whose approved amount differs from the estimate, then runs on the exact amount", async () => {
     const { db, orgId, campaignId } = await setup();
-    const adapters = { dataforseo: fake("dataforseo", 0.004), brightdata: fake("brightdata", 0.0015), anthropic: fake("anthropic", 0.02) };
+    const adapters = { dataforseo: fake("dataforseo", 0.004), anthropic: fake("anthropic", 0.02) };
     const { scanId, estimate } = await planDryRun(db, { orgId, campaignId, adapters });
     await expect(runDryRun(db, { orgId, scanId, approvedUsd: (estimate.totalUsd ?? 0) + 1, approver: "test", adapters })).rejects.toThrow(/does not match/);
     expect(adapters.dataforseo.calls).toBe(0);

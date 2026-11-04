@@ -106,7 +106,8 @@ Before the fix, the AI Overview capture stored one draw per prompt and cached by
 | Provider | Approved for adapter | Approved by | Date |
 |---|---|---|---|
 | DataForSEO LLM Scraper (ChatGPT, Gemini UI) | Yes, pending procurement review of collection method before production data | Project owner | 2026-11-03 |
-| Bright Data AI scrapers (Perplexity UI) | Yes, pending procurement review of collection method before production data | Project owner | 2026-11-03 |
+| Bright Data AI scrapers (Perplexity UI) | Deferred: OneIT blocks brightdata.com on campus. Adapter remains in code for later. Not an approved primary route. | Project owner | 2026-11-04 |
+| DataForSEO Perplexity LLM Responses (`sonar`) as Perplexity primary | Yes. Runner `api_search`, fidelity **medium**. Not the perplexity.ai UI. Country via `web_search_country_iso_code` only. | Project owner | 2026-11-04 |
 | DataForSEO Google AI Mode and Organic with AI Overview | Yes. Primary for both Google surfaces. SerpAPI drops to the free tier for parity checks; legacy SerpAPI draws keep rendering | Project owner | 2026-11-03 |
 | Anthropic web search (Claude primary) | Yes | Project owner | 2026-11-03 |
 | OpenAI web search (ChatGPT fallback) | Yes | Project owner | 2026-11-03 |
@@ -124,4 +125,5 @@ Adapters are built against documented sample responses first. Keys are added bef
 - **Parametric series** through DataForSEO LLM Responses: the model per engine is set by `DATAFORSEO_PARAMETRIC_MODEL_<ENGINE>`; there is no default. Its estimate assumes the model's tokens at $10 / $50 per MTok, an upper bound, because DataForSEO bills the model's own token cost [V] and the rate depends on the model chosen.
 - **Bright Data** uses the Perplexity dataset `gd_m7dhdot1vw9a7gc1n` from the docs sample. When the scrape returns 202 (still running), the adapter polls the snapshot (a free GET) for at most 8 minutes, then records an error draw.
 - **Budgets.** Default caps per provider (monthly / per scan, USD): DataForSEO 20 / 10, Bright Data 5 / 2, OpenAI 20 / 10, Anthropic 60 / 30, Perplexity 10 / 5, Gemini 20 / 10. Admins edit them on Settings > Providers. Monthly spend is summed from this UTC month's ledger rows.
-- **Gate dry run.** 3 prompts × 6 primary routes × 3 draws, plus 1 canary per route, is 60 draws. Upper bound with `claude-sonnet-5-5`: DataForSEO 4 × $0.04, Bright Data $0.015, Claude about $0.92; about $1.10 in total [E: upper bound assumptions above]. Run it with `npm run capture:dry-run`.
+- **Gate dry run.** 3 prompts × 6 primary routes × 3 draws, plus 1 canary per route, is 60 draws. Upper bound with `claude-sonnet-5-5`: DataForSEO UI/SERP 4 × $0.04, Perplexity via DataForSEO LLM Responses about $0.06 (task + tokens [E]), Claude about $0.92; about $1.15 in total [E: upper bound assumptions above]. Run it with `npm run capture:dry-run`.
+- **Perplexity primary (2026-11-04):** DataForSEO `POST /v3/ai_optimization/perplexity/llm_responses/live` with `DATAFORSEO_PERPLEXITY_MODEL` (e.g. `sonar`). These draws are medium fidelity. Do not chart them with ChatGPT/Gemini UI series.

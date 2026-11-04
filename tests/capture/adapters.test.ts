@@ -37,6 +37,7 @@ const ENV = {
   DATAFORSEO_LOGIN: "l",
   DATAFORSEO_PASSWORD: "p",
   DATAFORSEO_PARAMETRIC_MODEL_CHATGPT: "gpt-4.1-mini",
+  DATAFORSEO_PERPLEXITY_MODEL: "sonar",
   BRIGHTDATA_API_KEY: "k",
   OPENAI_API_KEY: "k",
   OPENAI_SEARCH_MODEL: "gpt-6-sol",
@@ -105,6 +106,29 @@ describe("DataForSEO parsing (documented samples)", () => {
     expect(r.modelBuild).toBe("gpt-4.1-mini-2025-04-14");
     expect(r.costUsd).toBeCloseTo(0.029631, 6);
     expect(r.regionHonored).toBe("no");
+    expect(r.citations).toEqual([]);
+  });
+
+  it("Perplexity LLM Responses as api_search: citations and fan out, medium fidelity shape, city region not honored", () => {
+    // Same documented response shape as ChatGPT LLM Responses; Perplexity uses the same fields.
+    const r = parseDataForSeo(req("perplexity", "api_search"), fixture("dataforseo_chatgpt_llm_responses_live.json").response, 10);
+    expect(r.status).toBe("ok");
+    expect(r.citations.length).toBeGreaterThan(0);
+    expect(r.citations[0].url).toContain("latribune.fr");
+    expect(r.fanoutQueries.length).toBeGreaterThan(0);
+    expect(r.regionHonored).toBe("no");
+  });
+
+  it("Perplexity api_search refuses without DATAFORSEO_PERPLEXITY_MODEL", async () => {
+    let called = false;
+    const a = createDataForSeoAdapter({
+      env: { DATAFORSEO_LOGIN: "l", DATAFORSEO_PASSWORD: "p" },
+      fetch: async () => ((called = true), new Response("{}")),
+    });
+    const r = await a.capture(req("perplexity", "api_search"));
+    expect(r.status).toBe("blocked");
+    expect(r.error).toContain("DATAFORSEO_PERPLEXITY_MODEL");
+    expect(called).toBe(false);
   });
 
   it("task level error codes become error or blocked draws", () => {
@@ -257,7 +281,9 @@ describe("capture never throws", () => {
 
   it("missing keys give a blocked draw without a network call", async () => {
     for (const id of PROVIDER_IDS) {
-      const route = allRoutes().find((r) => r.provider === id)!;
+      // Bright Data stays as an optional UI adapter but is no longer an approved primary route.
+      const route = allRoutes().find((r) => r.provider === id) ?? (id === "brightdata" ? { engine: "perplexity" as const, runner: "ui_provider" as const, provider: "brightdata" as const } : null);
+      if (!route) continue;
       let called = false;
       const a = createAdapter(id, { env: {}, fetch: async () => ((called = true), new Response("{}")) });
       const r = await a.capture(req(route.engine, route.runner));

@@ -26,14 +26,43 @@ export const PARAMETRIC_MODEL_ENV: Partial<Record<Engine, string>> = {
   perplexity: "DATAFORSEO_PARAMETRIC_MODEL_PERPLEXITY",
 };
 
+/**
+ * Model for Perplexity via LLM Responses with web search (medium fidelity, not the perplexity.ai UI).
+ * Docs examples use `sonar`. No default: unset means that route is refused.
+ */
+export const PERPLEXITY_SEARCH_MODEL_ENV = "DATAFORSEO_PERPLEXITY_MODEL";
+
 /** One endpoint call per draw. Live mode only: one POST, no polling, no retries. */
 function endpointFor(engine: Engine, runner: Runner): string | null {
   if (runner === "ui_provider" && engine === "chatgpt") return "/v3/ai_optimization/chat_gpt/llm_scraper/live/advanced";
   if (runner === "ui_provider" && engine === "gemini") return "/v3/ai_optimization/gemini/llm_scraper/live/advanced";
   if (runner === "serp_provider" && engine === "google_ai_mode") return "/v3/serp/google/ai_mode/live/advanced";
   if (runner === "serp_provider" && engine === "google_aio") return "/v3/serp/google/organic/live/advanced";
+  // Perplexity has no DataForSEO UI scraper. LLM Responses with sonar-family search is api_search (medium).
+  if (runner === "api_search" && engine === "perplexity") return `/v3/ai_optimization/perplexity/llm_responses/live`;
   if (runner === "api_parametric" && LLM_SE[engine]) return `/v3/ai_optimization/${LLM_SE[engine]}/llm_responses/live`;
   return null;
+}
+
+function parseLlmResponseText(result: Record<string, unknown>): { text: string; citations: CaptureCitation[]; fanoutQueries: string[] } {
+  const item = asRecord(asArray(result.items)[0]);
+  const sections = asArray(item?.sections);
+  const text = sections
+    .map((s) => str(asRecord(s)?.text) ?? "")
+    .join("\n")
+    .trim();
+  const citations: CaptureCitation[] = [];
+  for (const sec of sections) {
+    for (const c of citationsFrom(asRecord(sec)?.annotations)) citations.push({ ...c, position: citations.length + 1 });
+  }
+  if (!citations.length) {
+    for (const c of citationsFrom(result.search_results)) citations.push({ ...c, position: citations.length + 1 });
+  }
+  return {
+    text,
+    citations,
+    fanoutQueries: asArray(result.fan_out_queries).filter((q): q is string => typeof q === "string"),
+  };
 }
 
 function citationsFrom(list: unknown): CaptureCitation[] {
@@ -92,20 +121,21 @@ export function parseDataForSeo(req: CaptureRequest, json: unknown, latencyMs: n
     };
   }
 
-  if (req.runner === "api_parametric") {
-    const item = asRecord(asArray(result.items)[0]);
-    const text = asArray(item?.sections)
-      .map((s) => str(asRecord(s)?.text) ?? "")
-      .join("\n")
-      .trim();
+  if (req.runner === "api_parametric" || req.runner === "api_search") {
+    const parsed = parseLlmResponseText(result);
+    // Country ISO on web search is coarser than a city region, so Charlotte draws get region_honored = no.
+    const honored =
+      req.runner === "api_search"
+        ? regionHonored(region, req.region.country ? "country" : "none", "native")
+        : ("no" as const);
     return {
       ...base,
-      status: text ? "ok" : "empty",
-      answerText: text,
-      citations: [],
-      fanoutQueries: [],
+      status: parsed.text ? "ok" : "empty",
+      answerText: parsed.text,
+      citations: req.runner === "api_parametric" ? [] : parsed.citations,
+      fanoutQueries: req.runner === "api_parametric" ? [] : parsed.fanoutQueries,
       modelBuild: str(result.model_name) ?? "unknown",
-      regionHonored: "no",
+      regionHonored: honored,
     };
   }
 
@@ -171,12 +201,21 @@ export function createDataForSeoAdapter(deps: AdapterDeps = {}): ProviderAdapter
       if (req.engine === "google_aio") b.load_async_ai_overview = true;
       return b;
     }
+    if (req.runner === "api_search" && req.engine === "perplexity") {
+      const model = env()[PERPLEXITY_SEARCH_MODEL_ENV];
+      if (!model) return { error: `Missing ${PERPLEXITY_SEARCH_MODEL_ENV}`, missing: true };
+      const b: Record<string, unknown> = { user_prompt: req.prompt, model_name: model };
+      // Docs: sonar-family search is on by default; country localizes sources. City/state are not accepted here.
+      if (req.region.country) b.web_search_country_iso_code = req.region.country;
+      return b;
+    }
     const modelEnv = PARAMETRIC_MODEL_ENV[req.engine];
     const model = modelEnv ? env()[modelEnv] : undefined;
     if (!model) return { error: `Missing ${modelEnv ?? "parametric model"}`, missing: true };
     return { user_prompt: req.prompt, model_name: model, web_search: false };
   }
 
+  // Login/password only. Per-route models (Perplexity search, parametric) refuse as blocked draws when unset.
   const missingConfig = () => missingVars(env(), ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"]);
 
   return {
@@ -187,9 +226,10 @@ export function createDataForSeoAdapter(deps: AdapterDeps = {}): ProviderAdapter
       if (req.runner === "ui_provider") return { units: 1, usd: DATAFORSEO.llmScraper.live };
       if (req.runner === "serp_provider" && req.engine === "google_ai_mode") return { units: 1, usd: DATAFORSEO.aiMode.live };
       if (req.runner === "serp_provider") return { units: 1, usd: DATAFORSEO.organic.live * 2, note: "includes load_async_ai_overview" };
-      // Parametric: task fee plus the model's own tokens, priced by the provider; upper bound assumption.
+      // LLM Responses: task fee plus the model's own tokens; upper bound until the response reports money_spent.
       const t = TOKEN_ASSUMPTIONS.parametric;
-      return { units: 1, usd: roundUsd(DATAFORSEO.llmResponsesTask.live + (t.input * 10 + t.output * 50) / 1_000_000), note: "token cost assumed at $10/$50 per MTok upper bound" };
+      const note = req.runner === "api_search" ? "Perplexity via DataForSEO LLM Responses (medium fidelity, not the UI)" : "token cost assumed at $10/$50 per MTok upper bound";
+      return { units: 1, usd: roundUsd(DATAFORSEO.llmResponsesTask.live + (t.input * 10 + t.output * 50) / 1_000_000), note };
     },
     async capture(req) {
       const path = endpointFor(req.engine, req.runner);

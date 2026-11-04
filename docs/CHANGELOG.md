@@ -53,7 +53,7 @@ Known limits:
 
 Verification gate (2026-11-03 on this Mac):
 1. `typecheck` passes. `lint` passes; the one warning in `app/analyze/page.tsx` predates Phase 1. `npm test` passes 248 tests in 24 files.
-2. Live dry run: **not run yet**. `npm run capture:dry-run` plans and prints the estimate, then refuses: DataForSEO, Bright Data and Anthropic keys and `ANTHROPIC_MODEL` are not set. Upper-bound estimate once they are set: about $1.10 with `claude-sonnet-5-5` (PROVIDERS section 8).
+2. Live dry run: **not run yet**. As of 2026-11-04, DataForSEO login/password and `DATAFORSEO_PERPLEXITY_MODEL=sonar` are set; dry-run plan prices those routes. It still refuses until `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (e.g. `claude-sonnet-5-5`) are set. Bright Data is deferred (campus block). See 2026-11-04 Perplexity note above.
 3. Distinct raw payloads per draw are tested with fake adapters. It still needs confirming in the live run.
 4. Runner, fidelity, region honored and model build on every draw are tested. It still needs confirming in the live run.
 5. Legacy draws still render: every page returns 200, the dashboard still reads 80.0% (32 of 40; 95% Wilson CI 65.2% to 89.5%), and `data/tracker.db` is unchanged (sha256 04bfc5e4…).

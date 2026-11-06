@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { recordAudit, withRole } from "@/lib/auth";
 import { getDb } from "@/lib/db/pg/client";
-import { bulkBody, bulkSetStatus, listPromptsForReview, PromptNotFoundError, PromptValidationError, promptCounts } from "@/lib/prompts/review";
+import {
+  bulkBody,
+  bulkSetStatus,
+  listPromptsForReview,
+  PromptNotFoundError,
+  PromptValidationError,
+  promptCounts,
+  reviewDedupeStatus,
+} from "@/lib/prompts/review";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,10 +32,12 @@ export const GET = withRole<{ id: string }>("viewer", async (req, { user, params
       region: url.searchParams.get("region") ?? undefined,
       branded: brandedParam === "true" ? true : brandedParam === "false" ? false : undefined,
       status: (url.searchParams.get("status") as "draft" | "approved" | "rejected" | null) ?? undefined,
+      provenance: url.searchParams.get("provenance") ?? undefined,
+      intent: url.searchParams.get("intent") ?? undefined,
       q: url.searchParams.get("q") ?? undefined,
     });
-    const counts = await promptCounts(db, params.id);
-    return NextResponse.json({ prompts, counts });
+    const [counts, dedupeStatus] = await Promise.all([promptCounts(db, params.id), reviewDedupeStatus()]);
+    return NextResponse.json({ prompts, counts, dedupeStatus });
   } catch (err) {
     if (err instanceof PromptNotFoundError) return NextResponse.json({ error: err.message }, { status: 404 });
     if (err instanceof PromptValidationError) return NextResponse.json({ error: err.message }, { status: 400 });

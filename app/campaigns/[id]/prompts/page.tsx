@@ -22,15 +22,29 @@ type PromptRow = {
   pillar: string | null;
   region: string | null;
   near_duplicate: boolean;
+  provenance: string;
+  intent: string | null;
+  demand_evidence_label: string;
 };
 
-type Counts = { total: number; approved: number; neutrals: number; variants: number };
+type Counts = {
+  total: number;
+  approved: number;
+  neutrals: number;
+  variants: number;
+  branded?: number;
+  unbranded?: number;
+  unbrandedShare?: number;
+  unbrandedWarning?: boolean;
+  unbrandedWarningMessage?: string | null;
+};
 
 export default function PromptReviewPage() {
   const params = useParams<{ id: string }>();
   const campaignId = params.id;
   const [prompts, setPrompts] = useState<PromptRow[]>([]);
   const [counts, setCounts] = useState<Counts | null>(null);
+  const [dedupeStatus, setDedupeStatus] = useState<"enabled" | "disabled" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pillar, setPillar] = useState("");
@@ -56,6 +70,7 @@ export default function PromptReviewPage() {
     setError(null);
     setPrompts(json.prompts);
     setCounts(json.counts);
+    setDedupeStatus(json.dedupeStatus === "enabled" || json.dedupeStatus === "disabled" ? json.dedupeStatus : null);
     setSelected(new Set());
   }, [campaignId, pillar, persona, region, branded, status]);
 
@@ -132,13 +147,31 @@ export default function PromptReviewPage() {
           </p>
         </div>
         {counts ? (
-          <p className="text-sm text-uncc-ink/70">
-            {counts.approved} approved · {counts.neutrals} neutral · {counts.variants} persona · {counts.total} total
-          </p>
+          <div className="space-y-1 text-right text-sm text-uncc-ink/70">
+            <p>
+              {counts.approved} approved · {counts.neutrals} neutral · {counts.variants} persona · {counts.total} total
+            </p>
+            {typeof counts.unbrandedShare === "number" ? (
+              <p>
+                Branded {counts.branded ?? 0} · unbranded {counts.unbranded ?? 0} (
+                {(counts.unbrandedShare * 100).toFixed(0)}% unbranded)
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
       {error ? <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
+      {dedupeStatus === "disabled" ? (
+        <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Dedupe disabled — local embedding model is unavailable. Near-duplicates will not be filtered automatically.
+        </p>
+      ) : null}
+      {counts?.unbrandedWarning ? (
+        <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {counts.unbrandedWarningMessage ?? "Unbranded share is below the 70% default."}
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -189,6 +222,8 @@ export default function PromptReviewPage() {
               <th className="px-3 py-2">QID</th>
               <th className="px-3 py-2">Text</th>
               <th className="px-3 py-2">Persona</th>
+              <th className="px-3 py-2">Provenance</th>
+              <th className="px-3 py-2">Evidence</th>
               <th className="px-3 py-2">Doc vs suggested</th>
               <th className="px-3 py-2">Note</th>
               <th className="px-3 py-2">Status</th>
@@ -223,6 +258,11 @@ export default function PromptReviewPage() {
                   )}
                 </td>
                 <td className="px-3 py-2 text-xs">{p.persona_key ?? "neutral"}</td>
+                <td className="px-3 py-2 text-xs">
+                  <div>{p.provenance}</div>
+                  {p.intent ? <div className="text-uncc-ink/60">{p.intent}</div> : null}
+                </td>
+                <td className="px-3 py-2 text-xs text-uncc-ink/80">{p.demand_evidence_label}</td>
                 <td className="px-3 py-2 text-xs">
                   <div>doc: {p.doc_personas.join("; ") || "—"}</div>
                   <div>suggested: {p.suggested_personas.join("; ") || "—"}</div>

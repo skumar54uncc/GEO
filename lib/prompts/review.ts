@@ -3,6 +3,9 @@ import { z } from "zod";
 import type { Db } from "@/lib/db/pg/client";
 import { campaigns, personas, prompts } from "@/lib/db/pg/schema";
 import { NEAR_DUPLICATE_QIDS } from "@/lib/contentTeam/personas";
+import { brandedShare, type BrandedShare } from "@/lib/prompts/branded";
+import { createLocalEmbedder, type DedupeStatus } from "@/lib/prompts/embeddings";
+import { demandEvidenceLabel } from "@/lib/prompts/generate";
 
 export class PromptNotFoundError extends Error {}
 export class PromptValidationError extends Error {}
@@ -28,6 +31,8 @@ export type PromptListFilters = {
   region?: string;
   branded?: boolean;
   status?: "draft" | "approved" | "rejected";
+  provenance?: string;
+  intent?: string;
   q?: string;
 };
 
@@ -49,6 +54,10 @@ export type PromptRow = {
   pillar: string | null;
   region: string | null;
   near_duplicate: boolean;
+  provenance: string;
+  intent: string | null;
+  demand_evidence: unknown;
+  demand_evidence_label: string;
   updated_at: string;
 };
 
@@ -73,6 +82,17 @@ export async function listPromptsForReview(db: Db, filters: PromptListFilters): 
   if (filters.status) conds.push(eq(prompts.status, filters.status));
   if (filters.branded === true) conds.push(eq(prompts.branded, true));
   if (filters.branded === false) conds.push(eq(prompts.branded, false));
+  if (filters.provenance) {
+    conds.push(
+      eq(
+        prompts.provenance,
+        filters.provenance as "observed_ai_log" | "web_query" | "paa" | "fanout" | "synthesized" | "custom",
+      ),
+    );
+  }
+  if (filters.intent) {
+    conds.push(eq(prompts.intent, filters.intent as "discovery" | "comparison" | "evaluation" | "decision"));
+  }
   if (filters.personaKey === "neutral") conds.push(isNull(prompts.personaId));
   if (filters.pillar) {
     const tag = `pillar:${filters.pillar}`;
@@ -100,6 +120,9 @@ export async function listPromptsForReview(db: Db, filters: PromptListFilters): 
       docPersonas: prompts.docPersonas,
       suggestedPersonas: prompts.suggestedPersonas,
       tags: prompts.tags,
+      provenance: prompts.provenance,
+      intent: prompts.intent,
+      demandEvidence: prompts.demandEvidence,
       updatedAt: prompts.updatedAt,
       personaKey: personas.key,
       personaName: personas.name,
@@ -133,6 +156,10 @@ export async function listPromptsForReview(db: Db, filters: PromptListFilters): 
       pillar: tagValue(r.tags, "pillar:"),
       region: tagValue(r.tags, "region:"),
       near_duplicate: qid ? NEAR_DUPLICATE_QIDS.has(qid) : false,
+      provenance: r.provenance,
+      intent: r.intent,
+      demand_evidence: r.demandEvidence,
+      demand_evidence_label: demandEvidenceLabel(r.demandEvidence),
       updated_at: r.updatedAt.toISOString(),
     };
   });
@@ -189,7 +216,7 @@ export async function bulkSetStatus(
   return owned.length;
 }
 
-/** Counts used by the review header. */
+/** Counts used by the review header, including branded share and unbranded warning. */
 export async function promptCounts(db: Db, campaignId: string) {
   const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(prompts).where(eq(prompts.campaignId, campaignId));
   const [{ approved }] = await db
@@ -204,5 +231,23 @@ export async function promptCounts(db: Db, campaignId: string) {
     .select({ variants: sql<number>`count(*)::int` })
     .from(prompts)
     .where(and(eq(prompts.campaignId, campaignId), isNotNull(prompts.personaId)));
-  return { total: Number(total), approved: Number(approved), neutrals: Number(neutrals), variants: Number(variants) };
+  const brandedRows = await db.select({ branded: prompts.branded }).from(prompts).where(eq(prompts.campaignId, campaignId));
+  const share: BrandedShare = brandedShare(brandedRows);
+  return {
+    total: Number(total),
+    approved: Number(approved),
+    neutrals: Number(neutrals),
+    variants: Number(variants),
+    branded: share.branded,
+    unbranded: share.unbranded,
+    unbrandedShare: share.unbrandedShare,
+    unbrandedWarning: share.warning,
+    unbrandedWarningMessage: share.warningMessage,
+  };
+}
+
+/** Whether local embedding dedupe is available for this environment. */
+export async function reviewDedupeStatus(): Promise<DedupeStatus> {
+  const embedder = await createLocalEmbedder();
+  return embedder.status;
 }

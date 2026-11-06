@@ -119,8 +119,8 @@ export function inferContentType(url: string, page: ExtractedPage, features: Cit
   if (features.source.kind === "wikipedia") return "wikipedia";
   if (features.source.kind === "government") return "government_data";
   if (["reddit", "forum"].includes(features.source.kind)) return "forum";
-  if (features.source.kind === "news" || page.schemaTypes.some((type) => ["NewsArticle", "Article"].includes(type))) return "news";
   if (features.source.kind === "ranking" || features.listicle.present) return "ranking_list";
+  if (features.source.kind === "news" || page.schemaTypes.some((type) => ["NewsArticle", "Article"].includes(type))) return "news";
   if (/(?:^|\/)(?:programs?|degrees?|majors?|academics?)(?:\/|$)/.test(path)) return "program_page";
   return "other";
 }

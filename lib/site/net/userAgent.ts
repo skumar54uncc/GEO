@@ -16,5 +16,6 @@ export function crawlerContact(): string {
 }
 
 export function crawlerUserAgent(contact = crawlerContact()): string {
-  return `Mozilla/5.0 (compatible; ${CRAWLER_TOKEN}/${CRAWLER_VERSION}; +${contact})`;
+  // This crawler is not a browser. Naming only the project and contact avoids disguising it as one.
+  return `${CRAWLER_TOKEN}/${CRAWLER_VERSION} (+${contact})`;
 }

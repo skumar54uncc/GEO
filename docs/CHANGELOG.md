@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-06: Wave 2a — Phase 6 response and citation analysis
+
+- Added canonical cited-page caching and a `citation.fetch` worker. Fetches use the identifying
+  `UNCCGEOAudit/<version> (+<CRAWLER_CONTACT_URL>)` User-Agent, apply robots.txt before every redirect
+  hop, route every request through the SSRF guard, and record blocked/error outcomes without retries.
+- Third-party extracted text is forced into the ignored local raw store. Stored/exportable page data is
+  limited to derived features and evidence metadata.
+- Added tested cited-page structure features and the approved source classes, with higher-ed kinds for
+  rankings, listings, Wikipedia, Reddit, YouTube, news, government, and peer `.edu` sites.
+- Added an organization-scoped Answer Explorer API with safe UTF-16, code-point, and UTF-8 byte spans,
+  plus citation aggregates that require explicit engine, runner, fidelity, and chat/Google index bounds.
+  Every aggregate rate includes `n` and a Wilson 95% interval.
+- Added a fixture-only Content Analysis adapter. Capability and price remain `unknown`; there is no live
+  transport, and execution requires an exact estimate approval plus the normal cost guard.
+
+Verification: 381 tests pass, including the 6 browser-backed crawler tests; typecheck passes; lint passes
+with one pre-existing `app/analyze/page.tsx` hook warning. No paid provider call or live cited-page fetch
+was made.
+
 ## 2026-11-06: Local-only passwordless login guard
 
 - The development email login now refuses production, any bind other than explicit `127.0.0.1`, and requests addressed to another host.

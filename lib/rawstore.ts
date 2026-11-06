@@ -48,6 +48,25 @@ export async function putRaw(db: Db, content: string | Buffer, mediaType: string
   return hash;
 }
 
+/**
+ * Writes bytes to the local content-addressed store even if the same hash already has an inline
+ * metadata row. This is for third-party text that policy requires to exist only in the local raw
+ * store for this ingestion path. Existing raw_payloads rows remain immutable.
+ */
+export async function putRawFile(db: Db, content: string | Buffer, mediaType: string): Promise<string> {
+  const buf = typeof content === "string" ? Buffer.from(content, "utf8") : content;
+  const hash = sha256(buf);
+  const dir = rawStoreDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, hash);
+  if (!fs.existsSync(file)) fs.writeFileSync(file, buf, { mode: 0o444 });
+  await db
+    .insert(rawPayloads)
+    .values({ sha256: hash, content: null, bytes: buf.byteLength, storage: "file", path: file, mediaType })
+    .onConflictDoNothing();
+  return hash;
+}
+
 /** Reads a payload and verifies its hash. Throws if the bytes no longer match. */
 export async function getRaw(db: Db, hash: string): Promise<Buffer | null> {
   const [row] = await db.select().from(rawPayloads).where(eq(rawPayloads.sha256, hash));

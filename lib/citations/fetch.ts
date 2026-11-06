@@ -1,7 +1,7 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import { citations, citedPages } from "@/lib/db/pg/schema";
-import { putRaw } from "@/lib/rawstore";
+import { putRawFile } from "@/lib/rawstore";
 import { extractPage } from "@/lib/site/extract";
 import { guardedFetch, type FetchOptions, type FetchResult, type NetPolicy } from "@/lib/site/net/ssrf";
 import { crawlDelayFor, decide, parseRobots } from "@/lib/site/net/robots";
@@ -38,35 +38,83 @@ export async function fetchCitationDocument(url: string, deps: CitationFetchDeps
   }
   const userAgent = deps.userAgent ?? crawlerUserAgent();
   const fetcher = deps.fetch ?? guardedFetch;
-  const options = { userAgent, policy: deps.policy, maxRedirects: 5, maxBytes: MAX_PAGE_BYTES, timeoutMs: 20_000 };
-  const origin = new URL(canonical).origin;
-  const robotsResponse = await fetcher(`${origin}/robots.txt`, { ...options, accept: "text/plain" });
-  if (robotsResponse.blocked || robotsResponse.error || robotsResponse.status === null || (robotsResponse.status >= 500 && robotsResponse.status <= 599)) {
-    const error = robotsResponse.blocked ?? robotsResponse.error ?? `robots.txt returned ${robotsResponse.status ?? "no status"}`;
-    return { status: robotsResponse.blocked ? "blocked" : "error", statusCode: robotsResponse.status, error: `robots.txt unavailable: ${error}`, robotsResult: { allowed: false, status: robotsResponse.status, error } };
-  }
+  const options = { userAgent, policy: deps.policy, maxRedirects: 0, maxBytes: MAX_PAGE_BYTES, timeoutMs: 20_000 };
+  const robotsByOrigin = new Map<string, { robots: ReturnType<typeof parseRobots> | null; status: number }>();
+  const checks: object[] = [];
+  let current = new URL(canonical);
 
-  const robots = robotsResponse.ok ? parseRobots(robotsResponse.body.toString("utf8")) : null;
-  const parsed = new URL(canonical);
-  const decision = decide(robots, CRAWLER_TOKEN, parsed.pathname + parsed.search);
-  const robotsResult = {
-    allowed: decision.allowed,
-    status: robotsResponse.status,
-    rule: decision.rule,
-    matchedAgents: decision.matchedAgents,
-  };
-  if (!decision.allowed) {
-    return { status: "blocked", statusCode: null, error: "robots.txt disallows this citation URL", robotsResult };
-  }
+  for (let hop = 0; hop <= 5; hop++) {
+    const origin = current.origin;
+    let robotsEntry = robotsByOrigin.get(origin);
+    if (!robotsEntry) {
+      const robotsResponse = await fetcher(`${origin}/robots.txt`, {
+        ...options,
+        maxRedirects: 5,
+        accept: "text/plain",
+      });
+      if (robotsResponse.blocked || robotsResponse.error || robotsResponse.status === null || robotsResponse.status >= 500) {
+        const error = robotsResponse.blocked ?? robotsResponse.error ?? `robots.txt returned ${robotsResponse.status ?? "no status"}`;
+        return {
+          status: robotsResponse.blocked ? "blocked" : "error",
+          statusCode: robotsResponse.status,
+          error: `robots.txt unavailable: ${error}`,
+          robotsResult: { allowed: false, checks, status: robotsResponse.status, error },
+        };
+      }
+      robotsEntry = {
+        robots: robotsResponse.ok ? parseRobots(robotsResponse.body.toString("utf8")) : null,
+        status: robotsResponse.status,
+      };
+      robotsByOrigin.set(origin, robotsEntry);
+    }
 
-  const delayMs = Math.max(deps.minHostDelayMs ?? MIN_HOST_DELAY_MS, (crawlDelayFor(robots, CRAWLER_TOKEN) ?? 0) * 1_000);
-  await (deps.wait ?? sleep)(delayMs);
-  const response = await fetcher(canonical, { ...options, accept: "text/html,application/xhtml+xml" });
-  if (response.blocked) return { status: "blocked", statusCode: response.status, error: response.blocked, robotsResult };
-  if (response.error) return { status: "error", statusCode: response.status, error: response.error, robotsResult };
-  if (!response.ok) return { status: "error", statusCode: response.status, error: `page returned HTTP ${response.status}`, robotsResult };
-  if (response.truncated) return { status: "error", statusCode: response.status, error: `page exceeded ${MAX_PAGE_BYTES} bytes`, robotsResult };
-  return { status: "fetched", statusCode: response.status!, finalUrl: response.finalUrl, html: response.body, robotsResult };
+    const decision = decide(robotsEntry.robots, CRAWLER_TOKEN, current.pathname + current.search);
+    const check = {
+      url: current.toString(),
+      allowed: decision.allowed,
+      status: robotsEntry.status,
+      rule: decision.rule,
+      matchedAgents: decision.matchedAgents,
+    };
+    checks.push(check);
+    const robotsResult = { allowed: decision.allowed, checks };
+    if (!decision.allowed) {
+      return { status: "blocked", statusCode: null, error: "robots.txt disallows this citation URL", robotsResult };
+    }
+
+    const delayMs = Math.max(
+      deps.minHostDelayMs ?? MIN_HOST_DELAY_MS,
+      (crawlDelayFor(robotsEntry.robots, CRAWLER_TOKEN) ?? 0) * 1_000,
+    );
+    await (deps.wait ?? sleep)(delayMs);
+    const response = await fetcher(current.toString(), {
+      ...options,
+      followRedirects: false,
+      accept: "text/html,application/xhtml+xml",
+    });
+    if (response.blocked) return { status: "blocked", statusCode: response.status, error: response.blocked, robotsResult };
+    if (response.error) return { status: "error", statusCode: response.status, error: response.error, robotsResult };
+    const location = response.headers.location;
+    if (response.status !== null && response.status >= 300 && response.status < 400 && location) {
+      if (hop === 5) {
+        return { status: "blocked", statusCode: response.status, error: "more than 5 redirects", robotsResult };
+      }
+      try {
+        current = new URL(location, current);
+      } catch {
+        return { status: "error", statusCode: response.status, error: `bad redirect location ${location}`, robotsResult };
+      }
+      continue;
+    }
+    if (!response.ok) return { status: "error", statusCode: response.status, error: `page returned HTTP ${response.status}`, robotsResult };
+    if (response.truncated) return { status: "error", statusCode: response.status, error: `page exceeded ${MAX_PAGE_BYTES} bytes`, robotsResult };
+    const contentType = response.headers["content-type"] ?? "";
+    if (contentType && !/^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)) {
+      return { status: "error", statusCode: response.status, error: `not an HTML page (${contentType.split(";")[0]})`, robotsResult };
+    }
+    return { status: "fetched", statusCode: response.status!, finalUrl: current.toString(), html: response.body, robotsResult };
+  }
+  return { status: "blocked", statusCode: null, error: "more than 5 redirects", robotsResult: { allowed: false, checks } };
 }
 
 /**
@@ -106,7 +154,8 @@ export async function enqueueCitationFetches(
       continue;
     }
     try {
-      await boss.send(queue, { canonical_url: canonical }, jobOptions);
+      const jobId = await boss.send(queue, { canonical_url: canonical }, jobOptions);
+      if (!jobId) throw new Error("queue did not return a job id");
       queued++;
     } catch (error) {
       await db
@@ -153,7 +202,7 @@ export async function processCitationFetch(db: Db, canonicalUrl: string, deps: C
     const page = extractPage(html, result.finalUrl);
     const features = extractCitationFeatures(html, result.finalUrl, page);
     // Buffer forces local file storage even for short third-party text; it is never inline or committed.
-    const textRef = await putRaw(db, Buffer.from(page.text, "utf8"), "text/plain; charset=utf-8");
+    const textRef = await putRawFile(db, page.text, "text/plain; charset=utf-8");
     const date = (value: string | null) => (value ? new Date(value) : null);
     await db
       .update(citedPages)

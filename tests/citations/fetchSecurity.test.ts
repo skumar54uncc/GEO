@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fetchCitationDocument } from "@/lib/citations/fetch";
 import type { NetPolicy } from "@/lib/site/net/ssrf";
 
-const UA = "Mozilla/5.0 (compatible; UNCCGEOAudit/0.2; +https://example.edu/crawler)";
+const UA = "UNCCGEOAudit/0.2 (+https://example.edu/crawler)";
 
 describe("cited page network guard and robots", () => {
   let server: http.Server;
@@ -21,8 +21,18 @@ describe("cited page network guard and robots", () => {
       seenUserAgents.push(request.headers["user-agent"] ?? "");
       const host = request.headers.host?.split(":")[0];
       if (request.url === "/robots.txt") {
+        if (host === "robots-redirect.fixture.test") {
+          response.writeHead(302, { Location: "/robots-real.txt" });
+          response.end();
+          return;
+        }
         response.writeHead(200, { "Content-Type": "text/plain" });
         response.end(host === "disallow.fixture.test" ? "User-agent: UNCCGEOAudit\nDisallow: /private" : "User-agent: *\nAllow: /");
+        return;
+      }
+      if (request.url === "/robots-real.txt") {
+        response.writeHead(200, { "Content-Type": "text/plain" });
+        response.end("User-agent: *\nAllow: /");
         return;
       }
       if (request.url === "/private") disallowedPageHits++;
@@ -63,6 +73,11 @@ describe("cited page network guard and robots", () => {
     expect(disallowedPageHits).toBe(0);
   });
 
+  it("follows a robots.txt redirect through the SSRF guard", async () => {
+    const result = await fetchCitationDocument(`http://robots-redirect.fixture.test:${port}/ok`, deps);
+    expect(result).toMatchObject({ status: "fetched" });
+  });
+
   it("uses crawlerUserAgent with CRAWLER_CONTACT_URL on both requests", async () => {
     const previous = process.env.CRAWLER_CONTACT_URL;
     process.env.CRAWLER_CONTACT_URL = "https://example.edu/geo-crawler";
@@ -76,7 +91,7 @@ describe("cited page network guard and robots", () => {
       expect(result.status).toBe("fetched");
       expect(seenUserAgents).toHaveLength(2);
       expect(new Set(seenUserAgents)).toEqual(
-        new Set(["Mozilla/5.0 (compatible; UNCCGEOAudit/0.2; +https://example.edu/geo-crawler)"]),
+        new Set(["UNCCGEOAudit/0.2 (+https://example.edu/geo-crawler)"]),
       );
     } finally {
       if (previous === undefined) delete process.env.CRAWLER_CONTACT_URL;

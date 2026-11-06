@@ -68,6 +68,6 @@ describe("GEO Playbook cited-page features", () => {
       latestDate: "2026-10-20T09:30:00.000Z",
     });
     expect(features.schema).toEqual({ present: true, types: ["NewsArticle"] });
-    expect(inferContentType(pageUrl, page, features)).toBe("news");
+    expect(inferContentType(pageUrl, page, features)).toBe("ranking_list");
   });
 });

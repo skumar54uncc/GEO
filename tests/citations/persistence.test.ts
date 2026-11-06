@@ -9,7 +9,7 @@ import { resetDatabase } from "../helpers";
 import { addDraw, newScan, seed } from "../metrics/dbFixtures";
 
 const html = fs.readFileSync(path.join(process.cwd(), "tests", "fixtures", "citations", "feature-rich.html"));
-const UA = "Mozilla/5.0 (compatible; UNCCGEOAudit/0.2; +https://example.edu/crawler)";
+const UA = "UNCCGEOAudit/0.2 (+https://example.edu/crawler)";
 
 function response(url: string, body: Buffer, contentType: string): FetchResult {
   return {
@@ -28,6 +28,32 @@ function response(url: string, body: Buffer, contentType: string): FetchResult {
 
 describe("citation fetch persistence", () => {
   beforeEach(resetDatabase);
+
+  it("records a queue refusal instead of leaving a pending cited page", async () => {
+    const context = await seed(1);
+    const scanId = await newScan(context, context.promptSetId, "running");
+    const drawId = await addDraw(context, scanId, context.promptIds[0]);
+    await context.db.insert(citations).values({
+      drawId,
+      url: "https://queue-refused.example/article",
+      domain: "queue-refused.example",
+      sourceClass: "other",
+    });
+
+    const result = await enqueueCitationFetches(
+      context.db,
+      { send: async () => null },
+      "citation.fetch",
+      [drawId],
+      { retryLimit: 0 },
+    );
+    expect(result).toEqual({ queued: 0, skipped: 1 });
+    const [page] = await context.db
+      .select()
+      .from(citedPages)
+      .where(eq(citedPages.canonicalUrl, "https://queue-refused.example/article"));
+    expect(page).toMatchObject({ fetchStatus: "error", fetchError: expect.stringContaining("job id") });
+  });
 
   it("queues one fetch per canonical URL and keeps third-party text file-backed", async () => {
     const context = await seed(1);
@@ -75,7 +101,7 @@ describe("citation fetch persistence", () => {
     });
     expect(result.status).toBe("fetched");
     const [page] = await context.db.select().from(citedPages).where(eq(citedPages.canonicalUrl, sent[0]));
-    expect(page).toMatchObject({ fetchStatus: "fetched", title: "7 Best Clean Energy Programs", contentType: "news" });
+    expect(page).toMatchObject({ fetchStatus: "fetched", title: "7 Best Clean Energy Programs", contentType: "ranking_list" });
     expect(page.textRef).toBeTruthy();
     const [raw] = await context.db.select().from(rawPayloads).where(eq(rawPayloads.sha256, page.textRef!));
     expect(raw).toMatchObject({ storage: "file", content: null, mediaType: "text/plain; charset=utf-8" });

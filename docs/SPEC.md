@@ -69,7 +69,7 @@ Added 2026-11-03: local only (127.0.0.1), backup and restore scripts, file backe
 - Cited page content type: ranking list, program page, news, forum, Wikipedia, government data, other. Headlines (title, H1, H2s) of every cited page shown next to the answer.
 
 ## Phase 4: Personas and prompt generation
-- Persona library seeded for higher ed: prospective first year, transfer, grad applicant, international, parent, adult learner, employer, research partner, donor, journalist, policymaker. Custom personas (goal, background, region, vocabulary level).
+- Persona library: see `docs/PERSONAS.md` — 7 audience groups, 20 menu personas, plus retained general `undergrad`/`grad`. Business leaders and potential partners are one persona (`business_partner`). Dashboards report by group; specific personas only at ≥30 draws. Campaigns pick 3–5. Openings never name the brand. Custom personas (goal, background, region, vocabulary level) remain allowed per org.
 - Demand first: Google Trends (official API, SerpAPI Trends as fallback, never scraped), keyword volume (Keyword Planner or DataForSEO), PAA, autocomplete, related searches, Search Console queries, Exa (Reddit and forum discussion). Store in `demand_signals`.
 - Seasonality calendar (`seasonal_events`) seeded with admissions and aid deadlines.
 - Generate conversational prompts per persona, tagged with intent, funnel stage, branded, provenance, and evidence.

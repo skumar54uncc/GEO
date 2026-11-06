@@ -9,17 +9,17 @@ export type PersonaSeedRow = {
   id: string;
   created: boolean;
   canonicalKey: string | null;
+  group: string | null;
   selectable: boolean;
 };
 
 /**
- * Seeds the 12 selectable library personas. Never replaces or deletes the five
- * content-team rows; upserts new keys only.
+ * Seeds the library personas. Never replaces or deletes the five content-team
+ * rows; upserts new keys only. Sets persona_group and draft openings.
  */
 export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]> {
   assertPersonaLibraryComplete();
 
-  // Preserve existing UUIDs for the five content-team keys.
   const contentTeam = await ensureContentTeamPersonas(db);
   const contentIds = new Map(contentTeam.map((row) => [row.key, row.id]));
 
@@ -37,7 +37,13 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
           region: def.region,
           typicalQuestions: def.typicalQuestions,
           notes: def.notes,
-          // Keep content-team name/goal/draft_prefix; only enrich Phase 4 fields.
+          personaGroup: def.group,
+          // Sync opening onto draft_prefix for content-team rows (content team still owns approval).
+          draftPrefix: def.opening,
+          // For the merged business persona, also refresh display name/goal.
+          ...(def.contentTeamKey === "business_partner" || def.contentTeamKey === "business_leader"
+            ? { name: def.name, goal: def.goal }
+            : {}),
         })
         .where(eq(personas.id, id));
       out.push({
@@ -45,7 +51,8 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
         id,
         created: false,
         canonicalKey: def.canonicalKey,
-        selectable: true,
+        group: def.group,
+        selectable: def.selectable,
       });
       continue;
     }
@@ -62,6 +69,8 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
           region: def.region,
           typicalQuestions: def.typicalQuestions,
           notes: def.notes,
+          personaGroup: def.group,
+          draftPrefix: def.opening,
           orgId: null,
         })
         .where(eq(personas.id, existing.id));
@@ -70,7 +79,8 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
         id: existing.id,
         created: false,
         canonicalKey: def.canonicalKey,
-        selectable: true,
+        group: def.group,
+        selectable: def.selectable,
       });
       continue;
     }
@@ -87,6 +97,8 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
         region: def.region,
         typicalQuestions: def.typicalQuestions,
         notes: def.notes,
+        personaGroup: def.group,
+        draftPrefix: def.opening,
       })
       .returning({ id: personas.id });
     out.push({
@@ -94,7 +106,8 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
       id: created.id,
       created: true,
       canonicalKey: def.canonicalKey,
-      selectable: true,
+      group: def.group,
+      selectable: def.selectable,
     });
   }
 

@@ -31,7 +31,7 @@ describe("rollupScan", () => {
     expect(r.rolledAt).toBe(NOW.toISOString());
     expect(r.promptSetId).toBe(c.promptSetId);
     expect(r.excluded).toEqual({ notOk: 1, searchNotUsed: 1, experimental: 1, unjudged: 1 });
-    const overall = r.cells.filter((x) => x.key.regionId === null && x.key.personaId === null);
+    const overall = r.cells.filter((x) => x.key.regionId === null && x.key.personaId === null && x.key.personaGroup === null);
     const chatgpt = overall.find((x) => x.key.engine === "chatgpt")!;
     expect(chatgpt.draws).toBe(3); // p0 x2 and p1's retry
     expect(chatgpt.promptsWon).toMatchObject({ won: 2, prompts: 2 }); // p0 1 of 2 is won (at least 1 of 2), p1 won
@@ -73,7 +73,7 @@ describe("rollupScan", () => {
     await addDraw(c, scan, c.promptIds[2], { brand: true, citation: { domain: "x.invalid", sourceClass: "owned" } }); // class owned
     const r = await rollupScan(c.db, { orgId: c.orgId, scanId: scan, iterations: 50 });
     expect(r.ownedDomains).toContain(owned.domain);
-    const cell = r.cells.find((x) => x.key.regionId === null && x.key.personaId === null)!;
+    const cell = r.cells.find((x) => x.key.regionId === null && x.key.personaId === null && x.key.personaGroup === null)!;
     expect(cell.citationRate).toMatchObject({ numerator: 2, n: 3 });
   });
 });

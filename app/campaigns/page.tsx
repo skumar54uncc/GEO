@@ -17,7 +17,8 @@ type Campaign = {
   legacy: boolean;
   engines: EngineSel[];
   regions: Array<{ id: string; label: string }>;
-  personas: Array<{ id: string; name: string }>;
+  personas: Array<{ id: string; name: string; key?: string | null; group?: string | null }>;
+  persona_subset_ok?: boolean;
   prompt_count: number;
   approved_count: number;
   prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null }>;
@@ -27,7 +28,18 @@ type Options = {
   runners: string[];
   default_runner: Record<string, string>;
   regions: Array<{ id: string; label: string }>;
-  personas: Array<{ id: string; name: string }>;
+  personas: Array<{
+    id: string;
+    name: string;
+    key: string | null;
+    group: string | null;
+    group_label: string | null;
+    kind: string;
+    selectable: boolean;
+    opening: string | null;
+  }>;
+  persona_groups: Array<{ key: string; label: string }>;
+  persona_subset: { min: number; max: number };
 };
 type Draft = {
   name: string;
@@ -172,17 +184,33 @@ function CampaignForm({
       </div>
       <div className="space-y-2">
         <Label>Personas</Label>
-        <p className="text-xs text-uncc-ink/60">A persona changes how the prompt is written, not who is logged in.</p>
-        {options.personas.map((p) => (
-          <label key={p.id} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.persona_ids.includes(p.id)}
-              onChange={() => setDraft({ ...draft, persona_ids: toggle(draft.persona_ids, p.id) })}
-            />
-            {p.name}
-          </label>
-        ))}
+        <p className="text-xs text-uncc-ink/60">
+          A persona changes how the prompt is written, not who is logged in. Pick {options.persona_subset.min} to{" "}
+          {options.persona_subset.max} from the menu (library is the menu, not the order).
+        </p>
+        {draft.persona_ids.length > 0 &&
+        (draft.persona_ids.length < options.persona_subset.min || draft.persona_ids.length > options.persona_subset.max) ? (
+          <p className="text-xs text-amber-800">Recommended subset is {options.persona_subset.min}–{options.persona_subset.max} personas.</p>
+        ) : null}
+        {(options.persona_groups ?? []).map((g) => {
+          const groupPersonas = options.personas.filter((p) => p.group === g.key);
+          if (!groupPersonas.length) return null;
+          return (
+            <div key={g.key} className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-uncc-ink/60">{g.label}</p>
+              {groupPersonas.map((p) => (
+                <label key={p.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={draft.persona_ids.includes(p.id)}
+                    onChange={() => setDraft({ ...draft, persona_ids: toggle(draft.persona_ids, p.id) })}
+                  />
+                  {p.name}
+                </label>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

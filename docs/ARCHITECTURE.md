@@ -79,7 +79,7 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 
 ### 3.4 Campaigns, personas, regions, prompts
 - `campaigns` (org_id, brand_id, name, topic, status: draft | active | archived)
-- `personas` (org_id nullable for library items, name, goal, background, vocabulary, notes)
+- `personas` (org_id nullable for library items, name, goal, background, vocabulary, notes, persona_group; see `docs/PERSONAS.md`)
 - `seasonal_events` (org_id, name, kind: admissions_deadline | orientation | commencement | aid_deadline | term_start | custom, starts_on, ends_on, recurrence, source_url) (added 2026-11-03). Used by Phase 4 and Phase 8 to time prompts and content.
 - `regions` (country, state, city, language, serp_location string)
 - `campaign_engines` (campaign_id, engine, runner), `campaign_regions`, `campaign_personas`

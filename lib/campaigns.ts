@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { recordAudit, type SessionUser } from "./auth";
+import { CAMPAIGN_PERSONA_SUBSET, PERSONA_GROUP_LABELS, type PersonaGroupKey } from "./contracts/personas";
 import type { Db } from "./db/pg/client";
 import {
   brands,
@@ -15,6 +16,7 @@ import {
   regions,
   runnerEnum,
 } from "./db/pg/schema";
+import { PERSONA_LIBRARY } from "./personas/library";
 
 export const ENGINES = engineEnum.enumValues;
 export const RUNNERS = runnerEnum.enumValues;
@@ -37,6 +39,7 @@ export const campaignInput = z.object({
   status: z.enum(["draft", "active", "archived"]).optional(),
   engines: z.array(engineSel).max(60).optional(),
   region_ids: z.array(z.string().uuid()).max(50).optional(),
+  /** Campaign subset of library personas. Prefer 3–5 menu personas (see docs/PERSONAS.md). */
   persona_ids: z.array(z.string().uuid()).max(50).optional(),
 });
 export type CampaignInput = z.infer<typeof campaignInput>;
@@ -55,7 +58,9 @@ export type CampaignView = {
   updated_at: string;
   engines: Array<{ engine: string; runner: string }>;
   regions: Array<{ id: string; label: string }>;
-  personas: Array<{ id: string; name: string }>;
+  personas: Array<{ id: string; name: string; key: string | null; group: string | null }>;
+  /** Soft guidance: campaigns should pick 3–5 personas from the menu. */
+  persona_subset_ok: boolean;
   prompt_count: number;
   approved_count: number;
   prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null; label: string | null }>;
@@ -93,10 +98,19 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
     .innerJoin(regions, eq(regions.id, campaignRegions.regionId))
     .where(eq(campaignRegions.campaignId, id));
   const personaRows = await db
-    .select({ id: personas.id, name: personas.name })
+    .select({
+      id: personas.id,
+      name: personas.name,
+      key: personas.key,
+      group: personas.personaGroup,
+    })
     .from(campaignPersonas)
     .innerJoin(personas, eq(personas.id, campaignPersonas.personaId))
     .where(eq(campaignPersonas.campaignId, id));
+  const menuSelected = personaRows.filter((p) => PERSONA_LIBRARY.some((def) => def.dbKey === p.key && def.kind === "menu")).length;
+  const personaSubsetOk =
+    menuSelected === 0 ||
+    (menuSelected >= CAMPAIGN_PERSONA_SUBSET.min && menuSelected <= CAMPAIGN_PERSONA_SUBSET.max);
   const [{ total }] = await db.select({ total: count() }).from(prompts).where(eq(prompts.campaignId, id));
   const [{ approved }] = await db
     .select({ approved: count() })
@@ -118,6 +132,7 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
     engines,
     regions: regionRows,
     personas: personaRows,
+    persona_subset_ok: personaSubsetOk,
     prompt_count: total,
     approved_count: approved,
     prompt_sets: sets.map((s) => ({
@@ -232,9 +247,42 @@ export async function updateCampaign(db: Db, user: SessionUser, id: string, raw:
 export async function campaignOptions(db: Db, orgId: string) {
   const regionRows = await db.select({ id: regions.id, label: regions.label }).from(regions).orderBy(asc(regions.label));
   const personaRows = await db
-    .select({ id: personas.id, name: personas.name })
+    .select({
+      id: personas.id,
+      name: personas.name,
+      key: personas.key,
+      group: personas.personaGroup,
+    })
     .from(personas)
     .where(or(eq(personas.orgId, orgId), isNull(personas.orgId)))
     .orderBy(asc(personas.name));
-  return { engines: ENGINES, runners: RUNNERS, default_runner: DEFAULT_RUNNER, regions: regionRows, personas: personaRows };
+  const libraryByKey = new Map(PERSONA_LIBRARY.map((p) => [p.dbKey, p]));
+  const personasOut = personaRows
+    .map((row) => {
+      const def = row.key ? libraryByKey.get(row.key) : undefined;
+      return {
+        id: row.id,
+        name: row.name,
+        key: row.key,
+        group: (row.group ?? def?.group ?? null) as PersonaGroupKey | null,
+        group_label: row.group
+          ? PERSONA_GROUP_LABELS[row.group as PersonaGroupKey] ?? row.group
+          : def
+            ? PERSONA_GROUP_LABELS[def.group]
+            : null,
+        kind: def?.kind ?? "custom",
+        selectable: def ? def.selectable : true,
+        opening: def?.opening ?? null,
+      };
+    })
+    .filter((p) => p.selectable);
+  return {
+    engines: ENGINES,
+    runners: RUNNERS,
+    default_runner: DEFAULT_RUNNER,
+    regions: regionRows,
+    personas: personasOut,
+    persona_groups: Object.entries(PERSONA_GROUP_LABELS).map(([key, label]) => ({ key, label })),
+    persona_subset: CAMPAIGN_PERSONA_SUBSET,
+  };
 }

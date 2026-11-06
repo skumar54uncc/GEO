@@ -211,7 +211,8 @@ describe("rollup: cells and determinism", () => {
       draw({ prompt: "p2", brand: true, region: "r1", honored: "unknown" }),
     ];
     const cells = buildCells(draws, OWNED, { iterations: 100 });
-    const find = (region: string | null, persona: string | null) => cells.find((c) => c.key.regionId === region && c.key.personaId === persona)!;
+    const find = (region: string | null, persona: string | null) =>
+      cells.find((c) => c.key.regionId === region && c.key.personaId === persona && c.key.personaGroup === null)!;
     expect(find(null, null).draws).toBe(3); // overall includes every valid draw
     expect(find("r1", null)).toMatchObject({ draws: 2, regionExcluded: 1 });
     expect(find(null, "u1").draws).toBe(2);
@@ -225,7 +226,9 @@ describe("rollup: cells and determinism", () => {
       draw({ prompt: "p1", brand: true, runner: "api_parametric" }),
       draw({ prompt: "p1", brand: false, engine: "google_aio", runner: "serp_provider" }),
     ];
-    const overall = buildCells(draws, OWNED, { iterations: 50 }).filter((c) => c.key.regionId === null && c.key.personaId === null);
+    const overall = buildCells(draws, OWNED, { iterations: 50 }).filter(
+      (c) => c.key.regionId === null && c.key.personaId === null && c.key.personaGroup === null,
+    );
     expect(overall.map((c) => `${c.key.engine}|${c.key.runner}|${c.key.index}`)).toEqual([
       "chatgpt|api_parametric|chat",
       "chatgpt|ui_provider|chat",

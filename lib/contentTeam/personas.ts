@@ -14,9 +14,9 @@ export const CONTENT_TEAM_PERSONAS = [
   },
   {
     key: "business_partner",
-    name: "Business partner",
-    goal: "Partner with a university",
-    draftPrefix: "I run a company that wants to partner with a university.",
+    name: "Business leader / potential partner",
+    goal: "Hire talent or partner with a university",
+    draftPrefix: "I'm a business leader looking to hire talent or partner with a university.",
   },
   {
     key: "research_partner",
@@ -26,9 +26,9 @@ export const CONTENT_TEAM_PERSONAS = [
   },
   {
     key: "business_leader",
-    name: "Business leader (hiring interns)",
-    goal: "Hire interns from a university",
-    draftPrefix: "I'm a business leader who hires interns.",
+    name: "Business leader (legacy alias)",
+    goal: "Hire talent or partner with a university",
+    draftPrefix: "I'm a business leader looking to hire talent or partner with a university.",
   },
 ] as const;
 

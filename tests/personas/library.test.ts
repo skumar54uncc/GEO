@@ -3,20 +3,33 @@ import os from "os";
 import path from "path";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CANONICAL_PERSONA_KEYS, LEGACY_PERSONA_MIGRATION } from "@/lib/contracts/personas";
+import {
+  CANONICAL_PERSONA_KEYS,
+  LEGACY_PERSONA_MIGRATION,
+  MENU_PERSONA_KEYS,
+  MIN_PERSONA_DRAWS_FOR_DETAIL,
+  PERSONA_GROUP_KEYS,
+} from "@/lib/contracts/personas";
 import { EXPECTED_NEUTRAL, EXPECTED_VARIANTS, importContentTeamCsv } from "@/lib/contentTeam/import";
 import { CONTENT_TEAM_PERSONAS, IMPORT_TAG } from "@/lib/contentTeam/personas";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
 import { campaigns, personas, prompts } from "@/lib/db/pg/schema";
-import { assertCanonicalPersonaCellsNotCombined } from "@/lib/metrics/personaCells";
+import {
+  assertBusinessPartnerAliasCombined,
+  buildPersonaCellMeta,
+  dashboardPersonaSlices,
+} from "@/lib/metrics/personaCells";
 import type { CellRollup } from "@/lib/metrics/rollup";
 import {
   canonicalKeyForDbKey,
   CONTENT_TEAM_PERSONA_KEYS,
+  groupForDbKey,
+  menuPersonaDefinitions,
   PERSONA_LIBRARY,
   selectableDbKeyForCanonical,
 } from "@/lib/personas/library";
+import { assertLibraryOpeningsBrandSafe, TEST_BRAND_ALIASES } from "@/lib/personas/openings";
 import { ensureCanonicalPersonas } from "@/lib/personas/seed";
 import { resetDatabase } from "../helpers";
 
@@ -58,7 +71,7 @@ function writeSyntheticCsv(): void {
   fs.writeFileSync(CSV, [header, ...rows].join("\n"));
 }
 
-describe("Phase 4 persona library", () => {
+describe("Persona library (Christy taxonomy)", () => {
   beforeAll(() => {
     writeSyntheticCsv();
   });
@@ -69,39 +82,37 @@ describe("Phase 4 persona library", () => {
 
   beforeEach(resetDatabase);
 
-  it("lists 12 selectable personas and splits industry_partner from employer", () => {
-    expect(CANONICAL_PERSONA_KEYS).toHaveLength(12);
-    expect(PERSONA_LIBRARY).toHaveLength(12);
-    expect(PERSONA_LIBRARY.every((p) => p.selectable)).toBe(true);
-    expect(selectableDbKeyForCanonical("industry_partner")).toBe("business_partner");
-    expect(selectableDbKeyForCanonical("employer")).toBe("business_leader");
-    expect(canonicalKeyForDbKey("undergrad")).toBe("prospective_first_year");
-    expect(canonicalKeyForDbKey("grad")).toBe("grad_applicant");
-    expect(canonicalKeyForDbKey("research_partner")).toBe("research_partner");
-    expect(canonicalKeyForDbKey("business_partner")).toBe("industry_partner");
-    expect(canonicalKeyForDbKey("business_leader")).toBe("employer");
+  it("has 7 groups, 20 menu personas, and merges business into one canonical", () => {
+    expect(PERSONA_GROUP_KEYS).toHaveLength(7);
+    expect(MENU_PERSONA_KEYS).toHaveLength(20);
+    expect(menuPersonaDefinitions()).toHaveLength(20);
+    expect(CANONICAL_PERSONA_KEYS).toHaveLength(22);
+    expect(PERSONA_LIBRARY.filter((p) => p.selectable)).toHaveLength(22);
+    expect(PERSONA_LIBRARY.filter((p) => p.kind === "alias")).toHaveLength(1);
+    expect(selectableDbKeyForCanonical("business_partner")).toBe("business_partner");
+    expect(canonicalKeyForDbKey("business_partner")).toBe("business_partner");
+    expect(canonicalKeyForDbKey("business_leader")).toBe("business_partner");
+    expect(canonicalKeyForDbKey("undergrad")).toBe("undergrad");
+    expect(canonicalKeyForDbKey("grad")).toBe("grad");
+    expect(groupForDbKey("undergrad")).toBe("prospective_students");
+    expect(groupForDbKey("grad")).toBe("prospective_students");
+    expect(groupForDbKey("business_partner")).toBe("business_leaders_partners");
+    expect(groupForDbKey("state_policymaker")).toBe("government_policy");
     expect(
       Object.fromEntries(
         LEGACY_PERSONA_MIGRATION.map(({ legacyKey, canonicalKey }) => [legacyKey, canonicalKey]),
       ),
     ).toEqual({
-      undergrad: "prospective_first_year",
-      grad: "grad_applicant",
+      undergrad: "undergrad",
+      grad: "grad",
       research_partner: "research_partner",
-      business_partner: "industry_partner",
-      business_leader: "employer",
+      business_partner: "business_partner",
+      business_leader: "business_partner",
     });
-    expect(LEGACY_PERSONA_MIGRATION.every((row) => row.idDecision === "preserve_existing_id")).toBe(true);
-    for (const def of PERSONA_LIBRARY) {
-      expect(def.goal.length).toBeGreaterThan(0);
-      expect(def.background.length).toBeGreaterThan(0);
-      expect(def.vocabulary.length).toBeGreaterThan(0);
-      expect(def.region.length).toBeGreaterThan(0);
-      expect(def.typicalQuestions.length).toBeGreaterThan(0);
-    }
+    assertLibraryOpeningsBrandSafe(TEST_BRAND_ALIASES);
   });
 
-  it("keeps the five content-team persona IDs stable across reseed and preserves 459 imported prompts", async () => {
+  it("keeps the five content-team persona IDs stable and preserves 459 imported prompts", async () => {
     const db = getDb();
     const { orgId } = await legacyContext(db);
 
@@ -119,12 +130,20 @@ describe("Phase 4 persona library", () => {
     }
 
     const selectable = second.filter((p) => p.selectable);
-    expect(selectable).toHaveLength(12);
+    expect(selectable).toHaveLength(22);
     const partner = second.find((p) => p.key === "business_partner");
     const leader = second.find((p) => p.key === "business_leader");
-    expect(partner?.canonicalKey).toBe("industry_partner");
-    expect(leader?.canonicalKey).toBe("employer");
+    expect(partner?.canonicalKey).toBe("business_partner");
+    expect(leader?.canonicalKey).toBe("business_partner");
     expect(partner?.id).not.toBe(leader?.id);
+    expect(leader?.selectable).toBe(false);
+
+    const [partnerRow] = await db
+      .select({ group: personas.personaGroup, draftPrefix: personas.draftPrefix })
+      .from(personas)
+      .where(eq(personas.key, "business_partner"));
+    expect(partnerRow.group).toBe("business_leaders_partners");
+    expect(partnerRow.draftPrefix).not.toMatch(/Charlotte|UNCC|UNC Charlotte/i);
 
     const imported = await importContentTeamCsv(db, orgId, CSV);
     expect(imported.neutral).toBe(EXPECTED_NEUTRAL);
@@ -154,10 +173,13 @@ describe("Phase 4 persona library", () => {
       expect(CONTENT_TEAM_PERSONAS.some((p) => p.key === key)).toBe(true);
     }
 
-    const idToDbKey = new Map([
-      [partner!.id, "business_partner"],
-      [leader!.id, "business_leader"],
+    const meta = buildPersonaCellMeta([
+      { id: partner!.id, key: "business_partner" },
+      { id: leader!.id, key: "business_leader" },
     ]);
+    expect(meta.get(leader!.id)?.reportPersonaId).toBe(partner!.id);
+    expect(meta.get(leader!.id)?.canonicalKey).toBe("business_partner");
+
     const cells = [
       {
         key: {
@@ -166,8 +188,10 @@ describe("Phase 4 persona library", () => {
           index: "chat",
           regionId: null,
           personaId: partner!.id,
+          personaGroup: null,
           branded: false,
         },
+        draws: MIN_PERSONA_DRAWS_FOR_DETAIL,
       },
       {
         key: {
@@ -175,13 +199,29 @@ describe("Phase 4 persona library", () => {
           runner: "ui_provider",
           index: "chat",
           regionId: null,
-          personaId: leader!.id,
+          personaId: null,
+          personaGroup: "business_leaders_partners",
           branded: false,
         },
+        draws: 10,
+      },
+      {
+        key: {
+          engine: "chatgpt",
+          runner: "ui_provider",
+          index: "chat",
+          regionId: null,
+          personaId: partner!.id,
+          personaGroup: null,
+          branded: false,
+        },
+        draws: 5,
       },
     ] as CellRollup[];
-    expect(() => assertCanonicalPersonaCellsNotCombined(cells, idToDbKey)).not.toThrow();
-    expect(partner!.id).not.toBe(leader!.id);
-    expect(canonicalKeyForDbKey("business_partner")).not.toBe(canonicalKeyForDbKey("business_leader"));
+    expect(() => assertBusinessPartnerAliasCombined(cells, meta)).not.toThrow();
+    const slices = dashboardPersonaSlices(cells);
+    expect(slices.byGroup).toHaveLength(1);
+    expect(slices.byPersona).toHaveLength(1);
+    expect(slices.byPersona[0].draws).toBeGreaterThanOrEqual(MIN_PERSONA_DRAWS_FOR_DETAIL);
   });
 });

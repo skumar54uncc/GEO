@@ -612,6 +612,8 @@ export const personas = pgTable(
     key: text("key"),
     /** Draft first-person prefix for persona_mode=prefix variants. Content team must approve. */
     draftPrefix: text("draft_prefix"),
+    /** Reporting audience group (prospective_students, media, …). Dashboards default to this level. */
+    personaGroup: text("persona_group"),
     /** Optional geographic context for canonical and custom Phase 4 personas. */
     region: text("region"),
     /** Typical questions guide generation; they are prompts-to-consider, not measured demand. */

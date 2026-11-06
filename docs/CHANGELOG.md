@@ -1,10 +1,22 @@
 # Changelog
 
+## 2026-11-06: Persona taxonomy (content team)
+
+- Source of truth: `docs/PERSONAS.md` — 7 audience groups, 20 menu personas, retained general
+  `undergrad`/`grad`, and `business_leader` as a legacy alias of `business_partner` (one persona for
+  leaders and potential partners). Five content-team IDs and 459 imported prompts unchanged.
+- Migration `0009`: `personas.persona_group`. Openings must not contain brand aliases (tested).
+- Metrics cells include `personaGroup`. Dashboards report by group by default; specific personas only
+  at ≥30 draws. Campaign picker groups personas and recommends a 3–5 subset.
+
+Verification: typecheck and lint pass (pre-existing `app/analyze/page.tsx` hook warning). Persona,
+contracts, and metrics tests pass; full suite 436 tests after Playwright browsers available. No paid
+provider calls.
+
 ## 2026-11-06: Wave 2c — Phase 7 gap analysis
 
-- Persona fix: `business_partner` → canonical `industry_partner`; `business_leader` →
-  `employer`. Both IDs preserved; 459 imported prompts unchanged. Library is 12 selectable
-  personas. Metrics helpers assert the two are never combined.
+- Persona note: the industry_partner/employer split shipped in this wave was superseded by the
+  content-team taxonomy above (`business_partner` only).
 - Lost cohorts per engine × runner using METRICS won rules; branded excluded; `api_search`
   requires `search_used`.
 - Fan-out → organic join is fixture-only and estimate-gated. Term lift uses Dirichlet prior,

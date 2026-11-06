@@ -7,6 +7,8 @@ export type CellKey = {
   index: SearchIndex;
   regionId: string | null;
   personaId: string | null;
+  /** Audience group key when this is a group-level cell. Null for overall or specific-persona cells. */
+  personaGroup: string | null;
   branded: boolean;
 };
 

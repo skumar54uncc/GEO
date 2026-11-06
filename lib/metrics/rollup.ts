@@ -11,12 +11,15 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getCampaign } from "@/lib/campaigns";
 import type { Db } from "@/lib/db/pg/client";
-import { modelEvents, promptSets, scans } from "@/lib/db/pg/schema";
+import { modelEvents, personas, promptSets, scans } from "@/lib/db/pg/schema";
 import { listOpenAlerts } from "@/lib/alerts/service";
 import type { Engine, Runner } from "@/lib/capture/types";
+import { PERSONA_GROUP_LABELS } from "@/lib/contracts/personas";
+import { selectableDbKeyForCanonical, canonicalKeyForDbKey } from "@/lib/personas/library";
 import { compareScans, previousComparableScan, type SeriesComparison } from "./compare";
 import { assertSameIndex, ENGINE_INDEX } from "./indexes";
 import { loadScanDraws, type ExcludedCounts, type LoadedScan, type MetricDraw, type Verdict } from "./load";
+import { buildPersonaCellMeta, type PersonaCellMeta } from "./personaCells";
 import { BOOTSTRAP_ITERS, BOOTSTRAP_SEED, clusterBootstrap, clusterRate, median, promptsWon, TOO_FEW_DRAWS, wilsonRate } from "./stats";
 import type { CellKey, PromptsWon, RateWithCi } from "./types";
 
@@ -107,8 +110,15 @@ export type CellRollup = {
 
 export type CellOptions = { iterations?: number; seed?: number };
 
-export function cellKey(engine: Engine, runner: Runner, regionId: string | null, personaId: string | null, branded: boolean): CellKey {
-  return { engine, runner, index: ENGINE_INDEX[engine], regionId, personaId, branded };
+export function cellKey(
+  engine: Engine,
+  runner: Runner,
+  regionId: string | null,
+  personaId: string | null,
+  branded: boolean,
+  personaGroup: string | null = null,
+): CellKey {
+  return { engine, runner, index: ENGINE_INDEX[engine], regionId, personaId, personaGroup, branded };
 }
 
 function shareOfVoiceRate(clusters: Array<Array<{ brand: number; others: number }>>, validDraws: number, opts: CellOptions): RateWithCi {
@@ -217,13 +227,22 @@ export function rollupCell(input: { key: CellKey; draws: readonly MetricDraw[]; 
 }
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-const cellSortKey = (k: CellKey) => [k.engine, k.runner, k.regionId ?? "", k.personaId ?? "", k.branded ? "1" : "0"].join("|");
+const cellSortKey = (k: CellKey) =>
+  [k.engine, k.runner, k.regionId ?? "", k.personaId ?? "", k.personaGroup ?? "", k.branded ? "1" : "0"].join("|");
+
+export type BuildCellsOptions = CellOptions & {
+  /** When set, remaps alias persona ids and also builds persona_group cells. */
+  personaMeta?: Map<string, import("./personaCells").PersonaCellMeta>;
+};
 
 /**
  * Groups valid draws into cells and rolls each up. Per draw: the overall cell (no region, no persona filter), its
- * region cell (unless region_honored = no), its persona cell, and both. Branded and unbranded prompts never share a cell.
+ * region cell (unless region_honored = no), its persona cell, optional persona_group cell, and combinations.
+ * Branded and unbranded prompts never share a cell. Alias personas (business_leader) roll into the
+ * report persona id when personaMeta is provided.
  */
-export function buildCells(drawsIn: readonly MetricDraw[], ownedDomains: readonly string[], opts: CellOptions = {}): CellRollup[] {
+export function buildCells(drawsIn: readonly MetricDraw[], ownedDomains: readonly string[], opts: BuildCellsOptions = {}): CellRollup[] {
+  const { personaMeta, ...cellOpts } = opts;
   const groups = new Map<string, { key: CellKey; draws: MetricDraw[]; regionExcluded: number }>();
   const add = (key: CellKey, draw: MetricDraw, excluded: boolean) => {
     const id = cellSortKey(key);
@@ -233,26 +252,45 @@ export function buildCells(drawsIn: readonly MetricDraw[], ownedDomains: readonl
     groups.set(id, g);
   };
   for (const d of drawsIn) {
+    const meta = d.personaId && personaMeta ? personaMeta.get(d.personaId) : undefined;
+    const reportPersonaId = meta?.reportPersonaId ?? d.personaId;
+    const personaGroup = meta?.group ?? null;
     for (const regionId of [null, d.regionId]) {
-      for (const personaId of d.personaId === null ? [null] : [null, d.personaId]) {
-        const excluded = regionId !== null && d.regionHonored === "no";
-        add(cellKey(d.engine, d.runner, regionId, personaId, d.branded), d, excluded);
+      const excluded = regionId !== null && d.regionHonored === "no";
+      // Overall / region-only (no persona filter).
+      add(cellKey(d.engine, d.runner, regionId, null, d.branded, null), d, excluded);
+      if (reportPersonaId) {
+        add(cellKey(d.engine, d.runner, regionId, reportPersonaId, d.branded, null), d, excluded);
+      }
+      if (personaGroup) {
+        add(cellKey(d.engine, d.runner, regionId, null, d.branded, personaGroup), d, excluded);
       }
     }
   }
   return [...groups.entries()]
     .sort(([a], [b]) => cmp(a, b))
-    .map(([, g]) => rollupCell({ key: g.key, draws: g.draws, ownedDomains, regionExcluded: g.regionExcluded, ...opts }));
+    .map(([, g]) => rollupCell({ key: g.key, draws: g.draws, ownedDomains, regionExcluded: g.regionExcluded, ...cellOpts }));
 }
 
 /**
  * Cells that may be shown as the headline: unbranded, with the given region and persona filter (default: none).
- * Branded cells are always left out.
+ * Branded cells are always left out. Defaults to no persona and no persona group filter.
  */
-export function headlineCells(cells: readonly CellRollup[], filter: { regionId?: string | null; personaId?: string | null } = {}): CellRollup[] {
+export function headlineCells(
+  cells: readonly CellRollup[],
+  filter: { regionId?: string | null; personaId?: string | null; personaGroup?: string | null } = {},
+): CellRollup[] {
   const regionId = filter.regionId ?? null;
   const personaId = filter.personaId ?? null;
-  return cells.filter((c) => !c.key.branded && c.promptsWon !== null && c.key.regionId === regionId && c.key.personaId === personaId);
+  const personaGroup = filter.personaGroup ?? null;
+  return cells.filter(
+    (c) =>
+      !c.key.branded &&
+      c.promptsWon !== null &&
+      c.key.regionId === regionId &&
+      c.key.personaId === personaId &&
+      c.key.personaGroup === personaGroup,
+  );
 }
 
 /** Overall unbranded prompts won per engine x runner, with no bootstrap (cheap enough for a trend over scans). */
@@ -287,7 +325,29 @@ export type ScanRollup = {
   cells: CellRollup[];
 };
 
-export function rollupLoaded(loaded: LoadedScan, opts: CellOptions & { now?: Date } = {}): ScanRollup {
+export async function loadPersonaMetaForDraws(db: Db, draws: readonly MetricDraw[]): Promise<Map<string, PersonaCellMeta>> {
+  const ids = [...new Set(draws.map((d) => d.personaId).filter((id): id is string => Boolean(id)))];
+  if (!ids.length) return new Map();
+  const rows = await db.select({ id: personas.id, key: personas.key }).from(personas).where(inArray(personas.id, ids));
+  const reportKeys = new Set<string>();
+  for (const row of rows) {
+    if (!row.key) continue;
+    const canonical = canonicalKeyForDbKey(row.key);
+    if (canonical) reportKeys.add(selectableDbKeyForCanonical(canonical));
+  }
+  const extras =
+    reportKeys.size > 0
+      ? await db.select({ id: personas.id, key: personas.key }).from(personas).where(inArray(personas.key, [...reportKeys]))
+      : [];
+  const byId = new Map<string, { id: string; key: string | null }>();
+  for (const row of [...rows, ...extras]) byId.set(row.id, row);
+  return buildPersonaCellMeta([...byId.values()]);
+}
+
+export function rollupLoaded(
+  loaded: LoadedScan,
+  opts: CellOptions & { now?: Date; personaMeta?: Map<string, PersonaCellMeta> } = {},
+): ScanRollup {
   const iterations = opts.iterations ?? BOOTSTRAP_ITERS;
   const seed = opts.seed ?? BOOTSTRAP_SEED;
   return {
@@ -298,14 +358,15 @@ export function rollupLoaded(loaded: LoadedScan, opts: CellOptions & { now?: Dat
     iterations,
     excluded: loaded.excluded,
     ownedDomains: loaded.ownedDomains,
-    cells: buildCells(loaded.draws, loaded.ownedDomains, { iterations, seed }),
+    cells: buildCells(loaded.draws, loaded.ownedDomains, { iterations, seed, personaMeta: opts.personaMeta }),
   };
 }
 
 /** Rolls up one scan. Fails if the scan does not belong to `orgId`. Read only. */
 export async function rollupScan(db: Db, opts: { orgId: string; scanId: string; now?: Date } & CellOptions): Promise<ScanRollup> {
   const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: opts.scanId });
-  return rollupLoaded(loaded, opts);
+  const personaMeta = await loadPersonaMetaForDraws(db, loaded.draws);
+  return rollupLoaded(loaded, { ...opts, personaMeta });
 }
 
 // ---------- campaign dashboard ----------
@@ -362,7 +423,10 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
     for (const s of trendScans) {
       const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: s.id });
       trend.push({ scanId: s.id, createdAt: s.createdAt.toISOString(), series: headlinePromptsWon(loaded.draws) });
-      if (s.id === latest.id) latestRollup = rollupLoaded(loaded, opts);
+      if (s.id === latest.id) {
+        const personaMeta = await loadPersonaMetaForDraws(db, loaded.draws);
+        latestRollup = rollupLoaded(loaded, { ...opts, personaMeta });
+      }
     }
     const prev = await previousComparableScan(db, latest.id);
     promptSetViews.push({
@@ -389,6 +453,7 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
     engines: campaign.engines,
     regions: campaign.regions,
     personas: campaign.personas,
+    persona_groups: Object.entries(PERSONA_GROUP_LABELS).map(([key, label]) => ({ key, label })),
     promptSets: promptSetViews,
     alerts: alertRows,
     modelEvents: events,

@@ -38,7 +38,8 @@ type PromptSetView = {
 type Dashboard = {
   campaign: { id: string; name: string; topic: string; status: string };
   regions: Array<{ id: string; label: string }>;
-  personas: Array<{ id: string; name: string }>;
+  personas: Array<{ id: string; name: string; key?: string | null; group?: string | null }>;
+  persona_groups: Array<{ key: string; label: string }>;
   promptSets: PromptSetView[];
   alerts: AlertRow[];
   modelEvents: ModelEventRow[];
@@ -268,10 +269,24 @@ function TrendTable({ trend }: { trend: Trend[] }) {
 
 function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard }) {
   const [regionId, setRegionId] = useState<string>("");
-  const [personaId, setPersonaId] = useState<string>("");
+  /** "" = overall; "group:<key>" = audience group; "persona:<id>" = specific persona (n≥30 only). */
+  const [audienceFilter, setAudienceFilter] = useState<string>("");
   const cells = view.rollup.cells;
+  const detailPersonas = data.personas.filter((p) =>
+    cells.some((c) => c.key.personaId === p.id && c.key.personaGroup == null && c.draws >= 30),
+  );
   const pick = (branded: boolean) =>
-    cells.filter((c) => c.key.branded === branded && (c.key.regionId ?? "") === regionId && (c.key.personaId ?? "") === personaId);
+    cells.filter((c) => {
+      if (c.key.branded !== branded) return false;
+      if ((c.key.regionId ?? "") !== regionId) return false;
+      if (audienceFilter.startsWith("group:")) {
+        return c.key.personaGroup === audienceFilter.slice(6) && c.key.personaId == null;
+      }
+      if (audienceFilter.startsWith("persona:")) {
+        return c.key.personaId === audienceFilter.slice(8) && c.key.personaGroup == null;
+      }
+      return c.key.personaId == null && c.key.personaGroup == null;
+    });
   const unbranded = pick(false);
   const branded = pick(true);
   const ex = view.rollup.excluded;
@@ -302,18 +317,34 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
             </select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`persona-${view.promptSetId}`}>Persona</Label>
-            <select id={`persona-${view.promptSetId}`} className="h-9 rounded border border-uncc-rule bg-white px-2 text-sm" value={personaId} onChange={(e) => setPersonaId(e.target.value)}>
-              <option value="">All personas (no filter)</option>
-              {data.personas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+            <Label htmlFor={`persona-${view.promptSetId}`}>Audience</Label>
+            <select
+              id={`persona-${view.promptSetId}`}
+              className="h-9 rounded border border-uncc-rule bg-white px-2 text-sm"
+              value={audienceFilter}
+              onChange={(e) => setAudienceFilter(e.target.value)}
+            >
+              <option value="">All audiences (no filter)</option>
+              <optgroup label="Groups (default reporting)">
+                {(data.persona_groups ?? []).map((g) => (
+                  <option key={g.key} value={`group:${g.key}`}>
+                    {g.label}
+                  </option>
+                ))}
+              </optgroup>
+              {detailPersonas.length ? (
+                <optgroup label="Specific personas (30+ draws)">
+                  {detailPersonas.map((p) => (
+                    <option key={p.id} value={`persona:${p.id}`}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
             </select>
           </div>
           <p className="max-w-md self-end text-xs text-uncc-ink/60">
-            Region cells use draws where the region was honored or unknown. Persona and region slices are often under 30 draws; they are shown, greyed, not hidden.
+            Reports default to audience groups. A specific persona appears only when that cell has 30 or more draws. Region cells use honored or unknown draws only.
           </p>
         </div>
 

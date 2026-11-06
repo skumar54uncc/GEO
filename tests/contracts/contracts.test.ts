@@ -117,19 +117,19 @@ describe("cited page contracts", () => {
 });
 
 describe("persona contracts", () => {
-  it("defines all 12 canonical personas and keeps industry_partner separate from employer", () => {
-    expect(CANONICAL_PERSONA_KEYS).toHaveLength(12);
-    expect(new Set(CANONICAL_PERSONA_KEYS).size).toBe(12);
+  it("defines 22 canonical personas and maps business_leader to business_partner", () => {
+    expect(CANONICAL_PERSONA_KEYS).toHaveLength(22);
+    expect(new Set(CANONICAL_PERSONA_KEYS).size).toBe(22);
     expect(
       Object.fromEntries(
         LEGACY_PERSONA_MIGRATION.map(({ legacyKey, canonicalKey }) => [legacyKey, canonicalKey]),
       ),
     ).toEqual({
-      undergrad: "prospective_first_year",
-      grad: "grad_applicant",
+      undergrad: "undergrad",
+      grad: "grad",
       research_partner: "research_partner",
-      business_partner: "industry_partner",
-      business_leader: "employer",
+      business_partner: "business_partner",
+      business_leader: "business_partner",
     });
     expect(LEGACY_PERSONA_MIGRATION.every((row) => row.idDecision === "preserve_existing_id")).toBe(true);
   });
@@ -178,7 +178,7 @@ describe("gap and strategy contracts", () => {
   it("requires evidence IDs on every strategy item", () => {
     const item = {
       id: id(4),
-      persona: "grad_applicant",
+      persona: "grad",
       promptCluster: "energy graduate programs",
       format: "program guide",
       headlineTerms: ["power systems"],

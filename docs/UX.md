@@ -96,39 +96,21 @@ Skip to main content
 
 ## 5. Personas and stable semantic mapping
 
-The higher-education library exposes these 11 names exactly as the product taxonomy in `docs/SPEC.md`:
-
-1. Prospective first year
-2. Transfer
-3. Grad applicant
-4. International
-5. Parent
-6. Adult learner
-7. Employer
-8. Research partner
-9. Donor
-10. Journalist
-11. Policymaker
+Canonical taxonomy: **`docs/PERSONAS.md`**. Seven audience groups for reporting; twenty menu personas for prompt voice; campaigns pick 3–5. Dashboards default to group rows; a specific persona appears only at ≥30 draws.
 
 A persona changes how a prompt is written; it does not reproduce a real person’s account history. This explanation appears in the persona picker and prompt review help.
 
-The five existing content-team seeded records retain their current database IDs and stable `key` values. Wave 1 adds semantic presentation mapping; it does not delete, merge, re-key, or recreate them:
+The five existing content-team seeded records retain their current database IDs and stable `key` values:
 
-| Existing seeded key | Existing name | Library semantic presentation |
-|---|---|---|
-| `undergrad` | Undergraduate prospect | Prospective first year |
-| `grad` | Graduate prospect | Grad applicant |
-| `business_partner` | Business partner | Industry partner — research or industry partnership |
-| `research_partner` | Research partner | Research partner |
-| `business_leader` | Business leader (hiring interns) | Employer — hires interns and graduates |
+| Existing seeded key | Role |
+|---|---|
+| `undergrad` | Retained general persona in Prospective students |
+| `grad` | Retained general persona in Prospective students |
+| `business_partner` | Selectable **Business leader / potential partner** (one persona; hiring vs partnering comes from the question) |
+| `research_partner` | Research partner |
+| `business_leader` | Legacy alias of `business_partner` (same metrics meaning; ID kept for imports) |
 
-All five seeded rows and IDs remain unchanged so imported prompts retain valid
-foreign keys. The library has 12 selectable personas. `business_partner` maps to
-canonical `industry_partner`; `business_leader` maps to canonical `employer`.
-Metrics and heatmaps group by canonical persona and never combine those two.
-No historical prompt is repointed or rewritten.
-
-Legacy imported audience records also keep their IDs and `legacy_key`: `undergrad` → Prospective first year; `grad` → Grad applicant; `industry` → Employer or industry partner; `hel` → Higher ed leader; `government` → Government or policy staff. These migration labels remain available for historical data and are not presented as additional library personas.
+Openings must not contain the brand or any alias. The 459 imported prompts stay unchanged. Legacy imported audience `legacy_key` rows remain available for historical data and are not additional menu personas.
 
 ## 6. Exact six end-to-end journeys
 

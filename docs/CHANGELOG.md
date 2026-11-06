@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-06: Wave 2d — Phase 8 content strategy
+
+- Strategy pipeline runs in order: demand → landscape → supply → gaps → plan. Saved as
+  `strategy_reports` with hashed inputs; same inputs produce the same report (tested).
+- Landscape reuses an existing campaign scan when the topic relates; a new sample is estimate →
+  approval → cost guard, fixtures only in tests.
+- Missing Trends / Search Console / keywords never score as zero — items show "demand unknown" in
+  a separate unscored list.
+- Score = demand × gap size × effort; each factor shows source and n; editor edits are audited and
+  keep `originalScore` / `originalFactors`.
+- Publish-by dates from seeded higher-ed calendar (FAFSA Oct 1, early action Nov 1, regular
+  decision Jan, decision day May 1, fall start Aug) plus Trends-ready seasonality hooks.
+- Plan items require a playbook lever, owner, evidence grade, and evidence IDs (unknown IDs rejected).
+- Off-site section: third-party domains that cite peers but not us. CSV export; demo org gets the
+  DEMO DATA banner. Thin strategy screen at `/campaigns/[id]/strategy`.
+
+Verification: 444 tests pass; typecheck passes; lint passes with one pre-existing
+`app/analyze/page.tsx` hook warning. No paid provider calls.
+
 ## 2026-11-06: Persona taxonomy (content team)
 
 - Source of truth: `docs/PERSONAS.md` — 7 audience groups, 20 menu personas, retained general

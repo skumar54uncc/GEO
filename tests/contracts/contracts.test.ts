@@ -175,22 +175,46 @@ describe("gap and strategy contracts", () => {
     expect(gapAnalysisSchema.safeParse({ ...validGap, label: "caused lift" }).success).toBe(false);
   });
 
-  it("requires evidence IDs on every strategy item", () => {
+  it("requires evidence IDs, lever, score factors; demand unknown cannot carry a numeric score", () => {
+    const factors = {
+      demand: { value: 0.8, source: "google_trends+search_console+keyword_volume", n: 12 },
+      gapSize: { value: 0.7, source: "gap+supply", n: 20 },
+      effort: { value: 0.5, source: "editor", n: 1 },
+    };
     const item = {
       id: id(4),
-      persona: "grad",
+      topic: "energy storage",
+      persona: "grad" as const,
       promptCluster: "energy graduate programs",
       format: "program guide",
       headlineTerms: ["power systems"],
       faqs: [],
+      targetUrl: null,
+      thirdPartySources: [],
       owner: "Content team",
       publishBy: "2027-01-15",
       seasonalEventId: id(5),
-      score: 0.75,
+      leverType: "on_page" as const,
+      evidenceGrade: "C" as const,
+      score: 0.8 * 0.7 * 0.5,
+      scoreStatus: "scored" as const,
+      factors,
+      originalFactors: factors,
+      originalScore: 0.8 * 0.7 * 0.5,
       evidenceIds: [id(6)],
     };
     expect(strategyItemSchema.safeParse(item).success).toBe(true);
     expect(strategyItemSchema.safeParse({ ...item, evidenceIds: [] }).success).toBe(false);
+    expect(
+      strategyItemSchema.safeParse({
+        ...item,
+        scoreStatus: "demand_unknown",
+        score: 0.1,
+        factors: { ...factors, demand: { value: null, source: "google_trends", n: 0 } },
+        originalFactors: { ...factors, demand: { value: null, source: "google_trends", n: 0 } },
+        originalScore: null,
+      }).success,
+    ).toBe(false);
   });
 });
 

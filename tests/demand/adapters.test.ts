@@ -187,18 +187,15 @@ describe("Phase 4 demand adapters", () => {
     const db = getDb();
     const { orgId } = await legacyContext(db);
     const first = await ensureSeasonalEvents(db, orgId);
-    expect(first).toHaveLength(5);
-    expect(first.map((r) => r.kind).sort()).toEqual([
-      "admissions_deadline",
-      "aid_deadline",
-      "commencement",
-      "orientation",
-      "term_start",
-    ]);
+    expect(first).toHaveLength(7);
+    expect(new Set(first.map((r) => r.kind))).toEqual(
+      new Set(["admissions_deadline", "aid_deadline", "commencement", "orientation", "term_start", "custom"]),
+    );
+    expect(first.some((r) => r.name === "FAFSA opens")).toBe(true);
     const second = await ensureSeasonalEvents(db, orgId);
     expect(second.every((r) => r.created === false)).toBe(true);
     const rows = await db.select().from(seasonalEvents).where(eq(seasonalEvents.orgId, orgId));
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(7);
     expect(rows.every((r) => Boolean(r.sourceUrl))).toBe(true);
 
     await expect(

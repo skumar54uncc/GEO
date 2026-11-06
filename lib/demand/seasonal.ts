@@ -7,7 +7,8 @@ export type SeasonalSeedKind =
   | "aid_deadline"
   | "orientation"
   | "term_start"
-  | "commencement";
+  | "commencement"
+  | "custom";
 
 export type SeasonalSeedInput = {
   name: string;
@@ -20,41 +21,57 @@ export type SeasonalSeedInput = {
 };
 
 /**
- * Placeholder higher-ed calendar rows. Dates and URLs must be confirmed by the operator.
- * sourceUrl is required so Phase 8 publish-by dates stay evidence-backed.
+ * Configurable higher-ed calendar. Dates live here as seed data (not hardcoded in
+ * scoring). Phase 8 publish-by dates look up these rows. Confirm URLs with the operator.
  */
 export const DEFAULT_SEASONAL_SEEDS: SeasonalSeedInput[] = [
   {
-    name: "Fall undergraduate admissions deadline (confirm)",
+    name: "FAFSA opens",
+    kind: "aid_deadline",
+    startsOn: "2026-10-01",
+    endsOn: "2026-10-01",
+    recurrence: "annual",
+    sourceUrl: "https://studentaid.gov/h/apply-for-aid/fafsa",
+  },
+  {
+    name: "Early action deadline",
     kind: "admissions_deadline",
-    startsOn: "2026-06-01",
-    endsOn: "2026-06-01",
+    startsOn: "2026-11-01",
+    endsOn: "2026-11-01",
     recurrence: "annual",
     sourceUrl: "https://admissions.charlotte.edu/",
   },
   {
-    name: "Fall financial aid priority deadline (confirm)",
-    kind: "aid_deadline",
-    startsOn: "2026-03-01",
-    endsOn: "2026-03-01",
+    name: "Regular decision deadline",
+    kind: "admissions_deadline",
+    startsOn: "2027-01-15",
+    endsOn: "2027-01-15",
     recurrence: "annual",
-    sourceUrl: "https://finance.charlotte.edu/student-financial-services/",
+    sourceUrl: "https://admissions.charlotte.edu/",
+  },
+  {
+    name: "National College Decision Day",
+    kind: "custom",
+    startsOn: "2027-05-01",
+    endsOn: "2027-05-01",
+    recurrence: "annual",
+    sourceUrl: "https://www.nacacnet.org/",
+  },
+  {
+    name: "Fall term start",
+    kind: "term_start",
+    startsOn: "2027-08-24",
+    endsOn: "2027-08-24",
+    recurrence: "annual",
+    sourceUrl: "https://registrar.charlotte.edu/academic-calendar/",
   },
   {
     name: "Fall orientation (confirm)",
     kind: "orientation",
-    startsOn: "2026-08-10",
-    endsOn: "2026-08-20",
+    startsOn: "2027-08-10",
+    endsOn: "2027-08-20",
     recurrence: "annual",
     sourceUrl: "https://ninercentral.charlotte.edu/",
-  },
-  {
-    name: "Fall term start (confirm)",
-    kind: "term_start",
-    startsOn: "2026-08-24",
-    endsOn: "2026-08-24",
-    recurrence: "annual",
-    sourceUrl: "https://registrar.charlotte.edu/academic-calendar/",
   },
   {
     name: "Spring commencement (confirm)",
@@ -120,4 +137,24 @@ export async function ensureSeasonalEvents(
     out.push({ name: seed.name, kind: seed.kind, id: created.id, created: true });
   }
   return out;
+}
+
+/** Earliest upcoming event on or after `fromDate` (ISO date). Used for publish-by. */
+export async function nextSeasonalEvent(
+  db: Db,
+  orgId: string,
+  fromDate: string,
+): Promise<{ id: string; name: string; startsOn: string } | null> {
+  const rows = await db
+    .select({
+      id: seasonalEvents.id,
+      name: seasonalEvents.name,
+      startsOn: seasonalEvents.startsOn,
+    })
+    .from(seasonalEvents)
+    .where(eq(seasonalEvents.orgId, orgId));
+  const upcoming = rows
+    .filter((r) => r.startsOn >= fromDate)
+    .sort((a, b) => (a.startsOn < b.startsOn ? -1 : a.startsOn > b.startsOn ? 1 : 0));
+  return upcoming[0] ?? null;
 }

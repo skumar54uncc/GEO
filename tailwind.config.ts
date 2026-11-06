@@ -19,9 +19,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["IBM Plex Sans", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["Source Serif 4", "ui-serif", "Georgia", "serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)", "Arial", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Cambria", "Georgia", "serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Consolas", "monospace"],
       },
     },
   },

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-06: Wave 1 secure app shell
+
+- Authentication now keeps the session token and active-organization selector in separate httpOnly, sameSite=lax
+  cookies. The selector grants no access: every request reloads the session, explicit membership, and role.
+- `GET /api/auth/me` returns all and only the user's organization memberships plus the active organization's demo
+  state and validated theme. `POST /api/auth/org` refuses non-members, audits successful switches, and clears
+  incompatible browser context by returning to Overview.
+- Added the production shell with organization and campaign context, role/read-only state, semantic navigation,
+  visible focus, skip link, landmarks, exact global `DEMO DATA, not real results` banner, and safe per-org theming.
+- Replaced the pooled root dashboard with an honest Wave 1 Overview empty state. The old dashboard moved to
+  `/legacy` with `Legacy, not METRICS.md compliant`; the remaining legacy demand page carries the same label. Legacy
+  tools are absent from production navigation.
+- Added an honest Budget shell with no typed estimate values and a Settings shell that states API tokens are deferred.
+  Leadership-route tests prohibit the legacy `@/lib/metrics` module and `/api/metrics` while allowing the compliant
+  `@/lib/metrics/` directory.
+- Removed downloaded IBM/Source fonts. The default theme uses official green `#005035` and gold `#A49665`; local
+  system/Cambria/Arial Narrow stacks are documented in `docs/BRAND.md`, including the Calluna/Interstate licensing
+  requirement. No logo was recreated.
+
+Verification: typecheck passes; lint passes with one pre-existing `app/analyze/page.tsx` hook warning; all 18 focused
+auth/shell/contract tests pass. Full suite: 355 passed, 1 skipped, 2 failed only because the gitignored content-team
+CSV is absent from this isolated worktree (the second failure depends on that import). Playwright used
+`/Users/skumar54/Library/Caches/ms-playwright`. No paid calls or exports were run.
+
 ## 2026-11-06: Wave 1 database and operations foundation
 
 Additive migration `0007` prepares the contracts for Phases 6, 4, 7 and 8 without changing existing IDs or raw ledgers.

@@ -34,6 +34,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div className="border-2 border-red-800 bg-red-50 p-4 text-lg font-bold text-red-950" role="alert">
+        Legacy, not METRICS.md compliant
+      </div>
       <p className="max-w-3xl text-sm leading-6 text-uncc-ink/80">
         Rates use judged runs only. Empty paste boxes are excluded. Google AI Overview is pinned to the United States;
         manual surfaces use the location note captured on save. Store backend: <span className="font-mono">{data.backend}</span>.

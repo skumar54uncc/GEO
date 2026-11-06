@@ -86,6 +86,9 @@ export default function DemandPage() {
 
   return (
     <div className="space-y-6">
+      <div className="border-2 border-red-800 bg-red-50 p-4 text-lg font-bold text-red-950" role="alert">
+        Legacy, not METRICS.md compliant
+      </div>
       <p className="max-w-3xl text-sm leading-6 text-uncc-ink/80">
         Energy campaign intelligence for the year: what AI currently says about UNC Charlotte, the NSF Grid Engine story
         you own, how people search, and the six pages to write. Trends junk (Walmart, iPhones) is filtered out.

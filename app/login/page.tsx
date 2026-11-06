@@ -14,6 +14,7 @@ function LoginForm() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const expired = params.get("expired") === "1";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,11 +41,19 @@ function LoginForm() {
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Local development login. There is no password, so this app only listens on 127.0.0.1. The first person to sign
-          in becomes admin; everyone after starts as viewer.
+          Local development login. There is no password, so this app only listens on 127.0.0.1.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {expired ? (
+          <p className="mb-4 border-l-4 border-uncc-gold pl-3 text-sm">
+            Your local session expired. Sign in again to continue.
+          </p>
+        ) : null}
+        <p className="mb-4 text-xs text-uncc-ink/70">
+          Access is limited to organizations with an explicit membership for this email. Session and organization
+          selector cookies are httpOnly and stay on this local app.
+        </p>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>

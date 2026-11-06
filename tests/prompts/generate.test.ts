@@ -212,6 +212,30 @@ describe("prompt generation", () => {
     expect(generated.every((r) => r.status === "draft")).toBe(true);
     expect(generated.some((r) => demandEvidenceLabel(r.demandEvidence) === "no demand evidence")).toBe(true);
     expect(generated.filter((r) => r.branded).length).toBeGreaterThanOrEqual(2);
+
+    const unknownEvidence = await runPromptGenerate(db, {
+      orgId: ctx.orgId,
+      request,
+      approval: {
+        paramsHash: estimate.paramsHash,
+        units: estimate.units,
+        priceUsd: null,
+        acknowledgedUnknownPrice: true,
+      },
+      embedder: disabledEmbedder(),
+      fixture: {
+        prompts: [
+          {
+            text: "What career outcomes follow an energy engineering degree?",
+            personaId: persona!.id,
+            intent: "discovery",
+            provenance: "paa",
+            demandEvidenceIds: ["00000000-0000-4000-8000-000000000099"],
+          },
+        ],
+      },
+    });
+    expect(unknownEvidence.prompts[0]?.demandEvidence).toEqual({ label: "no demand evidence", ids: [] });
   });
 
   it("API estimate/run mirrors approval gate and freeze still refuses unapproved drafts", async () => {

@@ -5,6 +5,7 @@ import { exaAdapter } from "./exa";
 import { keywordsAdapter } from "./keywords";
 import { llmMentionsAdapter } from "./llmMentions";
 import { paaAdapter } from "./paa";
+import { relatedSearchAdapter } from "./relatedSearch";
 import { searchConsoleAdapter } from "./searchConsole";
 import { trendsAdapter } from "./trends";
 
@@ -13,6 +14,7 @@ export const DEMAND_ADAPTERS: DemandAdapter[] = [
   searchConsoleAdapter,
   paaAdapter,
   autocompleteAdapter,
+  relatedSearchAdapter,
   exaAdapter,
   keywordsAdapter,
   llmMentionsAdapter,
@@ -30,6 +32,7 @@ export {
   keywordsAdapter,
   llmMentionsAdapter,
   paaAdapter,
+  relatedSearchAdapter,
   searchConsoleAdapter,
   trendsAdapter,
 };

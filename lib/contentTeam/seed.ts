@@ -98,6 +98,9 @@ export async function ensureContentTeamCampaigns(db: Db, orgId: string): Promise
 }
 
 export async function seedContentTeam(db: Db, orgId: string): Promise<SeedResult> {
+  // Phase 4 library seed preserves the five content-team IDs and adds the remaining canonical personas.
+  const { ensureCanonicalPersonas } = await import("@/lib/personas/seed");
+  await ensureCanonicalPersonas(db);
   const personasOut = await ensureContentTeamPersonas(db);
   const campaignsOut = await ensureContentTeamCampaigns(db, orgId);
   return { personas: personasOut, campaigns: campaignsOut };

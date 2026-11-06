@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-06: Wave 2b — Phase 4 personas and prompt generation
+
+- Citation follow-ups before Phase 4: org-scoped `source_class_overrides`, Charlotte/higher-ed domain
+  lists (including review sites), top unclassified domains plus `other` share with n on citation
+  aggregates, answer-capsule near flag (15–40 words) with word count, and `docs/EVALS.md` pending a
+  20-page hand-check after the pilot.
+- Seeded the 11 canonical personas. Content-team keys stay mapped explicitly
+  (`undergrad`→`prospective_first_year`, `grad`→`grad_applicant`, `business_partner` owns selectable
+  `employer`, `business_leader` is a legacy alias, `research_partner` unchanged). The five seeded IDs
+  and 118+341 imported prompts remain unchanged.
+- Fixture-only demand adapters: Trends, Search Console, PAA, autocomplete, related searches, Exa,
+  DataForSEO keywords, LLM Mentions. Each reports `not_connected` when keys/access are missing.
+  Seasonal event seed requires a source URL.
+- Prompt generation is estimate → approval → cost guard, fixture-only in this wave. Drafts only;
+  provenance plus verified demand evidence ids, or the explicit label `no demand evidence`. Branded
+  detection uses the alias table (Charlotte alone is not branded) and warns under 70% unbranded.
+  Embedding dedupe shows `dedupe disabled` when the local model is unavailable.
+
+Verification: 403 tests pass; typecheck passes; lint passes with one pre-existing
+`app/analyze/page.tsx` hook warning. No paid provider calls.
+
 ## 2026-11-06: Wave 2a — Phase 6 response and citation analysis
 
 - Added canonical cited-page caching and a `citation.fetch` worker. Fetches use the identifying

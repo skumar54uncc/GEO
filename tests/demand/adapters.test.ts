@@ -40,6 +40,7 @@ const SOURCES: DemandSource[] = [
   "search_console",
   "paa",
   "autocomplete",
+  "related_search",
   "exa",
   "keyword_volume",
   "llm_mentions",
@@ -50,7 +51,7 @@ describe("Phase 4 demand adapters", () => {
 
   it("reports not_connected for every adapter when keys or access are missing", () => {
     const connections = listDemandConnections(EMPTY_ENV);
-    expect(connections).toHaveLength(7);
+    expect(connections).toHaveLength(8);
     for (const c of connections) {
       expect(c.connected).toBe(false);
       expect(c.status).toBe("not_connected");
@@ -152,7 +153,7 @@ describe("Phase 4 demand adapters", () => {
       expect(stored.inserted).toBeGreaterThan(0);
     }
 
-    expect(DEMAND_ADAPTERS).toHaveLength(7);
+    expect(DEMAND_ADAPTERS).toHaveLength(8);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
 
@@ -172,7 +173,7 @@ describe("Phase 4 demand adapters", () => {
       const response = await connectionsGet(req("/api/demand/connections", { cookie }));
       expect(response.status).toBe(200);
       const body = (await response.json()) as { connections: Array<{ status: string; connected: boolean }> };
-      expect(body.connections).toHaveLength(7);
+      expect(body.connections).toHaveLength(8);
       expect(body.connections.every((c) => c.status === "not_connected" && c.connected === false)).toBe(true);
     } finally {
       for (const [key, value] of Object.entries(previous)) {

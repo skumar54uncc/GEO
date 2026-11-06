@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { checkBudget } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
-import { campaigns, personas, prompts } from "@/lib/db/pg/schema";
+import { campaigns, demandSignals, personas, prompts } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
 import { brandedShare, isBrandedPrompt } from "@/lib/prompts/branded";
 import { dedupeAgainstCampaign } from "@/lib/prompts/dedupe";
@@ -140,6 +140,22 @@ export function demandEvidencePayload(ids: string[] | undefined): DemandEvidence
   return { ids: [...ids] };
 }
 
+/** Keeps only demand_signals ids that belong to this campaign. Unknown ids are dropped. */
+export async function verifiedDemandEvidence(
+  db: Db,
+  campaignId: string,
+  ids: string[] | undefined,
+): Promise<DemandEvidencePayload> {
+  if (!ids || ids.length === 0) return { label: "no demand evidence", ids: [] };
+  const unique = [...new Set(ids)];
+  const rows = await db
+    .select({ id: demandSignals.id })
+    .from(demandSignals)
+    .where(and(eq(demandSignals.campaignId, campaignId), inArray(demandSignals.id, unique)));
+  if (!rows.length) return { label: "no demand evidence", ids: [] };
+  return { ids: rows.map((row) => row.id) };
+}
+
 export function demandEvidenceLabel(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "no demand evidence";
   const row = payload as { label?: string; ids?: unknown };
@@ -243,7 +259,7 @@ export async function runPromptGenerate(
       intent: item.intent,
       funnelStage: item.funnelStage ?? INTENT_FUNNEL[item.intent],
       provenance: item.provenance,
-      demandEvidence: demandEvidencePayload(item.demandEvidenceIds),
+      demandEvidence: await verifiedDemandEvidence(db, campaign.id, item.demandEvidenceIds),
       branded: isBrandedPrompt(item.text, aliases),
     });
   }

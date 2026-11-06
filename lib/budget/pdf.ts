@@ -47,11 +47,21 @@ ${banner}
       ? data.providers
           .map(
             (p) =>
-              `<tr><td>${escape(p.provider)}</td><td>${money(p.spentThisMonthUsd)}</td><td>${money(p.monthlyBudgetUsd)}</td><td>${money(p.perScanCapUsd)}</td><td>${p.creditsRemaining ?? "unknown"}</td></tr>`,
+              `<tr><td>${escape(p.displayName)}${p.note ? ` <span class="muted">(${escape(p.note)})</span>` : ""}</td><td>${money(p.spentThisMonthUsd)}</td><td>${money(p.monthlyBudgetUsd)}</td><td>${money(p.perScanCapUsd)}</td><td>${p.creditsRemaining ?? "unknown"}</td></tr>`,
           )
           .join("")
       : `<tr><td colspan="5">No provider accounts configured.</td></tr>`
   }</tbody></table>
+${
+  data.capWarnings.length
+    ? `<p class="label"><strong>Cap warnings:</strong> ${data.capWarnings.map(escape).join(" ")}</p>`
+    : ""
+}
+${
+  data.pilot.basedOnDrafts
+    ? `<p class="label">Pilot is based on ${data.pilot.draftPrompts} draft prompts, pending approval.</p>`
+    : ""
+}
 
 <h2>Stop-loss</h2>
 <p>Pause if more than ${data.stopLoss.errorOrBlockedRateThreshold * 100}% of the first ${data.stopLoss.firstDrawWindow} AI answers are errors or blocked, or if actual cost runs more than ${data.stopLoss.estimateCostOverrunThreshold * 100}% over the estimate.</p>

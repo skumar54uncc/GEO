@@ -17,6 +17,9 @@ type AnswerRow = {
   branded: boolean;
   mentionedBrand: boolean;
   scanCreatedAt: string;
+  capturedAt: string;
+  personaKey: string | null;
+  personaLabel: string | null;
 };
 
 type DrawDetail = {
@@ -40,28 +43,14 @@ export default function AnswersPage() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [rows, setRows] = useState<AnswerRow[] | null>(null);
   const [selected, setSelected] = useState<DrawDetail | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      setError(null);
-      const res = await fetch(`/api/campaigns/${campaignId}/answers`, { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      setRows(json.answers);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [campaignId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function openDraw(drawId: string) {
+  const openDraw = useCallback(async (drawId: string) => {
     try {
       setDetailError(null);
+      setSelectedId(drawId);
       const res = await fetch(`/api/answers/${drawId}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
@@ -69,7 +58,25 @@ export default function AnswersPage() {
     } catch (err) {
       setDetailError(err instanceof Error ? err.message : String(err));
     }
-  }
+  }, []);
+
+  const load = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch(`/api/campaigns/${campaignId}/answers`, { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      const answers = json.answers as AnswerRow[];
+      setRows(answers);
+      if (answers.length > 0) void openDraw(answers[0].drawId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [campaignId, openDraw]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (error) return <ErrorState message={error} />;
   if (!rows) return <LoadingState label="Loading AI answers…" />;
@@ -96,18 +103,23 @@ export default function AnswersPage() {
         </EmptyState>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          <ul className="space-y-2">
+          <ul className="space-y-2" data-testid="answer-list">
             {rows.map((row) => (
               <li key={row.drawId}>
                 <button
                   type="button"
-                  className="w-full rounded border border-uncc-rule bg-white p-3 text-left text-sm hover:border-uncc-green"
+                  className={`w-full rounded border bg-white p-3 text-left text-sm hover:border-uncc-green ${
+                    selectedId === row.drawId ? "border-uncc-green" : "border-uncc-rule"
+                  }`}
                   onClick={() => void openDraw(row.drawId)}
                 >
                   <p className="font-medium line-clamp-2">{row.promptText}</p>
-                  <p className="mt-1 text-xs text-uncc-ink/60">
-                    {enginePlain(row.engine)} · {runnerPlain(row.runner)} ·{" "}
-                    {row.mentionedBrand ? "named us" : "did not name us"}
+                  <p className="mt-1 text-xs text-uncc-ink/70">
+                    {enginePlain(row.engine)} · {formatScanDate(row.capturedAt)} ·{" "}
+                    {row.personaLabel ?? row.personaKey ?? "no persona"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-uncc-ink/60">
+                    {runnerPlain(row.runner)} · {row.mentionedBrand ? "named us" : "did not name us"}
                     {row.branded ? " · branded question" : ""}
                   </p>
                 </button>
@@ -118,9 +130,9 @@ export default function AnswersPage() {
           <div>
             {detailError ? <ErrorState message={detailError} /> : null}
             {!selected ? (
-              <p className="text-sm text-uncc-ink/60">Select an answer to inspect.</p>
+              <LoadingState label="Opening answer…" />
             ) : (
-              <article className="space-y-3 rounded border border-uncc-rule bg-white p-4">
+              <article className="space-y-3 rounded border border-uncc-rule bg-white p-4" data-testid="answer-detail">
                 <div className="flex flex-wrap gap-2">
                   <Badge tone="muted">{enginePlain(selected.draw.engine)}</Badge>
                   <Badge tone="muted">{runnerPlain(selected.draw.runner)}</Badge>
@@ -148,43 +160,38 @@ export default function AnswersPage() {
                 <p className="text-sm font-medium">{selected.draw.promptText}</p>
                 <div
                   className="max-h-80 overflow-auto whitespace-pre-wrap rounded bg-uncc-paper p-3 text-sm"
-                  dangerouslySetInnerHTML={{
-                    __html: annotateMentions(selected.answer.escapedText, selected.mentions),
-                  }}
+                  dangerouslySetInnerHTML={{ __html: selected.answer.escapedText }}
                 />
                 <section>
-                  <h3 className="font-serif text-base font-semibold">Citations</h3>
-                  <ul className="mt-1 space-y-1 text-sm">
-                    {selected.citations.map((c, i) => (
-                      <li key={`${c.url}-${i}`}>
-                        <span className="font-mono text-xs">{c.sourceClass}</span> · {c.domain} ·{" "}
-                        <a className="text-uncc-green underline" href={c.url} target="_blank" rel="noreferrer">
-                          link
-                        </a>
-                      </li>
-                    ))}
-                    {!selected.citations.length ? <li className="text-uncc-ink/60">None</li> : null}
-                  </ul>
+                  <h2 className="text-sm font-semibold">Citations</h2>
+                  {selected.citations.length === 0 ? (
+                    <p className="text-xs text-uncc-ink/60">None recorded.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1 text-sm">
+                      {selected.citations.map((c) => (
+                        <li key={c.url}>
+                          <a className="underline" href={c.url} target="_blank" rel="noreferrer">
+                            {c.domain}
+                          </a>{" "}
+                          <span className="text-xs text-uncc-ink/60">({c.sourceClass})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </section>
                 <section>
-                  <h3 className="font-serif text-base font-semibold">Claims</h3>
-                  <ul className="mt-1 space-y-1 text-sm">
-                    {selected.claims.map((c, i) => (
-                      <li key={i}>
-                        <Badge tone="muted">{c.verdict}</Badge> {c.text}
-                      </li>
-                    ))}
-                    {!selected.claims.length ? <li className="text-uncc-ink/60">None</li> : null}
-                  </ul>
-                </section>
-                <section>
-                  <h3 className="font-serif text-base font-semibold">Follow-up queries</h3>
-                  <ul className="mt-1 list-disc pl-5 text-sm">
-                    {selected.fanoutQueries.map((f, i) => (
-                      <li key={i}>{f.query}</li>
-                    ))}
-                    {!selected.fanoutQueries.length ? <li className="text-uncc-ink/60">None recorded</li> : null}
-                  </ul>
+                  <h2 className="text-sm font-semibold">Claims</h2>
+                  {selected.claims.length === 0 ? (
+                    <p className="text-xs text-uncc-ink/60">None recorded.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1 text-sm">
+                      {selected.claims.map((c, i) => (
+                        <li key={`${c.text}-${i}`}>
+                          {c.text} <Badge tone="muted">{c.verdict}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </section>
               </article>
             )}
@@ -193,24 +200,4 @@ export default function AnswersPage() {
       )}
     </div>
   );
-}
-
-function annotateMentions(
-  escapedText: string,
-  mentions: Array<{ entityType: string; span: { text: string } | null }>,
-): string {
-  let out = escapedText;
-  for (const mention of mentions) {
-    if (!mention.span?.text) continue;
-    const label = mention.entityType === "brand" ? "our brand" : "competitor";
-    const needle = mention.span.text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    out = out.replace(
-      needle,
-      `<mark class="mention-${mention.entityType}" title="${label}">${needle}<span class="sr-only"> (${label})</span></mark>`,
-    );
-  }
-  return out;
 }

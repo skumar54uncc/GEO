@@ -85,8 +85,7 @@ export default function OverviewPage() {
               <h2 id={`c-${card.campaignId}`} className="font-serif text-xl font-semibold">
                 {card.name}
               </h2>
-              {card.legacy ? <Badge tone="gold">legacy method</Badge> : null}
-              {card.latestScan?.legacyMethod ? <Badge tone="muted">legacy method</Badge> : null}
+              {(card.legacy || card.latestScan?.legacyMethod) ? <Badge tone="gold">legacy method</Badge> : null}
               {card.partial ? <Badge tone="muted">partial data</Badge> : null}
             </div>
             <p className="text-sm text-uncc-ink/60">{card.topic}</p>
@@ -96,7 +95,8 @@ export default function OverviewPage() {
             ) : (
               <>
                 <p className="mt-2 text-sm text-uncc-ink/70">
-                  Latest scan {formatScanDate(card.latestScan.createdAt)}
+                  {card.legacy || card.latestScan.legacyMethod ? "Original scan date" : "Latest scan"}{" "}
+                  {formatScanDate(card.latestScan.createdAt)}
                   {card.openRecommendations ? ` · ${card.openRecommendations} open recommendations` : ""}
                 </p>
                 {card.partial ? (
@@ -110,7 +110,15 @@ export default function OverviewPage() {
                       <li key={`${h.engine}|${h.runner}`} className={h.tooFewDraws ? "opacity-60" : ""}>
                         <p className="font-medium">
                           {enginePlain(h.engine)}: {h.won} of {h.prompts} prompts
-                          {h.ciLow !== null && h.ciHigh !== null ? (
+                          {h.tooFewDraws ? (
+                            <span className="text-sm font-normal text-uncc-ink/70">
+                              {" "}
+                              — too few answers (n={h.draws})
+                              {h.ciLow !== null && h.ciHigh !== null && h.ciLow !== h.ciHigh
+                                ? `; approximate 95% Wilson CI ${pct(h.ciLow)} to ${pct(h.ciHigh)}`
+                                : ""}
+                            </span>
+                          ) : h.ciLow !== null && h.ciHigh !== null && h.ciLow !== h.ciHigh ? (
                             <span className="text-sm font-normal text-uncc-ink/70">
                               {" "}
                               (95% CI {pct(h.ciLow)} to {pct(h.ciHigh)})

@@ -51,13 +51,25 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return json as T;
 }
 
-/** A rate always shows its n and 95% interval. */
+/** A rate always shows its n and 95% interval. Never show a zero-width interval. */
 function Rate({ r }: { r: RateWithCi }) {
+  if (r.n > 0 && r.n < 30) {
+    return <span className="text-uncc-ink/70">too few answers (n={r.n})</span>;
+  }
   if (r.rate === null) return <span className="text-uncc-ink/50">unknown (n={r.n})</span>;
+  const zeroWidth = r.ciLow !== null && r.ciHigh !== null && r.ciLow === r.ciHigh;
+  if (zeroWidth) {
+    return <span className="text-uncc-ink/70">too few answers (n={r.n})</span>;
+  }
   const ci = r.ciLow !== null && r.ciHigh !== null ? `${pct(r.ciLow)} to ${pct(r.ciHigh)}` : "interval unknown";
+  const approx = r.approximate ? " approximate" : "";
   return (
     <span className={r.tooFewDraws ? "text-uncc-ink/50" : ""}>
-      {pct(r.rate)} <span className="text-xs text-uncc-ink/60">({ci}, n={r.n})</span>
+      {pct(r.rate)}{" "}
+      <span className="text-xs text-uncc-ink/60">
+        ({ci}
+        {approx}, n={r.n})
+      </span>
     </span>
   );
 }
@@ -78,7 +90,17 @@ function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDat
       </p>
       <p className="mt-1 font-serif text-xl text-uncc-ink">
         {w.won} of {w.prompts} prompts
-        {w.ciLow !== null && w.ciHigh !== null ? (
+        {grey ? (
+          <span className="text-sm text-uncc-ink/70">
+            {" "}
+            — too few answers (n={w.draws})
+            {w.ciLow !== null && w.ciHigh !== null && w.ciLow !== w.ciHigh ? (
+              <>
+                ; approximate 95% Wilson CI {pct(w.ciLow)} to {pct(w.ciHigh)}
+              </>
+            ) : null}
+          </span>
+        ) : w.ciLow !== null && w.ciHigh !== null && w.ciLow !== w.ciHigh ? (
           <span className="text-sm text-uncc-ink/70"> (95% CI {pct(w.ciLow)} to {pct(w.ciHigh)})</span>
         ) : null}
       </p>
@@ -111,8 +133,8 @@ function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDat
 function CellTable({ cells, showWon }: { cells: CellRollup[]; showWon: boolean }) {
   if (cells.length === 0) return <p className="text-sm text-uncc-ink/60">No valid judged draws in this selection yet.</p>;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px] text-left text-sm" data-testid="dashboard-metrics-table">
+    <div className="w-full overflow-x-auto rounded border border-uncc-rule/40">
+      <table className="w-full min-w-[720px] text-left text-sm" data-testid="dashboard-metrics-table">
         <caption className="sr-only">Campaign metrics by engine and how answers were collected</caption>
         <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
           <tr className="border-b border-uncc-rule">

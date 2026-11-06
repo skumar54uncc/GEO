@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, Message, SafeLink, SitePicker, useSites } from "@/components/site/client";
+import { EmptyState, ErrorState, LoadingState, PartialDataNotice } from "@/components/PageStates";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -434,7 +435,7 @@ function PeersStep({ view, setMsg }: { view: SiteView; setMsg: (m: { tone: "ok" 
       setMsg({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     }
   };
-  if (!data) return <p className="text-sm text-uncc-ink/60">Loading…</p>;
+  if (!data) return <LoadingState label="Loading peer suggestions…" />;
   return (
     <div className="space-y-4">
       <Card>
@@ -562,7 +563,9 @@ export default function OnboardingPage() {
           </Button>
         </div>
       </div>
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <ErrorState message={error} /> : null}
+      {msg?.tone === "error" ? <ErrorState message={msg.text} /> : <Message msg={msg} />}
+      {!sites ? <LoadingState label="Loading sites…" /> : null}
       {sites?.length ? (
         <div className="flex flex-wrap items-center gap-3">
           <SitePicker sites={sites} siteId={siteId} onChange={setSiteId} />
@@ -583,7 +586,7 @@ export default function OnboardingPage() {
           </nav>
         </div>
       ) : null}
-      <Message msg={msg} />
+      {busy ? <PartialDataNotice>Discovery or crawl is still running. This page refreshes automatically.</PartialDataNotice> : null}
       {view ? (
         step === "Hosts" ? (
           <HostsStep view={view} reload={loadSite} setMsg={setMsg} />
@@ -592,8 +595,12 @@ export default function OnboardingPage() {
         ) : (
           <PeersStep view={view} setMsg={setMsg} />
         )
+      ) : siteId && !view ? (
+        <LoadingState label="Loading site details…" />
       ) : sites && !sites.length ? (
-        <p className="text-sm text-uncc-ink/60">No sites yet. Enter a root URL to begin.</p>
+        <EmptyState title="No sites yet">
+          <p>Enter a root URL above to begin discovery and crawl.</p>
+        </EmptyState>
       ) : null}
     </div>
   );

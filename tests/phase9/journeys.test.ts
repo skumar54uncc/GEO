@@ -421,19 +421,15 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
       expect(await page.getByTestId("new-campaign").count()).toBe(0);
       expect(await page.getByTestId("demo-data-banner").count()).toBe(0);
       expect(await page.getByRole("button", { name: /Approve/i }).count()).toBe(0);
-      await page.screenshot({ path: "docs/phase9-screenshots/overview-unc.png", fullPage: true });
 
       await page.goto(`/campaigns/${c.campaignId}/dashboard`);
       await expectVisible(page.getByTestId("dashboard-metrics-table"));
-      await page.screenshot({ path: "docs/phase9-screenshots/campaign-dashboard-unc.png", fullPage: true });
 
       await page.goto(`/campaigns/${c.campaignId}/answers`);
       await expectVisible(page.getByRole("heading", { name: /Answer Explorer/i }));
-      await page.screenshot({ path: "docs/phase9-screenshots/answers-unc.png", fullPage: true });
 
       await page.goto(`/campaigns/${c.campaignId}/gaps`);
       await expectVisible(page.getByRole("heading", { name: /Gaps & Recommendations/i }));
-      await page.screenshot({ path: "docs/phase9-screenshots/gaps-unc.png", fullPage: true });
 
       await page.goto("/budget");
       await assertLandmarks(page, /Budget & Funding/i);
@@ -444,7 +440,6 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
       expect(html).toMatch(/upper estimate, prices verified on/i);
       expect(html).not.toContain(DEMO_DATA_BANNER);
       await assertPageA11yBasics(page);
-      await page.screenshot({ path: "docs/phase9-screenshots/budget-unc.png", fullPage: true });
 
       await page.goto("/overview");
       const orgSelect = page.locator("header.global-header label:has-text(\"Organization\") select");
@@ -454,11 +449,9 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
         orgSelect.selectOption(demoOrg.id),
       ]);
       await expectVisible(page.getByTestId("demo-data-banner"), 30_000);
-      await page.screenshot({ path: "docs/phase9-screenshots/overview-demo.png", fullPage: true });
 
       await page.goto("/budget");
       await expectVisible(page.getByTestId("demo-data-banner"));
-      await page.screenshot({ path: "docs/phase9-screenshots/budget-demo.png", fullPage: true });
 
       const pdfDemo = await page.request.get("/api/budget/pdf");
       expect(await pdfDemo.text()).toContain(DEMO_DATA_BANNER);

@@ -396,25 +396,42 @@ export const TREND_MAX_SCANS = 12;
 export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; campaignId: string; now?: Date } & CellOptions) {
   const campaign = await getCampaign(db, opts.orgId, opts.campaignId); // throws NotFoundError for another org's campaign
 
+  // Legacy Energy keeps a long-running unfrozen scan; include it. Measured campaigns stay complete/partial + frozen sets only.
+  const statuses = campaign.legacy
+    ? (["complete", "partial", "running"] as const)
+    : (["complete", "partial"] as const);
   const scanRows = await db
     .select({ id: scans.id, promptSetId: scans.promptSetId, status: scans.status, createdAt: scans.createdAt })
     .from(scans)
-    .where(and(eq(scans.campaignId, opts.campaignId), eq(scans.kind, "scan"), inArray(scans.status, ["complete", "partial"])))
+    .where(and(eq(scans.campaignId, opts.campaignId), eq(scans.kind, "scan"), inArray(scans.status, [...statuses])))
     .orderBy(asc(scans.createdAt), asc(scans.id));
+  const LEGACY_SET_KEY = "__legacy_unfrozen__";
   const bySet = new Map<string, typeof scanRows>();
   for (const s of scanRows) {
-    if (!s.promptSetId) continue;
-    const list = bySet.get(s.promptSetId) ?? [];
+    if (!s.promptSetId && !campaign.legacy) continue;
+    const key = s.promptSetId ?? LEGACY_SET_KEY;
+    const list = bySet.get(key) ?? [];
     list.push(s);
-    bySet.set(s.promptSetId, list);
+    bySet.set(key, list);
   }
 
-  const setRows = bySet.size
-    ? await db.select().from(promptSets).where(and(eq(promptSets.campaignId, opts.campaignId), inArray(promptSets.id, [...bySet.keys()]))).orderBy(desc(promptSets.version))
+  let realSetIds = [...bySet.keys()].filter((k) => k !== LEGACY_SET_KEY);
+  // Prefer frozen prompt-set series when present; only surface the unfrozen legacy bucket alone.
+  if (realSetIds.length > 0) bySet.delete(LEGACY_SET_KEY);
+  realSetIds = [...bySet.keys()].filter((k) => k !== LEGACY_SET_KEY);
+  const setRows = realSetIds.length
+    ? await db.select().from(promptSets).where(and(eq(promptSets.campaignId, opts.campaignId), inArray(promptSets.id, realSetIds))).orderBy(desc(promptSets.version))
     : [];
 
   const promptSetViews: DashboardPromptSet[] = [];
-  for (const set of setRows) {
+  const setsToRender: Array<{ id: string; sha256: string | null; version: number | null; frozenAt: string | null }> = [
+    ...setRows.map((s) => ({ id: s.id, sha256: s.sha256, version: s.version, frozenAt: s.frozenAt?.toISOString() ?? null })),
+  ];
+  if (bySet.has(LEGACY_SET_KEY)) {
+    setsToRender.push({ id: LEGACY_SET_KEY, sha256: null, version: null, frozenAt: null });
+  }
+
+  for (const set of setsToRender) {
     const list = bySet.get(set.id)!;
     const latest = list[list.length - 1];
     const trendScans = list.slice(-TREND_MAX_SCANS);
@@ -430,8 +447,8 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
     }
     const prev = await previousComparableScan(db, latest.id);
     promptSetViews.push({
-      promptSetId: set.id,
-      version: set.version,
+      promptSetId: set.id === LEGACY_SET_KEY ? latest.id : set.id,
+      version: set.version ?? 0,
       sha256: set.sha256,
       scanCount: list.length,
       latestScan: { id: latest.id, createdAt: latest.createdAt.toISOString(), status: latest.status },

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-06: Demo org full seed + admin fixture cleanup
+
+- `seedFullDemoOrg` / `seedMarkedDemoOrg`: leadership-sized Demo University dataset (3 content-team campaigns, frozen sets, 2 scans each, draws for all `ROUTES` engines with `fidelityFor`, judges, citations, gap recommendations, strategy rows, `cost_ledger`, `DEMO_SEED_MARKER` on applicable tables). Idempotent via `deleteAllDataForOrg` (slug `demo-university-leadership` or duplicate `Demo University` demo org).
+- Scripts: `scripts/seed-demo-org.ts` (loads `scripts/env`, requires `DATABASE_URL` ≠ `TEST_DATABASE_URL`), `scripts/admin-cleanup-fixture-contamination.ts` (dry-run default; `--apply` + audited deletes under UNC Charlotte; refuses `TEST_DATABASE_URL` without `--allow-test-db`).
+- Typecheck fix: `tests/budget/funding-pdf.test.ts` `FundingPageData` fixture matches `buildFundingPage` (pilot/steady-state fields, `capWarnings`).
+
+## 2026-11-06: Phase 9 review fixes (pre–Wave 4)
+
+- Provenance: prior review screenshots came from `geo_test` (Journey 6 fixture `prompt 0–3`), not
+  `DATABASE_URL` (`geo`). Real `geo` has no `prompt N` / fixture-answer contamination. Admin cleanup
+  script `scripts/admin-cleanup-fixture-contamination.ts` (dry-run default; `--apply` audits then deletes).
+- Tests refuse to start when `TEST_DATABASE_URL === DATABASE_URL`. Fixture draws default to
+  `test_fixture:v1`; isolation counts both `demo_seed:v1` and `test_fixture:v1` under UNC Charlotte.
+- Full Demo University seed (`seedFullDemoOrg` / `scripts/seed-demo-org.ts`): 3 campaigns, 2 scans each,
+  all 6 engines, citations, gap cards, strategy report, budget figures — all `demo_seed:v1`.
+- Budget: draft-prompt estimates labeled “based on N draft prompts, pending approval”; provider table
+  uses display names + active/calibration/blocked roles; cap-exceeded warnings.
+- Intervals: never show zero-width; n&lt;30 shows “too few answers (n=…)” with optional approximate Wilson;
+  tests for 0 of 4 and 4 of 4.
+- Polish: auto-select first active campaign; single nav active state; Answer Explorer opens first answer
+  with prompt/engine/date/persona; dashboard table scrolls at 1024px; one legacy badge; PageStates on
+  Site Audit + Onboarding; viewers redirected from legacy operator pages (tested).
+- Screenshots: `scripts/phase9-screenshots.ts` against real `DATABASE_URL` only (gitignored output).
+
 ## 2026-11-06: Wave 3 — Phase 9 frontend (all 10 screens)
 
 - Production shell wired to UX.md sitemap: Overview, Campaigns + dashboard, Prompts, Answer Explorer, Citations,

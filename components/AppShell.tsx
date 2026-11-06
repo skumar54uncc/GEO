@@ -23,17 +23,20 @@ const WORKSPACE_LINKS = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-function campaignLinks(campaignId: string | null) {
-  if (!campaignId) {
-    return [
-      { href: null, label: "Prompts" },
-      { href: null, label: "Answers" },
-      { href: null, label: "Citations" },
-      { href: null, label: "Gaps" },
-      { href: null, label: "Strategy" },
-      { href: null, label: "Dashboard" },
-    ] as const;
-  }
+const LEGACY_OPERATOR_PREFIXES = [
+  "/capture",
+  "/serpapi",
+  "/config",
+  "/analyze",
+  "/recommend",
+  "/bots",
+  "/demand",
+  "/legacy",
+  "/settings/providers",
+  "/settings/demand",
+] as const;
+
+function campaignLinks(campaignId: string) {
   return [
     { href: `/campaigns/${campaignId}/prompts`, label: "Prompts" },
     { href: `/campaigns/${campaignId}/answers`, label: "Answers" },
@@ -45,12 +48,19 @@ function campaignLinks(campaignId: string | null) {
 }
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" || pathname === "/overview" : pathname === href || pathname.startsWith(`${href}/`);
+  if (href === "/") return pathname === "/" || pathname === "/overview";
+  // Campaigns list only — not /campaigns/:id/*
+  if (href === "/campaigns") return pathname === "/campaigns";
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function campaignIdFromPath(pathname: string): string | null {
   const m = pathname.match(/^\/campaigns\/([0-9a-f-]{36})(?:\/|$)/i);
   return m?.[1] ?? null;
+}
+
+function isLegacyOperatorPath(pathname: string): boolean {
+  return LEGACY_OPERATOR_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -82,18 +92,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .then(async (state) => {
         setSession(state);
         if (state) {
+          if (state.user.role === "viewer" && isLegacyOperatorPath(pathname)) {
+            router.replace("/");
+            return;
+          }
           const list = await fetch("/api/campaigns", { cache: "no-store" }).then((r) => r.json());
-          setCampaigns(
-            ((list.campaigns ?? []) as Array<{ id: string; name: string; status: string }>).map((c) => ({
-              id: c.id,
-              name: c.name,
-              status: c.status,
-            })),
-          );
+          const opts = ((list.campaigns ?? []) as Array<{ id: string; name: string; status: string }>).map((c) => ({
+            id: c.id,
+            name: c.name,
+            status: c.status,
+          }));
+          setCampaigns(opts);
+          if (!pathCampaignId && !selectedCampaignId) {
+            const firstActive = opts.find((c) => c.status === "active") ?? opts[0];
+            if (firstActive) setSelectedCampaignId(firstActive.id);
+          }
         }
       })
       .finally(() => setLoading(false));
-  }, [pathname, router]);
+    // intentionally omit selectedCampaignId to avoid re-fetch loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, router, pathCampaignId]);
 
   if (pathname === "/login") {
     return (
@@ -148,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "--font-serif": activeOrganization.theme.serifFont,
   } as CSSProperties;
   const audience = user.role === "viewer" ? "Leadership" : "Operator";
-  const links = campaignLinks(selectedCampaignId);
+  const links = selectedCampaignId ? campaignLinks(selectedCampaignId) : [];
 
   return (
     <div className="min-h-screen" style={themeStyle}>
@@ -177,7 +196,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onChange={(e) => onCampaignChange(e.target.value)}
             data-testid="campaign-switcher"
           >
-            <option value="">Select campaign</option>
+            {!selectedCampaignId ? <option value="">Select campaign</option> : null}
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} ({c.status})
@@ -204,18 +223,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {link.label}
             </Link>
           ))}
-          <p className="nav-heading">Campaign</p>
-          {links.map((link) =>
-            link.href ? (
-              <Link key={link.label} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
-                {link.label}
-              </Link>
-            ) : (
-              <span key={link.label} aria-disabled="true" title="Select a campaign to open this destination">
-                {link.label} <small>Unavailable</small>
-              </span>
-            ),
-          )}
+          {selectedCampaignId ? (
+            <>
+              <p className="nav-heading">Campaign</p>
+              {links.map((link) => (
+                <Link key={link.label} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
+                  {link.label}
+                </Link>
+              ))}
+            </>
+          ) : null}
           {WORKSPACE_LINKS.slice(2).map((link) => (
             <Link key={link.href} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
               {link.label}

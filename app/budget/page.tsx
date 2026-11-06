@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { HowMeasured } from "@/components/HowMeasured";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { Badge } from "@/components/ui/card";
 
 type Funding = {
   organization: { id: string; name: string; isDemo: boolean };
@@ -18,6 +19,8 @@ type Funding = {
   pilot: {
     campaign: string | null;
     prompts: number;
+    draftPrompts: number;
+    basedOnDrafts: boolean;
     engines: number;
     drawsPerPrompt: number;
     totalDraws: number;
@@ -31,14 +34,21 @@ type Funding = {
     personaQuarterlyUsdUpper: number | null;
     monthlyUsdUpper: number | null;
     note: string;
+    basedOnDrafts: boolean;
   };
   providers: Array<{
     provider: string;
+    displayName: string;
+    role: "active" | "calibration" | "blocked";
+    note: string | null;
     monthlyBudgetUsd: number | null;
     perScanCapUsd: number | null;
     creditsRemaining: number | null;
     spentThisMonthUsd: number;
+    estimateExceedsCap: boolean;
+    capWarning: string | null;
   }>;
+  capWarnings: string[];
   spendToDateUsd: number;
 };
 
@@ -97,6 +107,17 @@ export default function BudgetPage() {
         }}
       />
 
+      {data.capWarnings.length ? (
+        <div className="rounded border border-amber-700/40 bg-amber-50 p-4 text-sm" role="status" data-testid="budget-cap-warnings">
+          <p className="font-semibold text-amber-950">Estimate exceeds a provider cap</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-950">
+            {data.capWarnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <section className="rounded border border-uncc-rule bg-white p-5" aria-labelledby="pilot-title">
         <h2 id="pilot-title" className="font-serif text-xl font-semibold">
           Pilot estimate (Energy core)
@@ -111,6 +132,11 @@ export default function BudgetPage() {
               Campaign: <strong>{data.pilot.campaign}</strong> · {data.pilot.prompts} prompts · {data.pilot.engines}{" "}
               engines · {data.pilot.drawsPerPrompt} answers each · {data.pilot.totalDraws} AI answers checked
             </p>
+            {data.pilot.basedOnDrafts ? (
+              <p className="mt-2 text-sm font-medium text-amber-950" data-testid="pilot-draft-label">
+                based on {data.pilot.draftPrompts} draft prompts, pending approval
+              </p>
+            ) : null}
             <p className="mt-2 font-serif text-2xl">
               {money(data.pilot.usdUpper)}{" "}
               <span className="text-sm font-sans italic text-uncc-ink/70">({data.upperEstimateLabel})</span>
@@ -124,6 +150,9 @@ export default function BudgetPage() {
         <h2 id="steady-title" className="font-serif text-xl font-semibold">
           Steady state (all 3 campaigns)
         </h2>
+        {data.steadyState.basedOnDrafts ? (
+          <p className="mt-2 text-sm font-medium text-amber-950">Includes draft prompts pending approval where a series has no approved prompts.</p>
+        ) : null}
         <p className="mt-2 text-sm">
           Core biweekly: {data.steadyState.coreBiweeklyDraws} AI answers / month →{" "}
           <strong>{money(data.steadyState.coreBiweeklyUsdUpper)}</strong>
@@ -149,11 +178,12 @@ export default function BudgetPage() {
         {data.providers.length === 0 ? (
           <p className="mt-3 text-sm text-uncc-ink/70">No provider accounts configured yet.</p>
         ) : (
-          <table className="mt-3 w-full text-left text-sm">
+          <table className="mt-3 w-full text-left text-sm" data-testid="budget-providers">
             <caption className="sr-only">Provider spend and caps</caption>
             <thead className="text-xs uppercase text-uncc-ink/60">
               <tr>
                 <th className="py-1">Provider</th>
+                <th>Role</th>
                 <th>Spent this month</th>
                 <th>Monthly cap</th>
                 <th>Per-scan cap</th>
@@ -162,8 +192,16 @@ export default function BudgetPage() {
             </thead>
             <tbody>
               {data.providers.map((p) => (
-                <tr key={p.provider} className="border-t border-uncc-rule/60">
-                  <td className="py-1.5">{p.provider}</td>
+                <tr key={p.provider} className={`border-t border-uncc-rule/60 ${p.estimateExceedsCap ? "bg-amber-50" : ""}`}>
+                  <td className="py-1.5">
+                    <span className="font-medium">{p.displayName}</span>
+                    {p.note ? <div className="text-xs text-uncc-ink/60">{p.note}</div> : null}
+                  </td>
+                  <td>
+                    {p.role === "calibration" ? <Badge tone="muted">calibration only</Badge> : null}
+                    {p.role === "blocked" ? <Badge tone="gold">not used (blocked by IT)</Badge> : null}
+                    {p.role === "active" ? <span className="text-xs">active route</span> : null}
+                  </td>
                   <td>{money(p.spentThisMonthUsd)}</td>
                   <td>{money(p.monthlyBudgetUsd)}</td>
                   <td>{money(p.perScanCapUsd)}</td>
@@ -206,15 +244,15 @@ export default function BudgetPage() {
           </thead>
           <tbody>
             {data.vendorComparison.map((v) => (
-              <tr key={v.vendor} className="border-t border-uncc-rule/60">
+              <tr key={v.vendor} className="border-t border-uncc-rule/60 align-top">
                 <td className="py-1.5">{v.vendor}</td>
                 <td>{v.price}</td>
-                <td>{v.scope}</td>
+                <td className="max-w-xs text-uncc-ink/80">{v.scope}</td>
                 <td>
-                  <a className="text-uncc-green underline" href={v.sourceUrl} target="_blank" rel="noreferrer">
+                  <a className="underline" href={v.sourceUrl} target="_blank" rel="noreferrer">
                     source
                   </a>{" "}
-                  ({v.sourceDate})
+                  <span className="text-xs text-uncc-ink/60">({v.sourceDate})</span>
                 </td>
               </tr>
             ))}

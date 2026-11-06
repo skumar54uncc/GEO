@@ -44,10 +44,13 @@ export async function buildOverview(db: Db, orgId: string): Promise<{ campaigns:
   const out: OverviewCampaignCard[] = [];
   for (const c of rows) {
     const legacy = Boolean((c.settings as { legacy?: boolean } | null)?.legacy);
+    // Legacy Energy keeps a long-running "Legacy and manual captures" scan; include it so
+    // leadership still sees original scan dates and figures. Measured campaigns stay complete/partial only.
+    const statuses = legacy ? (["complete", "partial", "running"] as const) : (["complete", "partial"] as const);
     const [latest] = await db
       .select()
       .from(scans)
-      .where(and(eq(scans.campaignId, c.id), inArray(scans.status, ["complete", "partial"]), eq(scans.kind, "scan")))
+      .where(and(eq(scans.campaignId, c.id), inArray(scans.status, [...statuses]), eq(scans.kind, "scan")))
       .orderBy(desc(scans.createdAt))
       .limit(1);
 

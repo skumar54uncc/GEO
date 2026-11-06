@@ -12,12 +12,16 @@ export type SeriesEstimate = {
   campaignId: string;
   series: "core" | "persona";
   prompts: number;
+  /** How many of `prompts` are still draft (pending approval). */
+  draftPrompts: number;
   engines: number;
   drawsPerPrompt: number;
   totalDraws: number;
   usdEachUpper: number | null;
   usdTotalUpper: number | null;
   note: string;
+  /** True when the estimate used draft prompts because none were approved. */
+  basedOnDrafts: boolean;
 };
 
 const DRAWS = 3;
@@ -25,6 +29,7 @@ const ENGINES = Object.keys(ROUTES) as Engine[];
 
 /**
  * Cost estimate only: 6 primary engines × 3 draws × Charlotte. Calls adapter.estimate (no network).
+ * Prefers approved imported prompts; if a series has none approved, estimates from drafts and labels them.
  * Does not create a scan or spend money.
  */
 export async function estimateContentTeamSeries(db: Db, orgId: string): Promise<{
@@ -57,8 +62,10 @@ export async function estimateContentTeamSeries(db: Db, orgId: string): Promise<
     .select({
       id: campaigns.id,
       name: campaigns.name,
-      neutrals: sql<number>`count(*) filter (where ${prompts.personaId} is null)::int`,
-      variants: sql<number>`count(*) filter (where ${prompts.personaId} is not null)::int`,
+      approvedCore: sql<number>`count(*) filter (where ${prompts.personaId} is null and ${prompts.status} = 'approved')::int`,
+      draftCore: sql<number>`count(*) filter (where ${prompts.personaId} is null and ${prompts.status} = 'draft')::int`,
+      approvedPersona: sql<number>`count(*) filter (where ${prompts.personaId} is not null and ${prompts.status} = 'approved')::int`,
+      draftPersona: sql<number>`count(*) filter (where ${prompts.personaId} is not null and ${prompts.status} = 'draft')::int`,
     })
     .from(campaigns)
     .innerJoin(prompts, eq(prompts.campaignId, campaigns.id))
@@ -74,19 +81,27 @@ export async function estimateContentTeamSeries(db: Db, orgId: string): Promise<
   const series: SeriesEstimate[] = [];
   for (const r of rows) {
     for (const kind of ["core", "persona"] as const) {
-      const n = kind === "core" ? Number(r.neutrals) : Number(r.variants);
+      const approved = kind === "core" ? Number(r.approvedCore) : Number(r.approvedPersona);
+      const drafts = kind === "core" ? Number(r.draftCore) : Number(r.draftPersona);
+      const basedOnDrafts = approved === 0 && drafts > 0;
+      const n = basedOnDrafts ? drafts : approved;
       const totalDraws = n * ENGINES.length * DRAWS;
+      const note = basedOnDrafts
+        ? `based on ${n} draft prompts, pending approval. Upper-bound adapter estimates; Charlotte region; primary routes only. Not approved. Not run.`
+        : "Upper-bound adapter estimates; Charlotte region; primary routes only. Not approved. Not run.";
       series.push({
         campaign: r.name,
         campaignId: r.id,
         series: kind,
         prompts: n,
+        draftPrompts: basedOnDrafts ? n : 0,
         engines: ENGINES.length,
         drawsPerPrompt: DRAWS,
         totalDraws,
         usdEachUpper: perPromptUsd,
         usdTotalUpper: perPromptUsd === null ? null : round4(perPromptUsd * n),
-        note: "Upper-bound adapter estimates; Charlotte region; primary routes only. Not approved. Not run.",
+        note,
+        basedOnDrafts,
       });
     }
   }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, EvidenceBadge, Message, SafeLink, SeverityBadge, SitePicker, useSites } from "@/components/site/client";
+import { EmptyState, ErrorState, LoadingState, PartialDataNotice } from "@/components/PageStates";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -58,7 +59,11 @@ export default function AuditPage() {
   const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
   const load = useCallback(async () => {
-    if (!siteId) return;
+    if (!siteId) {
+      setReport(null);
+      return;
+    }
+    setReport(undefined);
     const q = new URLSearchParams(Object.entries(filter).filter(([, v]) => v));
     q.set("limit", "500");
     const res = await api<{ report: Report | null }>(`/api/sites/${siteId}/audit?${q}`);
@@ -66,7 +71,10 @@ export default function AuditPage() {
   }, [siteId, filter]);
 
   useEffect(() => {
-    void load().catch((err) => setMsg({ tone: "error", text: String(err) }));
+    void load().catch((err) => {
+      setMsg({ tone: "error", text: String(err) });
+      setReport(null);
+    });
   }, [load]);
 
   const openPage = async (id: string) => {
@@ -104,9 +112,25 @@ export default function AuditPage() {
         </div>
         {sites ? <SitePicker sites={sites} siteId={siteId} onChange={setSiteId} /> : null}
       </div>
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      <Message msg={msg} />
-      {report === null ? <p className="text-sm text-uncc-ink/60">No audit yet. Crawl the site from Onboarding first.</p> : null}
+      {error ? <ErrorState message={error} /> : null}
+      {msg?.tone === "error" ? <ErrorState message={msg.text} /> : <Message msg={msg} />}
+      {!sites ? <LoadingState label="Loading sites…" /> : null}
+      {sites && sites.length === 0 ? (
+        <EmptyState title="No sites yet">
+          <p>
+            Start from <SafeLink href="/onboarding">Onboarding</SafeLink> to add a root URL and crawl before running an audit.
+          </p>
+        </EmptyState>
+      ) : null}
+      {siteId && report === undefined ? <LoadingState label="Loading audit findings…" /> : null}
+      {siteId && report === null ? (
+        <EmptyState title="No audit yet">
+          <p>Crawl the site from Onboarding first, then return here to review findings.</p>
+        </EmptyState>
+      ) : null}
+      {report && report.crawl.status !== "complete" ? (
+        <PartialDataNotice>Crawl status is {report.crawl.status}. Findings may still change.</PartialDataNotice>
+      ) : null}
       {report ? (
         <>
           <Card>

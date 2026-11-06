@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Engine, Runner } from "@/lib/capture/types";
 import type { Db } from "@/lib/db/pg/client";
-import { campaigns, draws, mentions, prompts, scans, judgeRuns } from "@/lib/db/pg/schema";
+import { campaigns, draws, mentions, personas, prompts, scans, judgeRuns } from "@/lib/db/pg/schema";
 
 export type AnswerListItem = {
   drawId: string;
@@ -9,12 +9,15 @@ export type AnswerListItem = {
   promptText: string;
   scanId: string;
   scanCreatedAt: string;
+  capturedAt: string;
   engine: Engine;
   runner: Runner;
   fidelity: string;
   branded: boolean;
   mentionedBrand: boolean;
   status: string;
+  personaKey: string | null;
+  personaLabel: string | null;
 };
 
 export async function listCampaignAnswers(
@@ -32,7 +35,7 @@ export async function listCampaignAnswers(
     const [latest] = await db
       .select({ id: scans.id })
       .from(scans)
-      .where(and(eq(scans.campaignId, opts.campaignId), inArray(scans.status, ["complete", "partial"]), eq(scans.kind, "scan")))
+      .where(and(eq(scans.campaignId, opts.campaignId), inArray(scans.status, ["complete", "partial", "running"]), eq(scans.kind, "scan")))
       .orderBy(desc(scans.createdAt))
       .limit(1);
     scanId = latest?.id ?? null;
@@ -45,10 +48,13 @@ export async function listCampaignAnswers(
       promptText: prompts.text,
       branded: prompts.branded,
       scanCreatedAt: scans.createdAt,
+      personaKey: personas.key,
+      personaName: personas.name,
     })
     .from(draws)
     .innerJoin(scans, eq(scans.id, draws.scanId))
     .innerJoin(prompts, eq(prompts.id, draws.promptId))
+    .leftJoin(personas, eq(personas.id, prompts.personaId))
     .where(and(eq(draws.scanId, scanId), eq(draws.status, "ok")))
     .orderBy(desc(draws.capturedAt))
     .limit(opts.limit ?? 100);
@@ -76,12 +82,15 @@ export async function listCampaignAnswers(
       promptText: row.promptText,
       scanId,
       scanCreatedAt: row.scanCreatedAt.toISOString(),
+      capturedAt: row.draw.capturedAt?.toISOString() ?? row.scanCreatedAt.toISOString(),
       engine: row.draw.engine,
       runner: row.draw.runner,
       fidelity: row.draw.fidelity,
       branded: row.branded,
       mentionedBrand,
       status: row.draw.status,
+      personaKey: row.personaKey,
+      personaLabel: row.personaName,
     });
   }
   return { answers: out, scanId };

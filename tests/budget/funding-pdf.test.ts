@@ -16,6 +16,8 @@ function minimalFunding(over: Partial<FundingPageData["organization"]> = {}): Fu
     pilot: {
       campaign: "Energy",
       prompts: 10,
+      draftPrompts: 0,
+      basedOnDrafts: false,
       engines: 2,
       drawsPerPrompt: 3,
       totalDraws: 60,
@@ -29,8 +31,10 @@ function minimalFunding(over: Partial<FundingPageData["organization"]> = {}): Fu
       personaQuarterlyUsdUpper: 25,
       monthlyUsdUpper: 75,
       note: "fixture",
+      basedOnDrafts: false,
     },
     providers: [],
+    capWarnings: [],
     spendToDateUsd: 0,
   };
 }

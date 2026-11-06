@@ -226,6 +226,37 @@ describe("prompts won", () => {
     expect(promptsWon([{ mentions: 2, validDraws: 3 }]).tooFewDraws).toBe(true);
     expect(promptsWon([])).toMatchObject({ won: 0, prompts: 0, rate: null, ciLow: null, ciHigh: null });
   });
+
+  it("0 of 4 and 4 of 4 never produce a zero-width Wilson interval", () => {
+    const none = promptsWon(Array.from({ length: 4 }, () => ({ mentions: 0, validDraws: 1 })));
+    expect(none).toMatchObject({ won: 0, prompts: 4, tooFewDraws: true, approximate: true });
+    expect(none.ciLow).not.toBeNull();
+    expect(none.ciHigh).not.toBeNull();
+    expect(none.ciLow!).toBeLessThan(none.ciHigh!);
+
+    const all = promptsWon(Array.from({ length: 4 }, () => ({ mentions: 1, validDraws: 1 })));
+    expect(all).toMatchObject({ won: 4, prompts: 4, tooFewDraws: true, approximate: true });
+    expect(all.ciLow).not.toBeNull();
+    expect(all.ciHigh).not.toBeNull();
+    expect(all.ciLow!).toBeLessThan(all.ciHigh!);
+  });
+
+  it("cluster rate falls back to Wilson when bootstrap width is zero", () => {
+    const allHit = clusterRate({
+      clusters: Array.from({ length: 4 }, () => [true]),
+    });
+    expect(allHit.rate).toBe(1);
+    expect(allHit.approximate).toBe(true);
+    expect(allHit.method).toBe("wilson");
+    expect(allHit.ciLow!).toBeLessThan(allHit.ciHigh!);
+
+    const noneHit = clusterRate({
+      clusters: Array.from({ length: 4 }, () => [false]),
+    });
+    expect(noneHit.rate).toBe(0);
+    expect(noneHit.approximate).toBe(true);
+    expect(noneHit.ciLow!).toBeLessThan(noneHit.ciHigh!);
+  });
 });
 
 describe("indexes", () => {

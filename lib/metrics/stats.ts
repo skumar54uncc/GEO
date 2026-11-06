@@ -149,6 +149,7 @@ export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDra
   const draws = scored.reduce((sum, p) => sum + p.validDraws, 0);
   const { rate, ci_low, ci_high } = wilsonInterval(won, scored.length);
   const sizes = [...new Set(scored.map((p) => p.validDraws))];
+  const tooFewDraws = draws < TOO_FEW_DRAWS;
   return {
     won,
     prompts: scored.length,
@@ -158,13 +159,24 @@ export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDra
     draws,
     method: "wilson",
     rule: sizes.length === 1 ? wonRuleLabel(sizes[0]) : "at least half of valid draws",
-    tooFewDraws: draws < TOO_FEW_DRAWS,
+    tooFewDraws,
+    approximate: tooFewDraws && scored.length > 0,
   };
 }
 
 export function wilsonRate(successes: number, n: number, draws = n): RateWithCi {
   const { rate, ci_low, ci_high } = wilsonInterval(successes, n);
-  return { rate, ciLow: ci_low, ciHigh: ci_high, numerator: successes, n, method: "wilson", tooFewDraws: draws < TOO_FEW_DRAWS };
+  const tooFewDraws = draws < TOO_FEW_DRAWS;
+  return {
+    rate,
+    ciLow: ci_low,
+    ciHigh: ci_high,
+    numerator: successes,
+    n,
+    method: "wilson",
+    tooFewDraws,
+    approximate: tooFewDraws && n > 0,
+  };
 }
 
 export function clusterRate(opts: {
@@ -177,10 +189,18 @@ export function clusterRate(opts: {
   const numerator = clusters.reduce((sum, c) => sum + c.filter(Boolean).length, 0);
   if (n === 0) return { rate: null, ciLow: null, ciHigh: null, numerator, n, method: "cluster_bootstrap", tooFewDraws: true };
   const { estimate, ciLow, ciHigh } = clusterBootstrap({ clusters, statistic: pooledRate, iterations, seed });
+  const low = Number.isFinite(ciLow) ? ciLow : null;
+  const high = Number.isFinite(ciHigh) ? ciHigh : null;
+  // Degenerate bootstrap (all successes or all failures) collapses to a zero-width interval.
+  // Never show that; fall back to Wilson and label it approximate.
+  if (low !== null && high !== null && low === high) {
+    const w = wilsonRate(numerator, n, n);
+    return { ...w, approximate: true };
+  }
   return {
     rate: estimate,
-    ciLow: Number.isFinite(ciLow) ? ciLow : null,
-    ciHigh: Number.isFinite(ciHigh) ? ciHigh : null,
+    ciLow: low,
+    ciHigh: high,
     numerator,
     n,
     method: "cluster_bootstrap",

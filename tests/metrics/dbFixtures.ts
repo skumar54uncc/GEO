@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { ensureCaptureProviders } from "@/lib/capture/accounts";
 import { CHARLOTTE_REGION, ensureNamedRegion } from "@/lib/capture/regions";
 import { fidelityFor, type Engine, type Runner } from "@/lib/capture/types";
+import { TEST_FIXTURE_MARKER } from "@/lib/contracts/demoSeed";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
 import { campaigns, citations, claims, draws, judgeRuns, mentions, prompts, scans } from "@/lib/db/pg/schema";
@@ -46,12 +47,16 @@ export type DrawOpts = {
   citation?: { domain: string; sourceClass?: "owned" | "other" };
   claim?: "supported" | "contradicted" | "unverifiable";
   brandSpan?: number;
-  /** Set only for Demo University / fixture contamination tests. */
+  /**
+   * Defaults to TEST_FIXTURE_MARKER so fixture draws are detectable.
+   * Pass `null` only for isolation tests that model unmarked production rows.
+   */
   seedMarker?: string | null;
 };
 
 export async function addDraw(c: Ctx, scanId: string, promptId: string, o: DrawOpts = {}) {
   const runner = o.runner ?? "ui_provider";
+  const seedMarker = o.seedMarker === undefined ? TEST_FIXTURE_MARKER : o.seedMarker;
   const [d] = await c.db
     .insert(draws)
     .values({
@@ -71,7 +76,7 @@ export async function addDraw(c: Ctx, scanId: string, promptId: string, o: DrawO
       capturedAt: new Date(),
       searchUsed: o.searchUsed ?? null,
       experimental: o.experimental ?? false,
-      seedMarker: o.seedMarker ?? null,
+      seedMarker,
     })
     .returning({ id: draws.id });
   if (o.citation) {

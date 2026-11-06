@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 64" role="img" aria-labelledby="t"><title id="t">Scout, scouting what AI says about us</title>
+<g><rect x="11" y="12" width="14" height="14" rx="4" fill="#005035"/>
+<rect x="39" y="12" width="14" height="14" rx="4" fill="#005035"/>
+<rect x="24" y="24" width="16" height="10" rx="3" fill="#005035"/>
+<circle cx="18" cy="39" r="14" fill="#005035"/>
+<circle cx="46" cy="39" r="14" fill="#005035"/>
+<circle cx="18" cy="39" r="8.5" fill="#FFFFFF"/>
+<circle cx="46" cy="39" r="8.5" fill="#FFFFFF"/>
+<circle cx="18" cy="39" r="5" fill="#A49665"/>
+<circle cx="46" cy="39" r="5" fill="#A49665"/>
+<circle cx="20.2" cy="36.6" r="1.7" fill="#FFFFFF"/></g>
+<text x="76" y="39" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="38" fill="#005035">Scout</text>
+<text x="77" y="57" font-family="'Helvetica Neue', Arial, sans-serif" font-size="11.5" letter-spacing=".4" fill="#005035">Scouting what AI says about us</text></svg>

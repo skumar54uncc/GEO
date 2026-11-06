@@ -1,8 +1,19 @@
 # Changelog
 
+## 2026-11-06: Phase 9 screenshot review round 2 (pre–Wave 4)
+
+- Budget: per-provider pilot/monthly shares from primary route plan only; fallback / calibration / parity are $0 unless scheduled. One role label per row (DataForSEO active; SerpAPI and Local SERP parity check only; Perplexity fallback only; OpenAI/Anthropic/Gemini calibration only; Bright Data not used, blocked by IT). Steady state as core $/mo, persona $/mo (quarterly ÷ 3), total $/mo, total $/yr. Vendor table summary row: "This platform, upper estimate: $X/mo, $Y/yr".
+- Demo reseed: 30 prompts × 3 answers × 6 engines per campaign scan; scan 2 differs from scan 1 with at least one McNemar-significant series and others within noise; `demo_seed:v1` markers kept.
+- Intervals: no cluster bootstrap when prompt count k &lt; 10 (approximate Wilson or "too few prompts (k=…)"); suppress by prompt and answer count, never mention count; paired comparison never returns a zero-width interval. Tests for k=3 and identical scans.
+- Gaps leadership cards: plain-English title, lever, owner, lost questions, shared cited-page traits (with n), evidence with links, suggested action, correlation note. No raw keys.
+- Answer Explorer: group by prompt, engine tabs, draws 1–3, filters for engine / named us / persona / runner.
+- AIO citation backfill (`lib/citations/backfillFromRaw.ts`, `scripts/backfill-aio-citations.ts`): new citation rows only from draw raw JSON or SerpAPI `provider_cache` when migration stored answer text instead of the full payload; draws untouched. Applied for UNC Charlotte (6 legacy google_aio draws, 69 citations).
+- Legacy campaign renamed to "Energy (legacy captures)". Persona display names map to taxonomy labels. Location-biased prompts (brand alias or city) excluded from headlines with a visible note. Em dashes removed from UI copy.
+
 ## 2026-11-06: Demo org full seed + admin fixture cleanup
 
-- `seedFullDemoOrg` / `seedMarkedDemoOrg`: leadership-sized Demo University dataset (3 content-team campaigns, frozen sets, 2 scans each, draws for all `ROUTES` engines with `fidelityFor`, judges, citations, gap recommendations, strategy rows, `cost_ledger`, `DEMO_SEED_MARKER` on applicable tables). Idempotent via `deleteAllDataForOrg` (slug `demo-university-leadership` or duplicate `Demo University` demo org).
+- `seedFullDemoOrg` / `seedMarkedDemoOrg`: 30 approved prompts per campaign (`import:content_team_v1`), one frozen set each, 2 complete scans, 30×3×6 primary-engine draws per scan (540 draws per scan, six engines), judges with brand mentions and supported claims, citations, 2+ gap cards per campaign (structured payload for leadership UI), one cross-campaign strategy report (Energy), `cost_ledger`, `ensureCaptureProviders`, `DEMO_SEED_MARKER` on applicable tables. Per campaign, scan 2 vs scan 1 includes one engine series with McNemar-significant change (6 discordant pairs, `mcnemarExact` alpha 0.05) and other series from a deterministic base mention pattern. Idempotent via `deleteAllDataForOrg` (slug `demo-university-leadership` or duplicate `Demo University` demo org).
+- Gaps leadership API (`listCampaignGaps`): enriches rows with `displayTitle`, `leverLabel`, `lostQuestionTexts`, shared-cited-pages summary, evidence links, `suggestedAction`. UI (`app/campaigns/[id]/gaps/page.tsx`) shows plain English only.
 - Scripts: `scripts/seed-demo-org.ts` (loads `scripts/env`, requires `DATABASE_URL` ≠ `TEST_DATABASE_URL`), `scripts/admin-cleanup-fixture-contamination.ts` (dry-run default; `--apply` + audited deletes under UNC Charlotte; refuses `TEST_DATABASE_URL` without `--allow-test-db`).
 - Typecheck fix: `tests/budget/funding-pdf.test.ts` `FundingPageData` fixture matches `buildFundingPage` (pilot/steady-state fields, `capWarnings`).
 

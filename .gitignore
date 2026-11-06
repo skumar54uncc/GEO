@@ -3,6 +3,8 @@ node_modules
 out
 .env
 .env.local
+# Stakeholder source files (PDF/CSV). Public repo — never commit.
+inputs/
 data/*.db
 data/*.json
 data/*.db-journal

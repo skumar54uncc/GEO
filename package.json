@@ -19,7 +19,9 @@
     "user:role": "tsx scripts/user-role.ts",
     "worker": "tsx worker/index.ts",
     "worker:ping": "tsx scripts/worker-ping.ts",
-    "capture:dry-run": "tsx scripts/dry-run.ts"
+    "capture:dry-run": "tsx scripts/dry-run.ts",
+    "capture:retry": "tsx scripts/retry-failed.ts",
+    "prompts:import": "tsx scripts/import-prompts-csv.ts"
   },
   "dependencies": {
     "@crawlee/memory-storage": "^3.18.2",

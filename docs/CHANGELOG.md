@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-11-06: Content-team prompt import (AI, Energy, Internships)
+
+Stakeholder CSV import only (not Phase 4 generation). `inputs/` is gitignored (public repo). Source: `inputs/content-team/content_team_prompts_v1.csv` (PDF optional later).
+
+- Migration `0006`: `personas.key` / `draft_prefix`; `prompts.note`, `external_id`, `persona_mode`, `doc_personas`, `suggested_personas`; `prompt_sets.label`.
+- Seeded library personas (undergrad, grad, business_partner, research_partner, business_leader) with draft prefixes. Non-legacy campaigns AI / Energy / Internships (`settings.content_team_v1`). Legacy Energy untouched.
+- `npm run prompts:import` → **118 neutral + 341 persona variants** (idempotent). All `status=draft`, `provenance=custom`.
+- Review UI: `/campaigns/[id]/prompts` (filters, bulk approve, near-dupe highlight). Freeze API accepts `{ filter: core|persona, label }` — **not frozen yet**.
+- Estimates only (6 engines × 3 draws × Charlotte, no spend): core **2124** draws (~$50.69 upper); persona **6138** draws (~$146.49 upper); total ~$197.19. Stopped for approval.
+
+## 2026-11-06: Phase 5 — scans, schedules, measurement
+
+Goal: “x of N prompts” with honest intervals, schedules, and alerts. Formulas live in `docs/METRICS.md`.
+
+**Metrics:** `lib/metrics/` — Wilson prompts-won, cluster bootstrap (2000 iters, seed 20261103), McNemar + paired bootstrap compare, rollup cells by engine×runner×region×persona×branded. Never averages runners or pools chat vs Google indexes. Branded series excluded from the headline. `api_search` counts only when `search_used = true`.
+
+**Schedules:** `lib/schedules.ts` + migration `0005` (`schedules.enabled`, `scans.period_key`, unique period). `schedule.tick` creates one scan per period; auto-runs only under `budget_cap_usd`; else awaits approval and raises `budget_threshold`.
+
+**Alerts:** `alerts.evaluate` — significant decline, budget 80%/100%, provider error rate ≥20%, blocked. Canary failures remain Phase 3.
+
+**Scan hardening:** atomic `approveScan`; `assertScanOrg` on all paid worker jobs; canary reuse on `scan.run` redelivery; `runScan` only while `status=running`.
+
+**UI/API:** `/campaigns/[id]/dashboard`, schedules + alerts + model-events routes (org-scoped, audited writes).
+
+**Tests:** metrics / schedules / alerts suites (87+ related tests green). Full Phase 5 live gate (Energy campaign scan + second scan McNemar + scheduled tick) still needs an approved paid run when you want it.
+
+Not done: stored rollup table; Recharts trend chart; model-event chart markers; DataForSEO Standard queue for Google SERP `40101`.
+
+## 2026-11-06: Phase 3 live dry-run (scan `3e5984e7-75a7-42a8-a5c6-841732e27733`)
+
+Ran `npm run capture:dry-run` against DataForSEO only (Charlotte). Estimate **$1.4320** approved; actual ledger **$0.6641**. Status **partial** (7 Google SERP errors from DataForSEO `40101 Internal SE Server Error`; recorded as error draws, batch continued). All 6 canaries ok.
+
+| engine | runner | fidelity | ok | error | actual | estimate |
+|---|---|---|---:|---:|---:|---:|
+| chatgpt | ui_provider | high | 9 | 0 | $0.0400 | $0.0400 |
+| gemini | ui_provider | high | 9 | 0 | $0.0400 | $0.0400 |
+| perplexity | api_search | medium | 9 | 0 | $0.0619 | $0.6360 |
+| claude | api_search | medium | 9 | 0 | $0.4701 | $0.6360 |
+| google_aio | serp_provider | high | 4 | 5 | $0.0200 | $0.0400 |
+| google_ai_mode | serp_provider | high | 7 | 2 | $0.0320 | $0.0400 |
+
+Checks: every draw has runner, fidelity, `region_honored`, and `model_build` (or `unknown`). One ChatGPT prompt’s three draws have three distinct `raw_payload_id` and answer texts.
+
+Manual retry of the 7 Google error draws (estimate $0.028, then remaining 2 at $0.008): **5 ok** (attempt 2), **2 still error** on `google_aio` for prompt `fde120df` (draws 2 and 3) with the same DataForSEO `40101` — failed rows kept; stopped (no retry loop). CLI helper: `scripts/retry-failed.ts`.
+
 ## 2026-11-04: Fixture redaction + CI Chromium (GitGuardian / Vitest)
 
 Capture fixtures now use `REDACTED_FIXTURE_TOKEN` / redacted SerpAPI archive URLs instead of high-entropy sample page tokens that GitGuardian flagged on commit `47bd056` (documented provider samples, not live keys). Added `scripts/redact-fixtures.ts` and `.gitguardian.yaml` ignoring `tests/fixtures/capture/**`. CI installs Chromium before tests so the Phase 2 crawl e2e does not fail empty-page assertions on `ubuntu-latest`.
@@ -59,11 +104,11 @@ Known limits:
 - Token-billed models are priced only for the names in `lib/capture/pricing.ts`. Any other model is refused as "unknown price".
 - Third-party UI providers still need the procurement review of their collection method before production data (PROVIDERS section 7).
 
-Verification gate (2026-11-03 on this Mac):
-1. `typecheck` passes. `lint` passes; the one warning in `app/analyze/page.tsx` predates Phase 1. `npm test` passes 248 tests in 24 files.
-2. Live dry run: **not run yet**. As of 2026-11-04, DataForSEO login/password and `DATAFORSEO_PERPLEXITY_MODEL=sonar` are set; dry-run plan prices those routes. It still refuses until `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (e.g. `claude-sonnet-5-5`) are set. Bright Data is deferred (campus block). See 2026-11-04 Perplexity note above.
-3. Distinct raw payloads per draw are tested with fake adapters. It still needs confirming in the live run.
-4. Runner, fidelity, region honored and model build on every draw are tested. It still needs confirming in the live run.
+Verification gate (live dry-run completed 2026-11-06 on this Mac):
+1. `typecheck` / `lint` / tests were green before the dry-run (CI on `614a550`).
+2. Live dry run: scan `3e5984e7-75a7-42a8-a5c6-841732e27733`. Estimate $1.4320 → actual $0.6641. Counts in the 2026-11-06 entry above. Anthropic not required (Claude primary = DataForSEO).
+3. Distinct raw payloads: confirmed live (ChatGPT prompt `fde120df-…`, 3 unique `raw_payload_id` and answers).
+4. Runner, fidelity, region honored, model build: present on all 54 measurement draws (0 missing).
 5. Legacy draws still render: every page returns 200, the dashboard still reads 80.0% (32 of 40; 95% Wilson CI 65.2% to 89.5%), and `data/tracker.db` is unchanged (sha256 04bfc5e4…).
 
 ## 2026-11-03: Phase 2, Onboarding and site audit

@@ -43,6 +43,17 @@ export async function runCanaries(
   db: Db,
   opts: { orgId: string; campaignId: string; forScanId: string; routes: Route[]; region: Region; adapters?: Partial<Record<string, ProviderAdapter>> },
 ): Promise<CanaryResult[]> {
+  // Re-delivery of scan.run must not pay for canaries twice: reuse rows already written for this scan.
+  const prior = await db.select().from(canaryRuns).where(eq(canaryRuns.scanId, opts.forScanId));
+  if (prior.length) {
+    const byRoute = new Map(prior.map((r) => [`${r.engine}|${r.runner}|${r.provider}`, r]));
+    return opts.routes.map((route) => {
+      const row = byRoute.get(`${route.engine}|${route.runner}|${route.provider}`);
+      if (!row) return { route, ok: false, reason: "Canary missing for route on resume", drawId: null };
+      return { route, ok: row.ok, reason: row.reason, drawId: row.drawId };
+    });
+  }
+
   const promptId = await ensureCanaryPrompt(db, opts.campaignId);
   const [canaryScan] = await db
     .insert(scans)

@@ -6,6 +6,7 @@ import type { Audience } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Legacy Energy prompt list (SQLite-era store). Campaign review uses /api/campaigns/[id]/prompts. */
 export const GET = withRole("viewer", async () => {
   return NextResponse.json({ prompts: await getStore().listPrompts() });
 });

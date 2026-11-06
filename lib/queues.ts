@@ -9,4 +9,6 @@ export const QUEUES = {
   captureRetry: "capture.retry",
   fanoutRun: "fanout.run",
   judgeRun: "judge.run",
+  metricsRollup: "metrics.rollup",
+  alertsEvaluate: "alerts.evaluate",
 } as const;

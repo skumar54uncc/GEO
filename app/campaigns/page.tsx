@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -324,6 +325,14 @@ export default function CampaignsPage() {
                 {c.topic ? <CardDescription>{c.topic}</CardDescription> : null}
               </div>
               <div className="flex shrink-0 gap-2">
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/campaigns/${c.id}/dashboard`}>Dashboard</Link>
+                </Button>
+                {!c.legacy ? (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/campaigns/${c.id}/prompts`}>Review prompts</Link>
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="outline" onClick={() => setEditing({ id: c.id, draft: draftFrom(c) })}>
                   Edit
                 </Button>

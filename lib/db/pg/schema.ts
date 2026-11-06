@@ -568,17 +568,25 @@ export const campaigns = pgTable("campaigns", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
-export const personas = pgTable("personas", {
-  id: id(),
-  orgId: uuid("org_id").references(() => organizations.id),
-  name: text("name").notNull(),
-  goal: text("goal").notNull().default(""),
-  background: text("background").notNull().default(""),
-  vocabulary: text("vocabulary").notNull().default(""),
-  notes: text("notes").notNull().default(""),
-  legacyKey: text("legacy_key"),
-  createdAt: createdAt(),
-});
+export const personas = pgTable(
+  "personas",
+  {
+    id: id(),
+    orgId: uuid("org_id").references(() => organizations.id),
+    name: text("name").notNull(),
+    goal: text("goal").notNull().default(""),
+    background: text("background").notNull().default(""),
+    vocabulary: text("vocabulary").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    legacyKey: text("legacy_key"),
+    /** Stable handle for content-team imports (undergrad, grad, …). Null on legacy-only rows. */
+    key: text("key"),
+    /** Draft first-person prefix for persona_mode=prefix variants. Content team must approve. */
+    draftPrefix: text("draft_prefix"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("personas_key_unique").on(t.key).where(sql`${t.key} is not null`)],
+);
 
 export const regions = pgTable("regions", {
   id: id(),
@@ -657,10 +665,20 @@ export const prompts = pgTable(
     version: integer("version").notNull().default(1),
     embedding: vector("embedding"),
     embeddingModel: text("embedding_model"),
+    note: text("note"),
+    /** CSV prompt_id for neutrals; `{prompt_id}:{persona_key}` for variants. Idempotency key. */
+    externalId: text("external_id"),
+    /** `prefix` when text was built from draft_prefix + neutral text; null for neutrals. */
+    personaMode: text("persona_mode"),
+    docPersonas: text("doc_personas").array().notNull().default(sql`'{}'::text[]`),
+    suggestedPersonas: text("suggested_personas").array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
-  (t) => [index("prompts_campaign").on(t.campaignId)],
+  (t) => [
+    index("prompts_campaign").on(t.campaignId),
+    uniqueIndex("prompts_campaign_external").on(t.campaignId, t.externalId).where(sql`${t.externalId} is not null`),
+  ],
 );
 
 export const promptSets = pgTable(
@@ -671,9 +689,14 @@ export const promptSets = pgTable(
     version: integer("version").notNull(),
     sha256: text("sha256"),
     frozenAt: ts("frozen_at"),
+    /** Human label such as AI-core-v1; unique per campaign when set. */
+    label: text("label"),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("prompt_sets_campaign_version").on(t.campaignId, t.version)],
+  (t) => [
+    uniqueIndex("prompt_sets_campaign_version").on(t.campaignId, t.version),
+    uniqueIndex("prompt_sets_campaign_label").on(t.campaignId, t.label).where(sql`${t.label} is not null`),
+  ],
 );
 
 export const promptSetItems = pgTable(
@@ -746,23 +769,35 @@ export const schedules = pgTable("schedules", {
   promptSetId: uuid("prompt_set_id").notNull().references(() => promptSets.id),
   nextRunAt: ts("next_run_at"),
   budgetCapUsd: numeric("budget_cap_usd"),
+  enabled: boolean("enabled").notNull().default(true),
   createdAt: createdAt(),
 });
 
-export const scans = pgTable("scans", {
-  id: id(),
-  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
-  promptSetId: uuid("prompt_set_id").references(() => promptSets.id),
-  scheduleId: uuid("schedule_id").references(() => schedules.id),
-  name: text("name").notNull().default(""),
-  // scan | capture_test | dry_run | calibration | canary
-  kind: text("kind").notNull().default("scan"),
-  status: scanStatusEnum("status").notNull(),
-  estimate: jsonb("estimate"),
-  approvedBy: uuid("approved_by").references(() => users.id),
-  approvedAt: ts("approved_at"),
-  createdAt: createdAt(),
-});
+export const scans = pgTable(
+  "scans",
+  {
+    id: id(),
+    campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
+    promptSetId: uuid("prompt_set_id").references(() => promptSets.id),
+    scheduleId: uuid("schedule_id").references(() => schedules.id),
+    name: text("name").notNull().default(""),
+    // scan | capture_test | dry_run | calibration | canary
+    kind: text("kind").notNull().default("scan"),
+    status: scanStatusEnum("status").notNull(),
+    estimate: jsonb("estimate"),
+    approvedBy: uuid("approved_by").references(() => users.id),
+    approvedAt: ts("approved_at"),
+    // Schedule period this scan covers: YYYY-MM (monthly) or YYYY-Www (biweekly). Null for unscheduled scans.
+    periodKey: text("period_key"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // One scan per schedule per period: a second tick in the same period cannot create a duplicate.
+    uniqueIndex("scans_schedule_period")
+      .on(t.scheduleId, t.periodKey)
+      .where(sql`${t.scheduleId} is not null and ${t.periodKey} is not null`),
+  ],
+);
 
 export const draws = pgTable(
   "draws",

@@ -1,5 +1,6 @@
 import type PgBoss from "pg-boss";
 import { eq, sql } from "drizzle-orm";
+import { evaluateAlerts } from "@/lib/alerts/evaluate";
 import { planRetry, runRetry, runScan } from "@/lib/capture/batch";
 import { computeCalibration } from "@/lib/capture/calibration";
 import { planFanout, runFanout } from "@/lib/capture/fanout";
@@ -7,6 +8,8 @@ import { judgeScan } from "@/lib/capture/service";
 import { getDb } from "@/lib/db/pg/client";
 import { campaigns, crawlRuns, scans } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
+import { rollupScan } from "@/lib/metrics/rollup";
+import { tickSchedules } from "@/lib/schedules";
 import { runAudit } from "@/lib/site/audit/run";
 import { primaryHostFor, siteContext } from "@/lib/site/context";
 import { crawlHost, liveCrawlDeps } from "@/lib/site/crawl";
@@ -31,6 +34,23 @@ export type ScanRunData = { scan_id: string; org_id: string };
 export type RetryData = { scan_id: string; org_id: string; approved_usd: number | null };
 export type FanoutData = { scan_id: string; org_id: string; approved_usd: number; limit: number };
 export type JudgeRunData = { scan_id: string; org_id: string };
+export type MetricsRollupData = { scan_id: string; org_id: string };
+export type AlertsEvaluateData = { scan_id: string; org_id: string };
+
+/**
+ * The org of a scan, derived from its campaign. Jobs carry an org_id for convenience, but it is never trusted:
+ * a payload that names another org's id fails the job instead of touching that org's data.
+ */
+export async function assertScanOrg(db: ReturnType<typeof getDb>, scanId: string, claimedOrgId: string): Promise<string> {
+  const [row] = await db
+    .select({ orgId: campaigns.orgId })
+    .from(scans)
+    .innerJoin(campaigns, eq(campaigns.id, scans.campaignId))
+    .where(eq(scans.id, scanId));
+  if (!row) throw new Error(`Scan ${scanId} not found`);
+  if (row.orgId !== claimedOrgId) throw new Error(`org_id mismatch for scan ${scanId}: payload ${claimedOrgId}, scan belongs to ${row.orgId}`);
+  return row.orgId;
+}
 
 /** Runs once every host of a crawl is done: entity candidates, then the audit. */
 export async function afterCrawl(boss: PgBoss, crawlRunId: string, siteId: string): Promise<void> {
@@ -50,8 +70,11 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
     return { ok: true, processed_at: new Date().toISOString() };
   });
 
-  await boss.work(QUEUES.scheduleTick, async (jobs) => {
-    for (const job of jobs) log(`[worker] schedule.tick ${job.id} (no scheduled scans until Phase 5)`);
+  await boss.work(QUEUES.scheduleTick, async () => {
+    // One run covers every due schedule. Jobs are sent without retries, like every other paid path.
+    const results = await tickSchedules(getDb(), { sendJob: (queue, data) => boss.send(queue, data, JOB_OPTIONS), log });
+    log(`[worker] schedule.tick: ${results.length} due, ${results.filter((r) => r.action === "started").length} started, ${results.filter((r) => r.action === "awaiting_approval").length} awaiting approval`);
+    return { results };
   });
 
   await boss.work<DiscoverData>(QUEUES.crawlDiscover, async ([job]) => {
@@ -113,7 +136,8 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
 
   await boss.work<ScanRunData>(QUEUES.scanRun, async ([job]) => {
     const db = getDb();
-    const { scan_id: scanId, org_id: orgId } = job.data;
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    const scanId = job.data.scan_id;
     const summary = await runScan(db, scanId, { orgId, log });
     log(`[worker] scan.run ${scanId}: ${summary.status}, $${summary.actualUsd} actual vs $${summary.estimateUsd ?? "unknown"} estimated`);
     const [scan] = await db.select().from(scans).where(eq(scans.id, scanId));
@@ -129,25 +153,50 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
 
   await boss.work<RetryData>(QUEUES.captureRetry, async ([job]) => {
     const db = getDb();
-    const plan = await planRetry(db, job.data.scan_id, job.data.org_id);
-    const out = await runRetry(db, plan, { orgId: job.data.org_id, approvedUsd: job.data.approved_usd });
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    const plan = await planRetry(db, job.data.scan_id, orgId);
+    const out = await runRetry(db, plan, { orgId, approvedUsd: job.data.approved_usd });
     log(`[worker] capture.retry ${job.data.scan_id}: ${out.length} draws retried`);
-    await boss.send(QUEUES.judgeRun, { scan_id: job.data.scan_id, org_id: job.data.org_id } satisfies JudgeRunData, JOB_OPTIONS);
+    await boss.send(QUEUES.judgeRun, { scan_id: job.data.scan_id, org_id: orgId } satisfies JudgeRunData, JOB_OPTIONS);
     return { retried: out.length, statuses: out.map((o) => o.status) };
   });
 
   await boss.work<FanoutData>(QUEUES.fanoutRun, async ([job]) => {
     const db = getDb();
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
     const plan = await planFanout(db, job.data.scan_id, job.data.limit);
-    const res = await runFanout(db, plan, { orgId: job.data.org_id, approvedUsd: job.data.approved_usd });
+    const res = await runFanout(db, plan, { orgId, approvedUsd: job.data.approved_usd });
     log(`[worker] fanout.run ${job.data.scan_id}: ${res.fetched} fetched, ${res.failed} failed, $${res.usd}`);
     return res;
   });
 
   await boss.work<JudgeRunData>(QUEUES.judgeRun, async ([job]) => {
-    const res = await judgeScan(getDb(), job.data.org_id, job.data.scan_id, log);
+    const db = getDb();
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    const res = await judgeScan(db, orgId, job.data.scan_id, log);
     log(`[worker] judge.run ${job.data.scan_id}: ${res.judged} judged, ${res.failed} failed`);
+    // Judging is done: roll up metrics, then check alerts. Neither calls a paid provider.
+    await boss.send(QUEUES.metricsRollup, { scan_id: job.data.scan_id, org_id: orgId } satisfies MetricsRollupData, JOB_OPTIONS);
+    await boss.send(QUEUES.alertsEvaluate, { scan_id: job.data.scan_id, org_id: orgId } satisfies AlertsEvaluateData, JOB_OPTIONS);
     return res;
+  });
+
+  await boss.work<MetricsRollupData>(QUEUES.metricsRollup, async ([job]) => {
+    const db = getDb();
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    // The rollup is computed on demand and deterministic; nothing is stored. Running it here proves the job works and
+    // surfaces a broken scan in the worker log. It makes no paid call.
+    const rollup = await rollupScan(db, { orgId, scanId: job.data.scan_id });
+    log(`[worker] metrics.rollup ${job.data.scan_id}: ${rollup.cells.length} cells, ${rollup.excluded.unjudged} unjudged draws excluded`);
+    return { rolledUp: true, cells: rollup.cells.length, excluded: rollup.excluded };
+  });
+
+  await boss.work<AlertsEvaluateData>(QUEUES.alertsEvaluate, async ([job]) => {
+    const db = getDb();
+    const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    const created = await evaluateAlerts(db, { orgId, scanId: job.data.scan_id });
+    log(`[worker] alerts.evaluate ${job.data.scan_id}: ${created.length} new alert(s)${created.length ? ` (${created.map((c) => `${c.kind}:${c.key}`).join(", ")})` : ""}`);
+    return { created: created.length };
   });
 
   await boss.schedule(QUEUES.scheduleTick, "0 * * * *");

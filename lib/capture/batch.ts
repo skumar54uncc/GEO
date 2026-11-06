@@ -74,7 +74,18 @@ function experimentalFor(route: Route): boolean {
 /** Creates the scan with its estimate. Nothing is called until the estimate is approved. */
 export async function planScan(
   db: Db,
-  opts: { orgId: string; campaignId: string; promptSetId?: string | null; kind: ScanKind; name: string; spec: ScanSpec; adapters?: Adapters },
+  opts: {
+    orgId: string;
+    campaignId: string;
+    promptSetId?: string | null;
+    kind: ScanKind;
+    name: string;
+    spec: ScanSpec;
+    adapters?: Adapters;
+    /** Set by schedule.tick: the schedule and the period (YYYY-MM or YYYY-Www) this scan covers. */
+    scheduleId?: string | null;
+    periodKey?: string | null;
+  },
 ): Promise<{ scanId: string; estimate: ScanEstimate }> {
   await ensureCaptureProviders(db, opts.orgId);
   const { spec } = opts;
@@ -134,11 +145,24 @@ export async function planScan(
   };
   const [scan] = await db
     .insert(scans)
-    .values({ campaignId: opts.campaignId, promptSetId: opts.promptSetId ?? null, name: opts.name, kind: opts.kind, status: "awaiting_approval", estimate })
+    .values({
+      campaignId: opts.campaignId,
+      promptSetId: opts.promptSetId ?? null,
+      name: opts.name,
+      kind: opts.kind,
+      status: "awaiting_approval",
+      estimate,
+      scheduleId: opts.scheduleId ?? null,
+      periodKey: opts.periodKey ?? null,
+    })
     .returning({ id: scans.id });
   return { scanId: scan.id, estimate };
 }
 
+/**
+ * Moves an estimate with no refusals from awaiting_approval to running. The status check and the update are one
+ * statement, so two approvals of the same scan (a click and a schedule tick) cannot both start it.
+ */
 export async function approveScan(db: Db, scanId: string, approver: { userId: string | null; via: string }): Promise<{ ok: boolean; reason: string | null }> {
   const [scan] = await db.select().from(scans).where(eq(scans.id, scanId));
   if (!scan) return { ok: false, reason: "Scan not found" };
@@ -146,10 +170,12 @@ export async function approveScan(db: Db, scanId: string, approver: { userId: st
   const est = scan.estimate as ScanEstimate | null;
   if (!est) return { ok: false, reason: "Scan has no estimate" };
   if (est.refusals.length) return { ok: false, reason: `Estimate has refusals: ${est.refusals.join("; ")}` };
-  await db
+  const updated = await db
     .update(scans)
     .set({ status: "running", approvedAt: new Date(), approvedBy: approver.userId, estimate: { ...est, approvedVia: approver.via } })
-    .where(eq(scans.id, scanId));
+    .where(and(eq(scans.id, scanId), eq(scans.status, "awaiting_approval")))
+    .returning({ id: scans.id });
+  if (!updated.length) return { ok: false, reason: "Scan was approved or changed by someone else; not approved again" };
   return { ok: true, reason: null };
 }
 
@@ -188,6 +214,8 @@ export async function runScan(
   const [scan] = await db.select().from(scans).where(eq(scans.id, scanId));
   if (!scan) throw new Error("Scan not found");
   if (!scan.approvedAt) throw new Error("Scan is not approved");
+  // Resume is allowed while running (worker redelivery). Finished scans must not re-enter the paid path.
+  if (scan.status !== "running") throw new Error(`Scan is ${scan.status}, not running`);
   const est = scan.estimate as ScanEstimate;
   const { spec } = est;
   const texts = await promptTexts(db, spec.promptIds, scan.promptSetId);

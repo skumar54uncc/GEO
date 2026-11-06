@@ -58,7 +58,7 @@ export type CampaignView = {
   personas: Array<{ id: string; name: string }>;
   prompt_count: number;
   approved_count: number;
-  prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null }>;
+  prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null; label: string | null }>;
 };
 
 export async function listCampaigns(db: Db, orgId: string, opts: { includeArchived?: boolean } = {}) {
@@ -125,6 +125,7 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
       version: s.version,
       sha256: s.sha256,
       frozen_at: s.frozenAt ? s.frozenAt.toISOString() : null,
+      label: s.label ?? null,
     })),
   };
 }

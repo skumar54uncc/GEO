@@ -4,12 +4,22 @@ import { NextResponse } from "next/server";
 import { getDb, type Db } from "./db/pg/client";
 import { legacyContext } from "./db/pg/bootstrap";
 import { ImmutableViolation, isImmutableDbError } from "./db/pg/immutable";
-import { auditLog, memberships, sessions, users } from "./db/pg/schema";
+import { safeOrganizationTheme, type OrganizationTheme } from "./contracts/shell";
+import { auditLog, memberships, organizations, sessions, users } from "./db/pg/schema";
 
 export type Role = "admin" | "editor" | "viewer";
 export type SessionUser = { userId: string; email: string; name: string | null; orgId: string; role: Role };
+export type OrganizationAccess = {
+  id: string;
+  name: string;
+  slug: string;
+  role: Role;
+  isDemo: boolean;
+  theme: OrganizationTheme;
+};
 
 export const SESSION_COOKIE = "geo_session";
+export const ACTIVE_ORG_COOKIE = "geo_active_org";
 const SESSION_DAYS = 7;
 const RANK: Record<Role, number> = { viewer: 0, editor: 1, admin: 2 };
 
@@ -57,10 +67,7 @@ export async function createSession(
   let [user] = await db.select().from(users).where(eq(users.email, normalized));
   if (!user) [user] = await db.insert(users).values({ email: normalized, name: name?.trim() || null }).returning();
 
-  let [membership] = await db
-    .select()
-    .from(memberships)
-    .where(and(eq(memberships.orgId, ctx.orgId), eq(memberships.userId, user.id)));
+  let [membership] = await db.select().from(memberships).where(eq(memberships.userId, user.id));
   if (!membership) {
     const [{ admins }] = await db
       .select({ admins: count() })
@@ -79,7 +86,7 @@ export async function createSession(
     expiresAt: new Date(Date.now() + SESSION_DAYS * 24 * 3600 * 1000),
   });
   await recordAudit(db, {
-    orgId: ctx.orgId,
+    orgId: membership.orgId,
     userId: user.id,
     action: "auth.login",
     entityType: "user",
@@ -87,7 +94,7 @@ export async function createSession(
   });
   return {
     token,
-    user: { userId: user.id, email: user.email, name: user.name, orgId: ctx.orgId, role: membership.role },
+    user: { userId: user.id, email: user.email, name: user.name, orgId: membership.orgId, role: membership.role },
   };
 }
 
@@ -104,21 +111,89 @@ export function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-export async function userForToken(token: string | null, db: Db = getDb()): Promise<SessionUser | null> {
+async function sessionIdentity(token: string | null, db: Db): Promise<{
+  userId: string;
+  email: string;
+  name: string | null;
+} | null> {
   if (!token) return null;
-  const ctx = await legacyContext(db);
   const [row] = await db
-    .select({ user: users, role: memberships.role })
+    .select({ user: users })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .innerJoin(memberships, and(eq(memberships.userId, users.id), eq(memberships.orgId, ctx.orgId)))
     .where(and(eq(sessions.tokenHash, hashToken(token)), gt(sessions.expiresAt, new Date())));
   if (!row) return null;
-  return { userId: row.user.id, email: row.user.email, name: row.user.name, orgId: ctx.orgId, role: row.role };
+  return { userId: row.user.id, email: row.user.email, name: row.user.name };
+}
+
+export async function organizationsForToken(token: string | null, db: Db = getDb()): Promise<{
+  identity: { userId: string; email: string; name: string | null };
+  organizations: OrganizationAccess[];
+} | null> {
+  const identity = await sessionIdentity(token, db);
+  if (!identity) return null;
+  const rows = await db
+    .select({ organization: organizations, role: memberships.role })
+    .from(memberships)
+    .innerJoin(organizations, eq(organizations.id, memberships.orgId))
+    .where(eq(memberships.userId, identity.userId));
+  return {
+    identity,
+    organizations: rows.map(({ organization, role }) => ({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      role,
+      isDemo: organization.isDemo,
+      theme: safeOrganizationTheme(organization.themeConfig),
+    })),
+  };
+}
+
+export async function userForToken(
+  token: string | null,
+  activeOrgId?: string | null,
+  db: Db = getDb(),
+): Promise<SessionUser | null> {
+  const access = await organizationsForToken(token, db);
+  if (!access || access.organizations.length === 0) return null;
+  const selected = activeOrgId
+    ? access.organizations.find((organization) => organization.id === activeOrgId)
+    : access.organizations[0];
+  if (!selected) return null;
+  return {
+    ...access.identity,
+    orgId: selected.id,
+    role: selected.role,
+  };
 }
 
 export async function getSessionUser(req: Request, db: Db = getDb()): Promise<SessionUser | null> {
-  return userForToken(readCookie(req, SESSION_COOKIE), db);
+  return userForToken(readCookie(req, SESSION_COOKIE), readCookie(req, ACTIVE_ORG_COOKIE), db);
+}
+
+export async function getSessionState(req: Request, db: Db = getDb()): Promise<{
+  user: SessionUser;
+  organizations: OrganizationAccess[];
+  activeOrganization: OrganizationAccess;
+} | null> {
+  const token = readCookie(req, SESSION_COOKIE);
+  const activeOrgId = readCookie(req, ACTIVE_ORG_COOKIE);
+  const access = await organizationsForToken(token, db);
+  if (!access || access.organizations.length === 0) return null;
+  const activeOrganization = activeOrgId
+    ? access.organizations.find((organization) => organization.id === activeOrgId)
+    : access.organizations[0];
+  if (!activeOrganization) return null;
+  return {
+    user: {
+      ...access.identity,
+      orgId: activeOrganization.id,
+      role: activeOrganization.role,
+    },
+    organizations: access.organizations,
+    activeOrganization,
+  };
 }
 
 export async function requireRole(req: Request, required: Role, db: Db = getDb()): Promise<SessionUser> {

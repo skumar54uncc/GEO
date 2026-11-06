@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AuthError, createSession, SESSION_COOKIE } from "@/lib/auth";
+import { ACTIVE_ORG_COOKIE, AuthError, createSession, SESSION_COOKIE } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +10,13 @@ export async function POST(req: Request) {
     const { token, user } = await createSession(body.email ?? "", body.name);
     const res = NextResponse.json({ user });
     res.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 7 * 24 * 3600,
+    });
+    res.cookies.set(ACTIVE_ORG_COOKIE, user.orgId, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

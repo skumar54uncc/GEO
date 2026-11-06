@@ -2,12 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import { personas } from "@/lib/db/pg/schema";
 import { ensureContentTeamPersonas } from "@/lib/contentTeam/seed";
-import {
-  assertPersonaLibraryComplete,
-  CONTENT_TEAM_PERSONA_KEYS,
-  EMPLOYER_LEGACY_ALIAS,
-  PERSONA_LIBRARY,
-} from "./library";
+import { assertPersonaLibraryComplete, CONTENT_TEAM_PERSONA_KEYS, PERSONA_LIBRARY } from "./library";
 
 export type PersonaSeedRow = {
   key: string;
@@ -18,8 +13,8 @@ export type PersonaSeedRow = {
 };
 
 /**
- * Seeds the 11 selectable library personas plus the business_leader legacy alias.
- * Never replaces or deletes the five content-team rows; upserts new keys only.
+ * Seeds the 12 selectable library personas. Never replaces or deletes the five
+ * content-team rows; upserts new keys only.
  */
 export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]> {
   assertPersonaLibraryComplete();
@@ -102,27 +97,6 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
       selectable: true,
     });
   }
-
-  // Enrich alias row without changing its ID or deleting it.
-  const aliasId = contentIds.get(EMPLOYER_LEGACY_ALIAS.contentTeamKey);
-  if (!aliasId) throw new Error("business_leader content-team persona missing after seed");
-  await db
-    .update(personas)
-    .set({
-      background: EMPLOYER_LEGACY_ALIAS.background,
-      vocabulary: EMPLOYER_LEGACY_ALIAS.vocabulary,
-      region: EMPLOYER_LEGACY_ALIAS.region,
-      typicalQuestions: EMPLOYER_LEGACY_ALIAS.typicalQuestions,
-      notes: EMPLOYER_LEGACY_ALIAS.notes,
-    })
-    .where(eq(personas.id, aliasId));
-  out.push({
-    key: EMPLOYER_LEGACY_ALIAS.dbKey,
-    id: aliasId,
-    created: false,
-    canonicalKey: EMPLOYER_LEGACY_ALIAS.canonicalKey,
-    selectable: false,
-  });
 
   return out;
 }

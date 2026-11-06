@@ -117,9 +117,9 @@ describe("cited page contracts", () => {
 });
 
 describe("persona contracts", () => {
-  it("defines all 11 canonical personas and preserves seeded meanings", () => {
-    expect(CANONICAL_PERSONA_KEYS).toHaveLength(11);
-    expect(new Set(CANONICAL_PERSONA_KEYS).size).toBe(11);
+  it("defines all 12 canonical personas and keeps industry_partner separate from employer", () => {
+    expect(CANONICAL_PERSONA_KEYS).toHaveLength(12);
+    expect(new Set(CANONICAL_PERSONA_KEYS).size).toBe(12);
     expect(
       Object.fromEntries(
         LEGACY_PERSONA_MIGRATION.map(({ legacyKey, canonicalKey }) => [legacyKey, canonicalKey]),
@@ -128,13 +128,10 @@ describe("persona contracts", () => {
       undergrad: "prospective_first_year",
       grad: "grad_applicant",
       research_partner: "research_partner",
-      business_partner: "employer",
+      business_partner: "industry_partner",
       business_leader: "employer",
     });
-    expect(
-      LEGACY_PERSONA_MIGRATION.find(({ legacyKey }) => legacyKey === "business_leader")
-        ?.idDecision,
-    ).toBe("preserve_existing_id_as_legacy_alias");
+    expect(LEGACY_PERSONA_MIGRATION.every((row) => row.idDecision === "preserve_existing_id")).toBe(true);
   });
 });
 

@@ -9,7 +9,7 @@ export type PersonaLibraryDefinition = {
   canonicalKey: CanonicalPersonaKey;
   /** Stable `personas.key` value. Content-team rows keep their legacy keys. */
   dbKey: string;
-  /** Library display name for the 11 selectable personas. */
+  /** Library display name for the selectable personas. */
   name: string;
   goal: string;
   background: string;
@@ -20,21 +20,6 @@ export type PersonaLibraryDefinition = {
   /** When set, the content-team seed owns name/goal/draft_prefix; we only enrich fields. */
   contentTeamKey?: ContentTeamPersonaKey;
   selectable: true;
-};
-
-export type LegacyAliasDefinition = {
-  dbKey: "business_leader";
-  canonicalKey: "employer";
-  name: string;
-  goal: string;
-  background: string;
-  vocabulary: string;
-  region: string;
-  typicalQuestions: string[];
-  notes: string;
-  contentTeamKey: "business_leader";
-  selectable: false;
-  idDecision: "preserve_existing_id_as_legacy_alias";
 };
 
 const byLegacy = Object.fromEntries(
@@ -48,8 +33,9 @@ function contentTeamMeta(key: ContentTeamPersonaKey) {
 }
 
 /**
- * Eleven selectable higher-ed personas. The five content-team rows keep their
+ * Twelve selectable higher-ed personas. The five content-team rows keep their
  * existing `key` values and IDs; new personas use the canonical key as `dbKey`.
+ * industry_partner and employer stay separate rows and are never combined in metrics.
  */
 export const PERSONA_LIBRARY: PersonaLibraryDefinition[] = [
   {
@@ -151,21 +137,39 @@ export const PERSONA_LIBRARY: PersonaLibraryDefinition[] = [
     selectable: true,
   },
   {
-    canonicalKey: "employer",
+    canonicalKey: "industry_partner",
     dbKey: "business_partner",
-    name: "Employer",
+    name: "Industry partner",
     goal: contentTeamMeta("business_partner").goal,
-    background: "Company leader evaluating university partnerships, talent pipelines, or research collaboration.",
+    background: "Company seeking research collaboration, sponsored projects, or industry partnership with a university.",
     vocabulary: "business",
     region: "United States",
     typicalQuestions: [
       "Which universities are strong partners for industry collaboration?",
-      "How do I hire interns or graduates from this program?",
-      "What applied research centers work with employers?",
+      "How do sponsored research agreements typically work?",
+      "What applied research centers work with industry partners?",
     ],
     notes:
-      "Selectable employer meaning is owned by content-team key business_partner. business_leader is a legacy alias only.",
+      "Maps from content-team key business_partner. Distinct from employer (hiring). Metrics never combine the two.",
     contentTeamKey: "business_partner",
+    selectable: true,
+  },
+  {
+    canonicalKey: "employer",
+    dbKey: "business_leader",
+    name: "Employer",
+    goal: contentTeamMeta("business_leader").goal,
+    background: "Business leader who hires interns and graduates from universities.",
+    vocabulary: "business",
+    region: "United States",
+    typicalQuestions: [
+      "Where should I recruit interns for my company?",
+      "Which programs produce job-ready graduates?",
+      "How do I hire graduates from this university?",
+    ],
+    notes:
+      "Maps from content-team key business_leader. Distinct from industry_partner. Metrics never combine the two.",
+    contentTeamKey: "business_leader",
     selectable: true,
   },
   {
@@ -235,46 +239,29 @@ export const PERSONA_LIBRARY: PersonaLibraryDefinition[] = [
   },
 ];
 
-/** Kept so imported prompt FKs stay valid; not a twelfth selectable library persona. */
-export const EMPLOYER_LEGACY_ALIAS: LegacyAliasDefinition = {
-  dbKey: "business_leader",
-  canonicalKey: "employer",
-  name: contentTeamMeta("business_leader").name,
-  goal: contentTeamMeta("business_leader").goal,
-  background: "Business leader focused on hiring interns; legacy alias of employer.",
-  vocabulary: "business",
-  region: "United States",
-  typicalQuestions: [
-    "Where should I recruit interns for my company?",
-    "Which programs produce job-ready interns?",
-  ],
-  notes: "Legacy alias of employer. Future generation resolves to business_partner meaning without rewriting historical prompts.",
-  contentTeamKey: "business_leader",
-  selectable: false,
-  idDecision: "preserve_existing_id_as_legacy_alias",
-};
-
 export const CONTENT_TEAM_PERSONA_KEYS = CONTENT_TEAM_PERSONAS.map((p) => p.key);
 
 export function assertPersonaLibraryComplete(): void {
   const keys = PERSONA_LIBRARY.map((p) => p.canonicalKey);
-  if (keys.length !== 11) throw new Error(`Expected 11 selectable personas, got ${keys.length}`);
-  if (new Set(keys).size !== 11) throw new Error("Duplicate canonical persona keys in library");
+  if (keys.length !== 12) throw new Error(`Expected 12 selectable personas, got ${keys.length}`);
+  if (new Set(keys).size !== 12) throw new Error("Duplicate canonical persona keys in library");
   for (const key of CANONICAL_PERSONA_KEYS) {
     if (!keys.includes(key)) throw new Error(`Missing canonical persona ${key}`);
   }
-  if (byLegacy.business_partner?.canonicalKey !== "employer") {
-    throw new Error("business_partner must own employer selectable meaning");
+  if (byLegacy.business_partner?.canonicalKey !== "industry_partner") {
+    throw new Error("business_partner must map to industry_partner");
   }
-  if (byLegacy.business_leader?.idDecision !== "preserve_existing_id_as_legacy_alias") {
-    throw new Error("business_leader must remain a legacy alias of employer");
+  if (byLegacy.business_leader?.canonicalKey !== "employer") {
+    throw new Error("business_leader must map to employer");
+  }
+  if (selectableDbKeyForCanonical("industry_partner") === selectableDbKeyForCanonical("employer")) {
+    throw new Error("industry_partner and employer must keep distinct persona rows");
   }
 }
 
 export function canonicalKeyForDbKey(dbKey: string): CanonicalPersonaKey | null {
   const library = PERSONA_LIBRARY.find((p) => p.dbKey === dbKey);
   if (library) return library.canonicalKey;
-  if (dbKey === EMPLOYER_LEGACY_ALIAS.dbKey) return EMPLOYER_LEGACY_ALIAS.canonicalKey;
   const migration = LEGACY_PERSONA_MIGRATION.find((row) => row.legacyKey === dbKey);
   return migration?.canonicalKey ?? null;
 }

@@ -7,6 +7,7 @@ export const CANONICAL_PERSONA_KEYS = [
   "international",
   "parent",
   "adult_learner",
+  "industry_partner",
   "employer",
   "research_partner",
   "donor",
@@ -38,6 +39,11 @@ export const LEGACY_PERSONA_KEYS = [
 
 export const legacyPersonaKeySchema = z.enum(LEGACY_PERSONA_KEYS);
 
+/**
+ * Content-team DB keys map to distinct canonical meanings. Both business_* IDs
+ * are preserved so the 459 imported prompts stay valid. Metrics and heatmaps
+ * group by canonical persona and must never combine industry_partner with employer.
+ */
 export const LEGACY_PERSONA_MIGRATION = [
   {
     legacyKey: "undergrad",
@@ -56,39 +62,23 @@ export const LEGACY_PERSONA_MIGRATION = [
   },
   {
     legacyKey: "business_partner",
-    canonicalKey: "employer",
+    canonicalKey: "industry_partner",
     idDecision: "preserve_existing_id",
   },
   {
     legacyKey: "business_leader",
     canonicalKey: "employer",
-    idDecision: "preserve_existing_id_as_legacy_alias",
+    idDecision: "preserve_existing_id",
   },
 ] as const;
 
-/**
- * `business_partner` owns the canonical employer row and keeps its existing ID.
- * `business_leader` keeps its existing row and ID so imported prompts remain
- * valid, but is a legacy alias rather than a second selectable persona. Future
- * generation resolves both keys to the one canonical employer meaning without
- * rewriting historical prompt references.
- */
-export const personaMigrationDecisionSchema = z.discriminatedUnion("idDecision", [
-  z
-    .object({
-      legacyKey: legacyPersonaKeySchema,
-      canonicalKey: canonicalPersonaKeySchema,
-      idDecision: z.literal("preserve_existing_id"),
-    })
-    .strict(),
-  z
-    .object({
-      legacyKey: z.literal("business_leader"),
-      canonicalKey: z.literal("employer"),
-      idDecision: z.literal("preserve_existing_id_as_legacy_alias"),
-    })
-    .strict(),
-]);
+export const personaMigrationDecisionSchema = z
+  .object({
+    legacyKey: legacyPersonaKeySchema,
+    canonicalKey: canonicalPersonaKeySchema,
+    idDecision: z.literal("preserve_existing_id"),
+  })
+  .strict();
 
 export type CanonicalPersonaKey = z.infer<typeof canonicalPersonaKeySchema>;
 export type CanonicalPersona = z.infer<typeof canonicalPersonaSchema>;

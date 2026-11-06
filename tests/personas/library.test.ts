@@ -3,16 +3,17 @@ import os from "os";
 import path from "path";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { LEGACY_PERSONA_MIGRATION } from "@/lib/contracts/personas";
+import { CANONICAL_PERSONA_KEYS, LEGACY_PERSONA_MIGRATION } from "@/lib/contracts/personas";
 import { EXPECTED_NEUTRAL, EXPECTED_VARIANTS, importContentTeamCsv } from "@/lib/contentTeam/import";
 import { CONTENT_TEAM_PERSONAS, IMPORT_TAG } from "@/lib/contentTeam/personas";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
-import { closeDb, getDb } from "@/lib/db/pg/client";
+import { getDb } from "@/lib/db/pg/client";
 import { campaigns, personas, prompts } from "@/lib/db/pg/schema";
+import { assertCanonicalPersonaCellsNotCombined } from "@/lib/metrics/personaCells";
+import type { CellRollup } from "@/lib/metrics/rollup";
 import {
   canonicalKeyForDbKey,
   CONTENT_TEAM_PERSONA_KEYS,
-  EMPLOYER_LEGACY_ALIAS,
   PERSONA_LIBRARY,
   selectableDbKeyForCanonical,
 } from "@/lib/personas/library";
@@ -68,16 +69,16 @@ describe("Phase 4 persona library", () => {
 
   beforeEach(resetDatabase);
 
-  it("lists 11 selectable personas and maps content-team duplicates explicitly", () => {
-    expect(PERSONA_LIBRARY).toHaveLength(11);
+  it("lists 12 selectable personas and splits industry_partner from employer", () => {
+    expect(CANONICAL_PERSONA_KEYS).toHaveLength(12);
+    expect(PERSONA_LIBRARY).toHaveLength(12);
     expect(PERSONA_LIBRARY.every((p) => p.selectable)).toBe(true);
-    expect(EMPLOYER_LEGACY_ALIAS.selectable).toBe(false);
-    expect(EMPLOYER_LEGACY_ALIAS.canonicalKey).toBe("employer");
-    expect(selectableDbKeyForCanonical("employer")).toBe("business_partner");
+    expect(selectableDbKeyForCanonical("industry_partner")).toBe("business_partner");
+    expect(selectableDbKeyForCanonical("employer")).toBe("business_leader");
     expect(canonicalKeyForDbKey("undergrad")).toBe("prospective_first_year");
     expect(canonicalKeyForDbKey("grad")).toBe("grad_applicant");
     expect(canonicalKeyForDbKey("research_partner")).toBe("research_partner");
-    expect(canonicalKeyForDbKey("business_partner")).toBe("employer");
+    expect(canonicalKeyForDbKey("business_partner")).toBe("industry_partner");
     expect(canonicalKeyForDbKey("business_leader")).toBe("employer");
     expect(
       Object.fromEntries(
@@ -87,9 +88,10 @@ describe("Phase 4 persona library", () => {
       undergrad: "prospective_first_year",
       grad: "grad_applicant",
       research_partner: "research_partner",
-      business_partner: "employer",
+      business_partner: "industry_partner",
       business_leader: "employer",
     });
+    expect(LEGACY_PERSONA_MIGRATION.every((row) => row.idDecision === "preserve_existing_id")).toBe(true);
     for (const def of PERSONA_LIBRARY) {
       expect(def.goal.length).toBeGreaterThan(0);
       expect(def.background.length).toBeGreaterThan(0);
@@ -117,8 +119,12 @@ describe("Phase 4 persona library", () => {
     }
 
     const selectable = second.filter((p) => p.selectable);
-    expect(selectable).toHaveLength(11);
-    expect(second.find((p) => p.key === "business_leader")?.selectable).toBe(false);
+    expect(selectable).toHaveLength(12);
+    const partner = second.find((p) => p.key === "business_partner");
+    const leader = second.find((p) => p.key === "business_leader");
+    expect(partner?.canonicalKey).toBe("industry_partner");
+    expect(leader?.canonicalKey).toBe("employer");
+    expect(partner?.id).not.toBe(leader?.id);
 
     const imported = await importContentTeamCsv(db, orgId, CSV);
     expect(imported.neutral).toBe(EXPECTED_NEUTRAL);
@@ -142,11 +148,40 @@ describe("Phase 4 persona library", () => {
       );
     expect(contentCampaigns).toHaveLength(3);
 
-    // Persona FKs for the five keys still resolve after library enrichment.
     for (const { key, id } of five) {
       const [row] = await db.select({ id: personas.id, key: personas.key }).from(personas).where(eq(personas.key, key));
       expect(row?.id).toBe(id);
       expect(CONTENT_TEAM_PERSONAS.some((p) => p.key === key)).toBe(true);
     }
+
+    const idToDbKey = new Map([
+      [partner!.id, "business_partner"],
+      [leader!.id, "business_leader"],
+    ]);
+    const cells = [
+      {
+        key: {
+          engine: "chatgpt",
+          runner: "ui_provider",
+          index: "chat",
+          regionId: null,
+          personaId: partner!.id,
+          branded: false,
+        },
+      },
+      {
+        key: {
+          engine: "chatgpt",
+          runner: "ui_provider",
+          index: "chat",
+          regionId: null,
+          personaId: leader!.id,
+          branded: false,
+        },
+      },
+    ] as CellRollup[];
+    expect(() => assertCanonicalPersonaCellsNotCombined(cells, idToDbKey)).not.toThrow();
+    expect(partner!.id).not.toBe(leader!.id);
+    expect(canonicalKeyForDbKey("business_partner")).not.toBe(canonicalKeyForDbKey("business_leader"));
   });
 });

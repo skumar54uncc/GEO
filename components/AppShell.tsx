@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useParams } from "next/navigation";
 import { DemoBanner } from "@/components/DemoBanner";
 import type { OrganizationAccess, SessionUser } from "@/lib/auth";
 
@@ -13,25 +13,59 @@ type SessionState = {
   activeOrganization: OrganizationAccess;
 };
 
-const PRIMARY_LINKS = [
+type CampaignOption = { id: string; name: string; status: string };
+
+const WORKSPACE_LINKS = [
   { href: "/", label: "Overview" },
   { href: "/campaigns", label: "Campaigns" },
-  { href: "/audit", label: "Audit" },
+  { href: "/sites", label: "Site Audit" },
   { href: "/budget", label: "Budget" },
   { href: "/settings", label: "Settings" },
 ] as const;
 
-const CAMPAIGN_LINKS = ["Prompts", "Scans", "Answers", "Citations", "Gaps", "Strategy"] as const;
+function campaignLinks(campaignId: string | null) {
+  if (!campaignId) {
+    return [
+      { href: null, label: "Prompts" },
+      { href: null, label: "Answers" },
+      { href: null, label: "Citations" },
+      { href: null, label: "Gaps" },
+      { href: null, label: "Strategy" },
+      { href: null, label: "Dashboard" },
+    ] as const;
+  }
+  return [
+    { href: `/campaigns/${campaignId}/prompts`, label: "Prompts" },
+    { href: `/campaigns/${campaignId}/answers`, label: "Answers" },
+    { href: `/campaigns/${campaignId}/citations`, label: "Citations" },
+    { href: `/campaigns/${campaignId}/gaps`, label: "Gaps" },
+    { href: `/campaigns/${campaignId}/strategy`, label: "Strategy" },
+    { href: `/campaigns/${campaignId}/dashboard`, label: "Dashboard" },
+  ] as const;
+}
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" || pathname === "/overview" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function campaignIdFromPath(pathname: string): string | null {
+  const m = pathname.match(/^\/campaigns\/([0-9a-f-]{36})(?:\/|$)/i);
+  return m?.[1] ?? null;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const params = useParams<{ id?: string }>();
   const [session, setSession] = useState<SessionState | null>(null);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [loading, setLoading] = useState(pathname !== "/login");
+  const pathCampaignId = campaignIdFromPath(pathname) ?? params.id ?? null;
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(pathCampaignId);
+
+  useEffect(() => {
+    setSelectedCampaignId(pathCampaignId);
+  }, [pathCampaignId]);
 
   useEffect(() => {
     if (pathname === "/login") return;
@@ -45,7 +79,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (!res.ok) throw new Error("Unable to load session.");
         return (await res.json()) as SessionState;
       })
-      .then((state) => setSession(state))
+      .then(async (state) => {
+        setSession(state);
+        if (state) {
+          const list = await fetch("/api/campaigns", { cache: "no-store" }).then((r) => r.json());
+          setCampaigns(
+            ((list.campaigns ?? []) as Array<{ id: string; name: string; status: string }>).map((c) => ({
+              id: c.id,
+              name: c.name,
+              status: c.status,
+            })),
+          );
+        }
+      })
       .finally(() => setLoading(false));
   }, [pathname, router]);
 
@@ -72,6 +118,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
+  function onCampaignChange(id: string) {
+    setSelectedCampaignId(id || null);
+    if (!id) {
+      router.push("/campaigns");
+      return;
+    }
+    if (pathname.includes("/prompts")) router.push(`/campaigns/${id}/prompts`);
+    else if (pathname.includes("/answers")) router.push(`/campaigns/${id}/answers`);
+    else if (pathname.includes("/citations")) router.push(`/campaigns/${id}/citations`);
+    else if (pathname.includes("/gaps")) router.push(`/campaigns/${id}/gaps`);
+    else if (pathname.includes("/strategy")) router.push(`/campaigns/${id}/strategy`);
+    else router.push(`/campaigns/${id}/dashboard`);
+  }
+
   if (loading || !session) {
     return (
       <main id="main-content" className="mx-auto max-w-7xl px-6 py-8" aria-live="polite">
@@ -88,6 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "--font-serif": activeOrganization.theme.serifFont,
   } as CSSProperties;
   const audience = user.role === "viewer" ? "Leadership" : "Operator";
+  const links = campaignLinks(selectedCampaignId);
 
   return (
     <div className="min-h-screen" style={themeStyle}>
@@ -103,35 +164,59 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <select value={activeOrganization.id} onChange={(event) => switchOrganization(event.target.value)}>
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
-                {organization.name}{organization.isDemo ? " — Demo" : ""} · {organization.role}
+                {organization.name}
+                {organization.isDemo ? " — Demo" : ""} · {organization.role}
               </option>
             ))}
           </select>
         </label>
-        <div className="campaign-context" aria-label="Campaign context">
-          Campaign: <button type="button" disabled>Select campaign</button>
-        </div>
+        <label className="context-control" aria-label="Campaign context">
+          <span>Campaign</span>
+          <select
+            value={selectedCampaignId ?? ""}
+            onChange={(e) => onCampaignChange(e.target.value)}
+            data-testid="campaign-switcher"
+          >
+            <option value="">Select campaign</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.status})
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="user-context">
-          <span>{user.name || user.email} · {audience} ({user.role})</span>
+          <span>
+            {user.name || user.email} · {audience} ({user.role})
+          </span>
           {user.role === "viewer" ? <span>Read-only</span> : null}
-          <button type="button" onClick={signOut}>Sign out</button>
+          <button type="button" onClick={signOut}>
+            Sign out
+          </button>
         </div>
       </header>
       <DemoBanner isDemo={activeOrganization.isDemo} />
       <div className="shell-grid">
         <nav className="primary-nav" aria-label="Primary">
           <p className="nav-heading">Workspace</p>
-          {PRIMARY_LINKS.slice(0, 2).map((link) => (
+          {WORKSPACE_LINKS.slice(0, 2).map((link) => (
             <Link key={link.href} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
               {link.label}
             </Link>
           ))}
-          {CAMPAIGN_LINKS.map((label) => (
-            <span key={label} aria-disabled="true" title="Select a campaign to open this destination">
-              {label} <small>Unavailable</small>
-            </span>
-          ))}
-          {PRIMARY_LINKS.slice(2).map((link) => (
+          <p className="nav-heading">Campaign</p>
+          {links.map((link) =>
+            link.href ? (
+              <Link key={link.label} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
+                {link.label}
+              </Link>
+            ) : (
+              <span key={link.label} aria-disabled="true" title="Select a campaign to open this destination">
+                {link.label} <small>Unavailable</small>
+              </span>
+            ),
+          )}
+          {WORKSPACE_LINKS.slice(2).map((link) => (
             <Link key={link.href} href={link.href} aria-current={isActive(pathname, link.href) ? "page" : undefined}>
               {link.label}
             </Link>
@@ -139,7 +224,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <main id="main-content" className="main-content">
           {user.role === "viewer" ? (
-            <p className="read-only-notice">Leadership access is read-only.</p>
+            <p className="read-only-notice" data-testid="leadership-readonly">
+              Leadership access is read-only.
+            </p>
           ) : null}
           {children}
         </main>

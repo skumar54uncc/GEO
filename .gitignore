@@ -5,6 +5,8 @@ out
 .env.local
 # Stakeholder source files (PDF/CSV). Public repo — never commit.
 inputs/
+# Phase 9 review screenshots may show draft prompts, budget figures, and real answers.
+docs/phase9-screenshots/
 data/*.db
 data/*.json
 data/*.db-journal

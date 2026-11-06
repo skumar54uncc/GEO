@@ -96,7 +96,7 @@ export default function AuditPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl space-y-1">
-          <h2 className="font-serif text-2xl font-semibold text-uncc-ink">AI readiness audit</h2>
+          <h1 className="font-serif text-2xl font-semibold text-uncc-ink">AI readiness audit</h1>
           <p className="text-sm leading-6 text-uncc-ink/75">
             Each finding states why it may matter and how strong the evidence is that it affects AI answers. Counts are findings, not rates.
             Rerunning the audit on the same crawl gives identical findings; the fingerprint below proves it.

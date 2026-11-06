@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { HowMeasured } from "@/components/HowMeasured";
+import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ReportListItem = { id: string; topic: string; createdAt: string };
@@ -76,8 +78,11 @@ export default function StrategyPage() {
     void load();
   }, [load]);
 
+  if (error && !reports) return <ErrorState message={error} />;
+  if (!reports) return <LoadingState label="Loading strategy reports…" />;
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
@@ -96,17 +101,26 @@ export default function StrategyPage() {
           <a
             className="inline-flex h-9 items-center rounded border border-uncc-rule bg-white px-3 text-sm"
             href={`/api/campaigns/${campaignId}/strategy/export?reportId=${report.id}`}
+            data-testid="strategy-export-csv"
           >
             Export CSV
           </a>
         ) : null}
       </div>
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <ErrorState message={error} /> : null}
 
-      {!reports ? <p className="text-sm text-uncc-ink/60">Loading…</p> : null}
-      {reports && reports.length === 0 ? (
-        <p className="text-sm text-uncc-ink/60">No strategy reports yet. Run the Phase 8 pipeline for a topic.</p>
+      <HowMeasured
+        context={{
+          extra:
+            "The recommendation writer is a different model from the visibility judge. Unavailable demand sources stay unknown and unscored — never treated as zero.",
+        }}
+      />
+
+      {reports.length === 0 ? (
+        <EmptyState title="No strategy reports yet">
+          <p>An Operator runs the strategy pipeline for a topic. Unsupported ideas are blocked rather than invented.</p>
+        </EmptyState>
       ) : null}
 
       {report ? (

@@ -10,11 +10,12 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("font-serif text-lg font-semibold text-uncc-ink", className)} {...props} />;
+  // h2 under page h1 — keeps Lighthouse heading-order sequential (no h1→h3 skip).
+  return <h2 className={cn("font-serif text-lg font-semibold text-uncc-ink", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-uncc-ink/70", className)} {...props} />;
+  return <p className={cn("text-sm text-uncc-ink/80", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -30,7 +31,7 @@ export function Badge({
     neutral: "border-uncc-rule bg-uncc-paper text-uncc-ink",
     green: "border-uncc-green/30 bg-uncc-mist text-uncc-green",
     gold: "border-uncc-gold/40 bg-[#f4f0e3] text-[#6b5f35]",
-    muted: "border-uncc-rule bg-white text-uncc-ink/50",
+    muted: "border-uncc-rule bg-white text-uncc-ink/75",
   };
   return (
     <span

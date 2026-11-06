@@ -3,23 +3,17 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { ChartCaption, HowMeasured } from "@/components/HowMeasured";
+import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ENGINES } from "@/lib/capture/types";
+import { ENGINES, fidelityFor } from "@/lib/capture/types";
 import type { CellRollup, ScanRollup } from "@/lib/metrics/rollup";
 import type { SeriesComparison } from "@/lib/metrics/compare";
 import type { PromptsWon, RateWithCi } from "@/lib/metrics/types";
-import { SURFACE_LABELS, type Surface } from "@/lib/types";
-
-const RUNNER_LABELS: Record<string, string> = {
-  ui_provider: "UI capture provider",
-  serp_provider: "SERP provider",
-  api_search: "API with web search",
-  api_parametric: "API, no browsing",
-  manual_paste: "Manual paste",
-};
+import { enginePlain, formatScanDate, runnerPlain } from "@/lib/ui/labels";
 
 type AlertRow = { id: string; kind: string; status: string; createdAt: string; payload: { message?: string } | null };
 type ModelEventRow = { id: string; engine: string; occurredOn: string; note: string; sourceUrl: string | null };
@@ -45,10 +39,10 @@ type Dashboard = {
   modelEvents: ModelEventRow[];
 };
 
-const engineLabel = (e: string) => SURFACE_LABELS[e as Surface] ?? e;
-const runnerLabel = (r: string) => RUNNER_LABELS[r] ?? r;
+const engineLabel = enginePlain;
+const runnerLabel = runnerPlain;
 const pct = (x: number | null) => (x === null ? "unknown" : `${(x * 100).toFixed(1)}%`);
-const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+const date = formatScanDate;
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) } });
@@ -68,12 +62,17 @@ function Rate({ r }: { r: RateWithCi }) {
   );
 }
 
-function Headline({ cell }: { cell: CellRollup }) {
+function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDate: string; promptSetHash: string | null }) {
   const w = cell.promptsWon;
   if (!w) return null;
   const grey = cell.tooFewDraws;
+  const fidelity = fidelityFor(cell.key.runner);
   return (
-    <div className={`rounded border border-uncc-rule p-4 ${grey ? "bg-uncc-paper opacity-70" : "bg-white"}`}>
+    <div
+      className={`rounded border p-4 ${
+        grey ? "border-dashed border-uncc-rule bg-uncc-paper" : "border-uncc-rule bg-white"
+      }`}
+    >
       <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
         {engineLabel(cell.key.engine)} · {runnerLabel(cell.key.runner)}
       </p>
@@ -83,10 +82,28 @@ function Headline({ cell }: { cell: CellRollup }) {
           <span className="text-sm text-uncc-ink/70"> (95% CI {pct(w.ciLow)} to {pct(w.ciHigh)})</span>
         ) : null}
       </p>
-      <p className="text-xs text-uncc-ink/60">
-        Won = brand named in {w.rule}. {w.draws} valid draws.
-      </p>
-      {grey ? <Badge tone="muted" className="mt-2">too few draws (under 30)</Badge> : null}
+      <ChartCaption
+        context={{
+          engine: cell.key.engine,
+          runner: cell.key.runner,
+          fidelity,
+          n: w.draws,
+          scanDate,
+          promptSetHash,
+        }}
+      />
+      <HowMeasured
+        context={{
+          engine: cell.key.engine,
+          runner: cell.key.runner,
+          fidelity,
+          n: w.draws,
+          scanDate,
+          promptSetHash,
+          extra: `Won means UNC Charlotte was named under the ${w.rule} rule.`,
+        }}
+      />
+      {grey ? <Badge tone="muted" className="mt-2">Too few answers checked (under 30)</Badge> : null}
     </div>
   );
 }
@@ -95,11 +112,12 @@ function CellTable({ cells, showWon }: { cells: CellRollup[]; showWon: boolean }
   if (cells.length === 0) return <p className="text-sm text-uncc-ink/60">No valid judged draws in this selection yet.</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px] text-left text-sm">
+      <table className="w-full min-w-[960px] text-left text-sm" data-testid="dashboard-metrics-table">
+        <caption className="sr-only">Campaign metrics by engine and how answers were collected</caption>
         <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
           <tr className="border-b border-uncc-rule">
-            <th className="py-2 pr-3">Engine · runner</th>
-            <th className="pr-3">Draws · prompts</th>
+            <th className="py-2 pr-3">Engine · how collected</th>
+            <th className="pr-3">Answers · prompts</th>
             {showWon ? <th className="pr-3">Prompts won</th> : null}
             <th className="pr-3">Mention rate</th>
             <th className="pr-3">Owned citation rate</th>
@@ -118,11 +136,13 @@ function CellTable({ cells, showWon }: { cells: CellRollup[]; showWon: boolean }
                 <td className="py-2 pr-3">
                   {engineLabel(c.key.engine)} · {runnerLabel(c.key.runner)}
                   <div className="text-xs text-uncc-ink/50">{c.key.index} index</div>
-                  {c.tooFewDraws ? <Badge tone="muted">too few draws</Badge> : null}
-                  {c.regionExcluded > 0 ? <div className="text-xs">{c.regionExcluded} draws left out: region not honored</div> : null}
+                  {c.tooFewDraws ? <Badge tone="muted">Too few answers checked</Badge> : null}
+                  {c.regionExcluded > 0 ? (
+                    <div className="text-xs">{c.regionExcluded} answers left out: region not honored</div>
+                  ) : null}
                 </td>
                 <td className="pr-3">
-                  {c.draws} · {c.prompts}
+                  {c.draws} AI answers · {c.prompts} prompts
                 </td>
                 {showWon ? (
                   <td className="pr-3">
@@ -205,7 +225,7 @@ function Comparisons({ rows, regions }: { rows: SeriesComparison[]; regions: Arr
                       {d.estimate >= 0 ? "+" : ""}
                       {(d.estimate * 100).toFixed(1)} points{" "}
                       <span className="text-xs text-uncc-ink/60">
-                        (95% paired bootstrap {d.ciLow === null ? "unknown" : `${(d.ciLow * 100).toFixed(1)} to ${(d.ciHigh! * 100).toFixed(1)}`}; {d.prompts} prompts, {d.drawsBefore} and {d.drawsAfter} draws)
+                        (95% paired bootstrap {d.ciLow === null ? "unknown" : `${(d.ciLow * 100).toFixed(1)} to ${(d.ciHigh! * 100).toFixed(1)}`}; {d.prompts} prompts, {d.drawsBefore} and {d.drawsAfter} AI answers)
                       </span>
                     </>
                   ) : (
@@ -333,7 +353,7 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
                 ))}
               </optgroup>
               {detailPersonas.length ? (
-                <optgroup label="Specific personas (30+ draws)">
+                <optgroup label="Specific personas (30+ AI answers)">
                   {detailPersonas.map((p) => (
                     <option key={p.id} value={`persona:${p.id}`}>
                       {p.name}
@@ -344,54 +364,62 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
             </select>
           </div>
           <p className="max-w-md self-end text-xs text-uncc-ink/60">
-            Reports default to audience groups. A specific persona appears only when that cell has 30 or more draws. Region cells use honored or unknown draws only.
+            Reports default to audience groups. A specific persona appears only when that cell has 30 or more AI answers
+            checked. Region cells use honored or unknown answers only.
           </p>
         </div>
 
         <section className="space-y-3">
-          <h4 className="font-serif text-base font-semibold text-uncc-ink">Prompts won (unbranded prompts only)</h4>
+          <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won (unbranded prompts only)</h3>
           {unbranded.length ? (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {unbranded.map((c) => (
-                <Headline key={`${c.key.engine}|${c.key.runner}`} cell={c} />
+                <Headline
+                  key={`${c.key.engine}|${c.key.runner}`}
+                  cell={c}
+                  scanDate={view.latestScan.createdAt}
+                  promptSetHash={view.sha256}
+                />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-uncc-ink/60">No judged unbranded draws yet for this selection.</p>
+            <p className="text-sm text-uncc-ink/60">No judged unbranded AI answers yet for this selection.</p>
           )}
           <p className="text-xs text-uncc-ink/60">
-            One card per engine and runner. Runners are never averaged and the chat and Google indexes are never pooled.
+            One card per engine and collection method. Collection methods are never averaged and the chat and Google
+            indexes are never pooled.
           </p>
         </section>
 
         <section className="space-y-2">
-          <h4 className="font-serif text-base font-semibold text-uncc-ink">Engine × runner</h4>
+          <h3 className="font-serif text-base font-semibold text-uncc-ink">Engine × runner</h3>
           <CellTable cells={unbranded} showWon />
         </section>
 
         {branded.length ? (
           <section className="space-y-2">
-            <h4 className="font-serif text-base font-semibold text-uncc-ink">Branded prompts (separate series, not in the headline)</h4>
+            <h3 className="font-serif text-base font-semibold text-uncc-ink">Branded prompts (separate series, not in the headline)</h3>
             <CellTable cells={branded} showWon={false} />
           </section>
         ) : null}
 
         <section className="space-y-2">
-          <h4 className="font-serif text-base font-semibold text-uncc-ink">
+          <h3 className="font-serif text-base font-semibold text-uncc-ink">
             Change vs previous scan{view.previousScan ? ` (${date(view.previousScan.createdAt)})` : ""}
-          </h4>
+          </h3>
           <Comparisons rows={view.comparisons} regions={data.regions} />
           <p className="text-xs text-uncc-ink/60">McNemar exact test on prompts paired within this frozen set; labels are significant improvement, significant decline, or within noise (alpha 0.05).</p>
         </section>
 
         <section className="space-y-2">
-          <h4 className="font-serif text-base font-semibold text-uncc-ink">Prompts won over scans</h4>
+          <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won over scans</h3>
           <TrendTable trend={view.trend} />
         </section>
 
         {excludedTotal > 0 ? (
           <p className="text-xs text-uncc-ink/60">
-            Left out of every number: {ex.notOk} not ok, {ex.searchNotUsed} api_search without web search, {ex.experimental} experimental, {ex.unjudged} not judged yet.
+            Left out of every number: {ex.notOk} not ok, {ex.searchNotUsed} API-with-search answers that did not use
+            web search, {ex.experimental} experimental, {ex.unjudged} not judged yet.
           </p>
         ) : null}
       </CardContent>
@@ -448,7 +476,7 @@ export default function CampaignDashboardPage() {
   }
 
   if (!data) {
-    return message ? <p className="text-sm text-red-700">{message.text}</p> : <p className="text-uncc-ink/60">Loading…</p>;
+    return message?.tone === "error" ? <ErrorState message={message.text} /> : <LoadingState label="Loading campaign dashboard…" />;
   }
 
   return (
@@ -457,10 +485,11 @@ export default function CampaignDashboardPage() {
         <Link href="/campaigns" className="text-sm text-uncc-green underline">
           Campaigns
         </Link>
-        <h2 className="font-serif text-2xl font-semibold text-uncc-ink">{data.campaign.name}: dashboard</h2>
+        <h1 className="font-serif text-2xl font-semibold text-uncc-ink">{data.campaign.name}: dashboard</h1>
         {data.campaign.topic ? <p className="text-sm text-uncc-ink/75">{data.campaign.topic}</p> : null}
         <p className="max-w-3xl text-xs text-uncc-ink/60">
-          Rates describe sampled answers from each captured runner, not all users. Every rate shows n and a 95% interval. Draws inside one prompt are correlated, so draw-level intervals come from a bootstrap over prompts.
+          Rates describe sampled AI answers from each collection method, not all users. Every rate shows n and a 95%
+          interval. Answers inside one prompt are correlated, so intervals come from a bootstrap over prompts.
         </p>
       </div>
 
@@ -471,7 +500,9 @@ export default function CampaignDashboardPage() {
       ) : null}
 
       {data.promptSets.length === 0 ? (
-        <p className="text-sm text-uncc-ink/60">No finished scans on a frozen prompt set yet. Freeze a prompt set and run a scan first.</p>
+        <EmptyState title="No finished scans yet">
+          <p>Freeze a question set and run a measured scan. We never invent placeholder scores.</p>
+        </EmptyState>
       ) : (
         data.promptSets.map((v) => <PromptSetCard key={v.promptSetId} view={v} data={data} />)
       )}

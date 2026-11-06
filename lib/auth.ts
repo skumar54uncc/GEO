@@ -64,8 +64,12 @@ export function assertDevEmailLoginAllowed(req: Request): void {
     );
   }
   const requestHost = new URL(req.url).hostname;
+  const hostHeader = req.headers.get("host")?.split(":")[0]?.trim() ?? "";
   const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim().split(":")[0];
-  if (requestHost !== "127.0.0.1" || (forwardedHost && forwardedHost !== "127.0.0.1")) {
+  // Next may rewrite req.url to localhost while the client still dialed 127.0.0.1 (Host header).
+  const loopback =
+    requestHost === "127.0.0.1" || hostHeader === "127.0.0.1" || requestHost === "localhost" && hostHeader === "127.0.0.1";
+  if (!loopback || (forwardedHost && forwardedHost !== "127.0.0.1")) {
     throw new AuthError(
       "Passwordless email login is available only through 127.0.0.1. Use real authentication before hosting.",
       403,

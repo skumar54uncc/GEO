@@ -46,6 +46,8 @@ export type DrawOpts = {
   citation?: { domain: string; sourceClass?: "owned" | "other" };
   claim?: "supported" | "contradicted" | "unverifiable";
   brandSpan?: number;
+  /** Set only for Demo University / fixture contamination tests. */
+  seedMarker?: string | null;
 };
 
 export async function addDraw(c: Ctx, scanId: string, promptId: string, o: DrawOpts = {}) {
@@ -69,6 +71,7 @@ export async function addDraw(c: Ctx, scanId: string, promptId: string, o: DrawO
       capturedAt: new Date(),
       searchUsed: o.searchUsed ?? null,
       experimental: o.experimental ?? false,
+      seedMarker: o.seedMarker ?? null,
     })
     .returning({ id: draws.id });
   if (o.citation) {

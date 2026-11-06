@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-06: Wave 3 — Phase 9 frontend (all 10 screens)
+
+- Production shell wired to UX.md sitemap: Overview, Campaigns + dashboard, Prompts, Answer Explorer, Citations,
+  Gaps, Strategy, Site Audit (`/sites` → audit / onboarding), Budget & Funding, Settings. Campaign nav + switcher.
+- Leadership copy: `lib/ui/labels.ts` (“AI answers checked”, plain runner/fidelity). Chart captions + HowMeasured
+  on headline metrics; tables accompany color. Viewer RBAC hides estimate/approve/edit/run (`OperatorOnly`).
+- Budget & Funding: estimator pilot (Energy core) + steady state, provider spend/caps, DataForSEO $50 top-up,
+  stop-loss, vendor comparison with source dates, one-page PDF with upper-estimate labels; demo PDF carries exact
+  `DEMO DATA, not real results` banner.
+- Empty / loading / partial / error states on primary screens; legacy energy scans labeled “legacy method”.
+- Playwright journeys in `tests/phase9/` (shared `next dev` on test DB): all 6 UX journeys including leadership
+  login → Overview → Budget → PDF; landmark a11y checks.
+- Row-level demo isolation: `DEMO_SEED_MARKER` (`demo_seed:v1`) on seeded
+  draws / raw_payloads / citations / judge_runs / recommendations / strategy_reports / cost_ledger;
+  `tests/phase9/demoIsolation.test.ts` asserts UNC Charlotte has zero marked rows (not merely `orgs.is_demo`).
+- Review screenshots stay local under `docs/phase9-screenshots/` (gitignored; public repo).
+- Lighthouse + load gates via `scripts/phase9-lighthouse.ts` against `next build` + `next start` (not journey timeouts):
+  Overview / Campaign dashboard / Budget for UNC Charlotte and Demo, a11y ≥95, TTFB+FCP+load under 2s.
+- `npm run test:e2e` runs `tests/phase9`; `npm test` includes the full Vitest suite.
+
 ## 2026-11-06: Wave 2d — Phase 8 content strategy
 
 - Strategy pipeline runs in order: demand → landscape → supply → gaps → plan. Saved as

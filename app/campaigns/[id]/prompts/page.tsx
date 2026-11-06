@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { OperatorOnly, canMutate } from "@/components/CanAct";
+import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Role } from "@/lib/auth";
 
 type PromptRow = {
   id: string;
@@ -42,9 +45,10 @@ type Counts = {
 export default function PromptReviewPage() {
   const params = useParams<{ id: string }>();
   const campaignId = params.id;
-  const [prompts, setPrompts] = useState<PromptRow[]>([]);
+  const [prompts, setPrompts] = useState<PromptRow[] | null>(null);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [dedupeStatus, setDedupeStatus] = useState<"enabled" | "disabled" | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pillar, setPillar] = useState("");
@@ -61,26 +65,39 @@ export default function PromptReviewPage() {
     if (region) q.set("region", region);
     if (branded) q.set("branded", branded);
     if (status) q.set("status", status);
-    const res = await fetch(`/api/campaigns/${campaignId}/prompts?${q}`);
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error ?? "Failed to load");
-      return;
+    try {
+      const [res, me] = await Promise.all([
+        fetch(`/api/campaigns/${campaignId}/prompts?${q}`),
+        fetch("/api/auth/me", { cache: "no-store" }),
+      ]);
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Failed to load");
+        return;
+      }
+      const meJson = await me.json();
+      setRole(meJson.user?.role ?? null);
+      setError(null);
+      setPrompts(json.prompts);
+      setCounts(json.counts);
+      setDedupeStatus(json.dedupeStatus === "enabled" || json.dedupeStatus === "disabled" ? json.dedupeStatus : null);
+      setSelected(new Set());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
-    setError(null);
-    setPrompts(json.prompts);
-    setCounts(json.counts);
-    setDedupeStatus(json.dedupeStatus === "enabled" || json.dedupeStatus === "disabled" ? json.dedupeStatus : null);
-    setSelected(new Set());
   }, [campaignId, pillar, persona, region, branded, status]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const allSelected = useMemo(() => prompts.length > 0 && prompts.every((p) => selected.has(p.id)), [prompts, selected]);
+  const allSelected = useMemo(
+    () => Boolean(prompts?.length) && (prompts?.every((p) => selected.has(p.id)) ?? false),
+    [prompts, selected],
+  );
 
   function toggleAll() {
+    if (!prompts) return;
     if (allSelected) setSelected(new Set());
     else setSelected(new Set(prompts.map((p) => p.id)));
   }
@@ -130,8 +147,11 @@ export default function PromptReviewPage() {
     await load();
   }
 
+  if (error && !prompts) return <ErrorState message={error} />;
+  if (!prompts) return <LoadingState label="Loading prompts…" />;
+
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
@@ -161,7 +181,7 @@ export default function PromptReviewPage() {
         ) : null}
       </div>
 
-      {error ? <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
+      {error ? <ErrorState message={error} /> : null}
       {dedupeStatus === "disabled" ? (
         <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Dedupe disabled — local embedding model is unavailable. Near-duplicates will not be filtered automatically.
@@ -202,102 +222,130 @@ export default function PromptReviewPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={toggleAll}>
-          {allSelected ? "Clear selection" : "Select all"}
-        </Button>
-        <Button type="button" onClick={() => bulk("approved")} disabled={!selected.size}>
-          Bulk approve ({selected.size})
-        </Button>
-        <Button type="button" variant="outline" onClick={() => bulk("rejected")} disabled={!selected.size}>
-          Bulk reject
-        </Button>
-      </div>
+      <OperatorOnly role={role}>
+        <div className="flex flex-wrap gap-2" data-testid="prompt-mutate-actions">
+          <Button type="button" variant="outline" onClick={toggleAll}>
+            {allSelected ? "Clear selection" : "Select all"}
+          </Button>
+          <Button type="button" data-testid="bulk-approve" onClick={() => bulk("approved")} disabled={!selected.size}>
+            Bulk approve ({selected.size})
+          </Button>
+          <Button type="button" variant="outline" onClick={() => bulk("rejected")} disabled={!selected.size}>
+            Bulk reject
+          </Button>
+        </div>
+      </OperatorOnly>
+      {!canMutate(role) ? (
+        <p className="text-sm text-uncc-ink/60">Leadership access is read-only. Prompt approval is an Operator action.</p>
+      ) : null}
 
-      <div className="overflow-x-auto rounded border border-uncc-rule bg-white">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-uncc-rule bg-uncc-mist/40 text-xs uppercase tracking-wide text-uncc-ink/60">
-            <tr>
-              <th className="px-3 py-2" />
-              <th className="px-3 py-2">QID</th>
-              <th className="px-3 py-2">Text</th>
-              <th className="px-3 py-2">Persona</th>
-              <th className="px-3 py-2">Provenance</th>
-              <th className="px-3 py-2">Evidence</th>
-              <th className="px-3 py-2">Doc vs suggested</th>
-              <th className="px-3 py-2">Note</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prompts.map((p) => (
-              <tr key={p.id} className={`border-b border-uncc-rule/60 align-top ${p.near_duplicate ? "bg-amber-50" : ""}`}>
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(p.id)}
-                    onChange={() => {
-                      const next = new Set(selected);
-                      if (next.has(p.id)) next.delete(p.id);
-                      else next.add(p.id);
-                      setSelected(next);
-                    }}
-                  />
-                </td>
-                <td className="px-3 py-2 font-mono text-xs">
-                  {p.question_id}
-                  {p.branded ? <Badge className="ml-1">branded</Badge> : null}
-                  {p.near_duplicate ? <Badge className="ml-1">near-dupe</Badge> : null}
-                </td>
-                <td className="max-w-md px-3 py-2">
-                  {editing?.id === p.id ? (
-                    <textarea className="w-full rounded border p-2 text-sm" rows={3} value={editing.text} onChange={(e) => setEditing({ id: p.id, text: e.target.value })} />
-                  ) : (
-                    p.text
-                  )}
-                </td>
-                <td className="px-3 py-2 text-xs">{p.persona_key ?? "neutral"}</td>
-                <td className="px-3 py-2 text-xs">
-                  <div>{p.provenance}</div>
-                  {p.intent ? <div className="text-uncc-ink/60">{p.intent}</div> : null}
-                </td>
-                <td className="px-3 py-2 text-xs text-uncc-ink/80">{p.demand_evidence_label}</td>
-                <td className="px-3 py-2 text-xs">
-                  <div>doc: {p.doc_personas.join("; ") || "—"}</div>
-                  <div>suggested: {p.suggested_personas.join("; ") || "—"}</div>
-                </td>
-                <td className="max-w-xs px-3 py-2 text-xs text-uncc-ink/70">{p.note ?? "—"}</td>
-                <td className="px-3 py-2">{p.status}</td>
-                <td className="space-y-1 px-3 py-2">
-                  {editing?.id === p.id ? (
-                    <>
-                      <Button size="sm" onClick={saveEdit}>
-                        Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditing({ id: p.id, text: p.text })}>
-                        Edit
-                      </Button>
-                      <Button size="sm" onClick={() => setOne(p.id, "approved")}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setOne(p.id, "rejected")}>
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </td>
+      {prompts.length === 0 ? (
+        <EmptyState title="No prompts for these filters">
+          <p>
+            {canMutate(role)
+              ? "Import or generate prompts, then clear filters if needed."
+              : "An Operator must import or generate prompts before results appear here."}
+          </p>
+        </EmptyState>
+      ) : (
+        <div className="overflow-x-auto rounded border border-uncc-rule bg-white">
+          <table className="min-w-full text-left text-sm" data-testid="prompt-review-table">
+            <caption className="sr-only">Campaign prompts</caption>
+            <thead className="border-b border-uncc-rule bg-uncc-mist/40 text-xs uppercase tracking-wide text-uncc-ink/60">
+              <tr>
+                {canMutate(role) ? <th className="px-3 py-2" /> : null}
+                <th className="px-3 py-2">QID</th>
+                <th className="px-3 py-2">Text</th>
+                <th className="px-3 py-2">Persona</th>
+                <th className="px-3 py-2">Provenance</th>
+                <th className="px-3 py-2">Evidence</th>
+                <th className="px-3 py-2">Doc vs suggested</th>
+                <th className="px-3 py-2">Note</th>
+                <th className="px-3 py-2">Status</th>
+                {canMutate(role) ? <th className="px-3 py-2">Actions</th> : null}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {prompts.map((p) => (
+                <tr
+                  key={p.id}
+                  className={`border-b border-uncc-rule/60 align-top ${p.near_duplicate ? "bg-amber-50" : ""}`}
+                >
+                  {canMutate(role) ? (
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(p.id)}
+                        onChange={() => {
+                          const next = new Set(selected);
+                          if (next.has(p.id)) next.delete(p.id);
+                          else next.add(p.id);
+                          setSelected(next);
+                        }}
+                      />
+                    </td>
+                  ) : null}
+                  <td className="px-3 py-2 font-mono text-xs">
+                    {p.question_id}
+                    {p.branded ? <Badge className="ml-1">branded</Badge> : null}
+                    {p.near_duplicate ? <Badge className="ml-1">near-dupe</Badge> : null}
+                  </td>
+                  <td className="max-w-md px-3 py-2">
+                    {editing?.id === p.id ? (
+                      <textarea
+                        className="w-full rounded border p-2 text-sm"
+                        rows={3}
+                        value={editing.text}
+                        onChange={(e) => setEditing({ id: p.id, text: e.target.value })}
+                      />
+                    ) : (
+                      p.text
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs">{p.persona_key ?? "neutral"}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <div>{p.provenance}</div>
+                    {p.intent ? <div className="text-uncc-ink/60">{p.intent}</div> : null}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-uncc-ink/80">{p.demand_evidence_label}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <div>doc: {p.doc_personas.join("; ") || "—"}</div>
+                    <div>suggested: {p.suggested_personas.join("; ") || "—"}</div>
+                  </td>
+                  <td className="max-w-xs px-3 py-2 text-xs text-uncc-ink/70">{p.note ?? "—"}</td>
+                  <td className="px-3 py-2">{p.status}</td>
+                  {canMutate(role) ? (
+                    <td className="space-y-1 px-3 py-2">
+                      {editing?.id === p.id ? (
+                        <>
+                          <Button size="sm" onClick={saveEdit}>
+                            Save
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" data-testid="edit-prompt" onClick={() => setEditing({ id: p.id, text: p.text })}>
+                            Edit
+                          </Button>
+                          <Button size="sm" data-testid="approve-prompt" onClick={() => setOne(p.id, "approved")}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setOne(p.id, "rejected")}>
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

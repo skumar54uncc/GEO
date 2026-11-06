@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { OperatorOnly, canMutate } from "@/components/CanAct";
+import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SURFACE_LABELS, type Surface } from "@/lib/types";
+import type { Role } from "@/lib/auth";
+import { enginePlain, runnerPlain } from "@/lib/ui/labels";
 
 type EngineSel = { engine: string; runner: string };
 type Campaign = {
@@ -48,14 +51,6 @@ type Draft = {
   engines: EngineSel[];
   region_ids: string[];
   persona_ids: string[];
-};
-
-const RUNNER_LABELS: Record<string, string> = {
-  ui_provider: "UI capture provider",
-  serp_provider: "SERP provider",
-  api_search: "API with web search",
-  api_parametric: "API, no browsing",
-  manual_paste: "Manual paste",
 };
 
 function emptyDraft(): Draft {
@@ -141,10 +136,10 @@ function CampaignForm({
                     })
                   }
                 />
-                {SURFACE_LABELS[engine as Surface] ?? engine}
+                {enginePlain(engine)}
               </label>
               <select
-                aria-label={`Runner for ${engine}`}
+                aria-label={`How answers are collected for ${engine}`}
                 disabled={!runner}
                 className="h-8 flex-1 rounded border border-uncc-rule bg-white px-2 text-xs disabled:opacity-40"
                 value={runner ?? options.default_runner[engine]}
@@ -157,7 +152,7 @@ function CampaignForm({
               >
                 {options.runners.map((r) => (
                   <option key={r} value={r}>
-                    {RUNNER_LABELS[r] ?? r}
+                    {runnerPlain(r)}
                   </option>
                 ))}
               </select>
@@ -219,6 +214,7 @@ function CampaignForm({
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [options, setOptions] = useState<Options | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [creating, setCreating] = useState<Draft | null>(null);
   const [editing, setEditing] = useState<{ id: string; draft: Draft } | null>(null);
@@ -226,12 +222,14 @@ export default function CampaignsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [list, opts] = await Promise.all([
+      const [list, opts, me] = await Promise.all([
         api<{ campaigns: Campaign[] }>(`/api/campaigns${showArchived ? "?archived=1" : ""}`),
         api<Options>("/api/campaigns/options"),
+        api<{ user: { role: Role } | null }>("/api/auth/me"),
       ]);
       setCampaigns(list.campaigns);
       setOptions(opts);
+      setRole(me.user?.role ?? null);
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     }
@@ -286,14 +284,16 @@ export default function CampaignsPage() {
     });
 
   if (!campaigns || !options) {
-    return message ? <p className="text-sm text-red-700">{message.text}</p> : <p className="text-uncc-ink/60">Loading…</p>;
+    return message?.tone === "error" ? <ErrorState message={message.text} /> : <LoadingState label="Loading campaigns…" />;
   }
+
+  const operator = canMutate(role);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl space-y-1">
-          <h2 className="font-serif text-2xl font-semibold text-uncc-ink">Campaigns</h2>
+          <h1 className="font-serif text-2xl font-semibold text-uncc-ink">Campaigns</h1>
           <p className="text-sm leading-6 text-uncc-ink/75">
             A campaign owns its prompts, engines, regions, and personas. Freezing snapshots the approved prompts into a
             numbered version with a hash. Scores are only compared within one version; editing a prompt afterwards only
@@ -305,9 +305,15 @@ export default function CampaignsPage() {
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             Show archived
           </label>
-          <Button onClick={() => setCreating(emptyDraft())} disabled={Boolean(creating)}>
-            New campaign
-          </Button>
+          <OperatorOnly role={role}>
+            <Button
+              onClick={() => setCreating(emptyDraft())}
+              disabled={Boolean(creating)}
+              data-testid="new-campaign"
+            >
+              New campaign
+            </Button>
+          </OperatorOnly>
         </div>
       </div>
 
@@ -334,7 +340,15 @@ export default function CampaignsPage() {
         </Card>
       ) : null}
 
-      {campaigns.length === 0 ? <p className="text-sm text-uncc-ink/60">No campaigns yet.</p> : null}
+      {campaigns.length === 0 ? (
+        <EmptyState title="No campaigns yet">
+          <p>
+            {operator
+              ? "Create a campaign to start measuring AI search visibility."
+              : "An Operator must prepare a campaign before Leadership can review results."}
+          </p>
+        </EmptyState>
+      ) : null}
 
       {campaigns.map((c) => {
         const latest = c.prompt_sets.find((s) => s.frozen_at);
@@ -352,7 +366,7 @@ export default function CampaignsPage() {
                 </div>
                 {c.topic ? <CardDescription>{c.topic}</CardDescription> : null}
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-wrap gap-2">
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/campaigns/${c.id}/dashboard`}>Dashboard</Link>
                 </Button>
@@ -361,17 +375,30 @@ export default function CampaignsPage() {
                     <Link href={`/campaigns/${c.id}/prompts`}>Review prompts</Link>
                   </Button>
                 ) : null}
-                <Button size="sm" variant="outline" onClick={() => setEditing({ id: c.id, draft: draftFrom(c) })}>
-                  Edit
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => freeze(c)} disabled={c.approved_count === 0}>
-                  Freeze prompt set
-                </Button>
-                {c.status !== "archived" ? (
-                  <Button size="sm" variant="ghost" onClick={() => archive(c)}>
-                    Archive
+                <OperatorOnly role={role}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid="edit-campaign"
+                    onClick={() => setEditing({ id: c.id, draft: draftFrom(c) })}
+                  >
+                    Edit
                   </Button>
-                ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-testid="freeze-prompt-set"
+                    onClick={() => freeze(c)}
+                    disabled={c.approved_count === 0}
+                  >
+                    Freeze prompt set
+                  </Button>
+                  {c.status !== "archived" ? (
+                    <Button size="sm" variant="ghost" data-testid="archive-campaign" onClick={() => archive(c)}>
+                      Archive
+                    </Button>
+                  ) : null}
+                </OperatorOnly>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -417,8 +444,8 @@ export default function CampaignsPage() {
                     <dd className="flex flex-wrap gap-1">
                       {c.engines.length
                         ? c.engines.map((e) => (
-                            <Badge key={`${e.engine}:${e.runner}`} title={RUNNER_LABELS[e.runner] ?? e.runner}>
-                              {SURFACE_LABELS[e.engine as Surface] ?? e.engine} · {RUNNER_LABELS[e.runner] ?? e.runner}
+                            <Badge key={`${e.engine}:${e.runner}`} title={runnerPlain(e.runner)}>
+                              {enginePlain(e.engine)} · {runnerPlain(e.runner)}
                             </Badge>
                           ))
                         : "none"}

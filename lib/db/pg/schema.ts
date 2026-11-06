@@ -757,6 +757,8 @@ export const rawPayloads = pgTable("raw_payloads", {
   storage: storageEnum("storage").notNull(),
   path: text("path"),
   mediaType: text("media_type").notNull(),
+  /** Exact `DEMO_SEED_MARKER` when this payload was inserted by a demo/fixture seed. */
+  seedMarker: text("seed_marker"),
   createdAt: createdAt(),
 });
 
@@ -881,12 +883,15 @@ export const draws = pgTable(
     paramsHash: text("params_hash"),
     // Null = not applicable (UI, SERP, manual). api_search series: true when the provider searched the web.
     searchUsed: boolean("search_used"),
+    /** Exact `DEMO_SEED_MARKER` when this draw was inserted by a demo/fixture seed. */
+    seedMarker: text("seed_marker"),
     createdAt: createdAt(),
   },
   (t) => [
     uniqueIndex("draws_unique_cell").on(t.scanId, t.promptId, t.engine, t.runner, t.regionId, t.drawIndex, t.attempt),
     index("draws_prompt").on(t.promptId),
     index("draws_scan_dashboard").on(t.scanId, t.engine, t.runner, t.status),
+    index("draws_seed_marker").on(t.seedMarker).where(sql`${t.seedMarker} is not null`),
   ],
 );
 
@@ -1100,11 +1105,14 @@ export const recommendations = pgTable(
     baselineScanId: uuid("baseline_scan_id").references(() => scans.id),
     publishedAt: ts("published_at"),
     followupScanId: uuid("followup_scan_id").references(() => scans.id),
+    /** Exact `DEMO_SEED_MARKER` when this card was inserted by a demo/fixture seed. */
+    seedMarker: text("seed_marker"),
     createdAt: createdAt(),
   },
   (t) => [
     index("recommendations_campaign_status").on(t.campaignId, t.status, t.createdAt.desc()),
     index("recommendations_campaign_lever").on(t.campaignId, t.leverType).where(sql`${t.leverType} is not null`),
+    index("recommendations_seed_marker").on(t.seedMarker).where(sql`${t.seedMarker} is not null`),
   ],
 );
 
@@ -1117,9 +1125,14 @@ export const strategyReports = pgTable(
     inputs: jsonb("inputs").notNull(),
     output: jsonb("output").notNull(),
     createdBy: uuid("created_by").references(() => users.id),
+    /** Exact `DEMO_SEED_MARKER` when this report was inserted by a demo/fixture seed. */
+    seedMarker: text("seed_marker"),
     createdAt: createdAt(),
   },
-  (t) => [index("strategy_reports_campaign_created").on(t.campaignId, t.createdAt.desc())],
+  (t) => [
+    index("strategy_reports_campaign_created").on(t.campaignId, t.createdAt.desc()),
+    index("strategy_reports_seed_marker").on(t.seedMarker).where(sql`${t.seedMarker} is not null`),
+  ],
 );
 
 // ---------- 3.9 ops ----------
@@ -1160,11 +1173,14 @@ export const costLedger = pgTable(
     cached: boolean("cached").notNull().default(false),
     error: text("error"),
     promptId: uuid("prompt_id").references(() => prompts.id),
+    /** Exact `DEMO_SEED_MARKER` when this ledger row was inserted by a demo/fixture seed. */
+    seedMarker: text("seed_marker"),
     createdAt: createdAt(),
   },
   (t) => [
     index("cost_ledger_provider_at").on(t.provider, t.at),
     index("cost_ledger_org_at").on(t.orgId, t.at.desc()),
+    index("cost_ledger_seed_marker").on(t.seedMarker).where(sql`${t.seedMarker} is not null`),
   ],
 );
 

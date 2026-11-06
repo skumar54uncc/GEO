@@ -146,7 +146,8 @@ body {
 }
 
 .primary-nav span[aria-disabled="true"] {
-  color: #67736c;
+  /* AA for small "Unavailable" label on white (≥4.5:1). */
+  color: #4a544e;
 }
 
 .primary-nav small {
@@ -165,6 +166,55 @@ body {
   border-left: 4px solid var(--org-accent);
   margin: 0 0 1rem;
   padding: 0.5rem 0.75rem;
+}
+
+/* Answer Explorer: brand vs competitor highlights use pattern + label, not color alone. */
+mark.mention-brand {
+  background: #dcefe4;
+  border-bottom: 2px solid var(--org-primary);
+  font-weight: 600;
+  padding: 0 0.1em;
+}
+mark.mention-competitor,
+mark.mention-peer {
+  background: #f4f0e3;
+  border-bottom: 2px dashed var(--org-accent);
+  font-style: italic;
+  padding: 0 0.1em;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/*
+ * Tailwind /60 and /50 on #14231c against paper/white miss WCAG AA at 12px.
+ * Bump those utility classes to AA-safe muted ink (~#4a544e ≈ 7:1 on white).
+ */
+.text-uncc-ink\/50,
+.text-uncc-ink\/60 {
+  color: #4a544e !important;
+}
+.text-uncc-ink\/70 {
+  color: #3f4842 !important;
+}
+
+@media (max-width: 1024px) {
+  .shell-grid {
+    grid-template-columns: 12rem minmax(0, 1fr);
+  }
+
+  .main-content {
+    padding: 1.5rem 1rem;
+  }
 }
 
 @media (max-width: 760px) {

@@ -1,5 +1,7 @@
 import { spawnSync } from "child_process";
+import crypto from "crypto";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -60,33 +62,156 @@ export async function runMigrations(target = urlFor()): Promise<void> {
   console.log(`migrations applied to ${dbNameOf(target)}`);
 }
 
-function backup(): void {
+type BackupManifest = {
+  version: 1;
+  createdAt: string;
+  database: string;
+  databaseDump: "database.dump";
+  rawStore: { source: "data/raw"; included: boolean; files: number; bytes: number };
+};
+
+function filesUnder(root: string): string[] {
+  if (!fs.existsSync(root)) return [];
+  return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(root, entry.name);
+    return entry.isDirectory() ? filesUnder(absolute) : [absolute];
+  });
+}
+
+function sha256(file: string): string {
+  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+/** Creates one self-contained local bundle: Postgres dump, data/raw, and a manifest. */
+export function backup(): string {
   const url = urlFor();
   assertLocal(url);
   const dir = path.join(process.cwd(), "backups");
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const file = path.join(dir, `${dbNameOf(url)}-${stamp}.dump`);
-  const res = spawnSync(pgBinary("pg_dump"), ["--format=custom", "--no-owner", `--file=${file}`, url], {
-    stdio: "inherit",
-  });
-  if (res.status !== 0) throw new Error("pg_dump failed");
-  console.log(`backup written: ${path.relative(process.cwd(), file)}`);
-  console.log("Raw files in data/raw/ are not inside the dump. Copy that folder alongside it.");
+  const bundle = path.join(dir, `${dbNameOf(url)}-${stamp}`);
+  const dump = path.join(bundle, "database.dump");
+  const rawSource = path.join(process.cwd(), "data", "raw");
+  const rawTarget = path.join(bundle, "data", "raw");
+  fs.mkdirSync(bundle, { recursive: false });
+  try {
+    const res = spawnSync(pgBinary("pg_dump"), ["--format=custom", "--no-owner", `--file=${dump}`, url], {
+      stdio: "inherit",
+    });
+    if (res.status !== 0) throw new Error("pg_dump failed");
+
+    if (fs.existsSync(rawSource)) fs.cpSync(rawSource, rawTarget, { recursive: true, errorOnExist: true });
+    const rawFiles = filesUnder(rawTarget);
+    const manifest: BackupManifest = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      database: dbNameOf(url),
+      databaseDump: "database.dump",
+      rawStore: {
+        source: "data/raw",
+        included: fs.existsSync(rawSource),
+        files: rawFiles.length,
+        bytes: rawFiles.reduce((sum, file) => sum + fs.statSync(file).size, 0),
+      },
+    };
+    fs.writeFileSync(path.join(bundle, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n", {
+      flag: "wx",
+    });
+  } catch (error) {
+    fs.rmSync(bundle, { recursive: true, force: true });
+    throw error;
+  }
+  console.log(`backup bundle written: ${path.relative(process.cwd(), bundle)}`);
+  return bundle;
 }
 
-async function restore(file: string | undefined, targetName: string | undefined): Promise<void> {
-  if (!file) throw new Error("usage: npm run db:restore -- <backup file> [target database name]");
+export function restoreRawStore(
+  bundle: string,
+  targetRoot = path.join(process.cwd(), "data", "raw"),
+): number {
+  const source = path.join(bundle, "data", "raw");
+  if (!fs.existsSync(source)) return 0;
+  let copied = 0;
+  for (const sourceFile of filesUnder(source)) {
+    const relative = path.relative(source, sourceFile);
+    const targetFile = path.join(targetRoot, relative);
+    if (fs.existsSync(targetFile)) {
+      if (sha256(targetFile) !== sha256(sourceFile)) {
+        throw new Error(`refusing to overwrite different raw-store file: data/raw/${relative}`);
+      }
+      continue;
+    }
+    fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+    fs.copyFileSync(sourceFile, targetFile, fs.constants.COPYFILE_EXCL);
+    copied++;
+  }
+  return copied;
+}
+
+export async function restore(file: string | undefined, targetName: string | undefined): Promise<void> {
+  if (!file) throw new Error("usage: npm run db:restore -- <backup bundle or .dump file> [target database name]");
+  const resolved = path.resolve(file);
+  const bundle = fs.existsSync(resolved) && fs.statSync(resolved).isDirectory() ? resolved : null;
+  const dump = bundle ? path.join(bundle, "database.dump") : resolved;
+  if (!fs.existsSync(dump)) throw new Error(`database dump not found: ${dump}`);
   const target = targetName ? urlFor(targetName) : urlFor();
   assertLocal(target);
   await setup(target);
   const res = spawnSync(
     pgBinary("pg_restore"),
-    ["--clean", "--if-exists", "--no-owner", `--dbname=${target}`, file],
+    ["--clean", "--if-exists", "--no-owner", `--dbname=${target}`, dump],
     { stdio: "inherit" },
   );
   if (res.status !== 0) throw new Error("pg_restore failed");
-  console.log(`restored ${file} into ${dbNameOf(target)}`);
+  const copied = bundle ? restoreRawStore(bundle) : 0;
+  console.log(`restored ${dump} into ${dbNameOf(target)}`);
+  if (bundle) console.log(`restored ${copied} new data/raw file(s); identical existing files were kept`);
+  else console.log("Legacy .dump restored without data/raw; restore a backup bundle for file-backed payloads.");
+}
+
+function xml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Pure generation is exported so the launchd contract can be tested without installing it. */
+export function nightlyLaunchAgent(repo: string, node: string, npmCli: string): string {
+  const log = path.join(repo, "backups", "nightly.log");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>edu.charlotte.geo.backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${xml(node)}</string>
+    <string>${xml(npmCli)}</string>
+    <string>run</string>
+    <string>db:nightly:run</string>
+  </array>
+  <key>WorkingDirectory</key><string>${xml(repo)}</string>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>2</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>${xml(log)}</string>
+  <key>StandardErrorPath</key><string>${xml(log)}</string>
+</dict>
+</plist>
+`;
+}
+
+function nightlyInstall(): void {
+  if (process.platform !== "darwin") throw new Error("nightly installer currently supports macOS launchd only");
+  const npmCli = process.env.npm_execpath;
+  if (!npmCli) throw new Error("run this installer through npm so npm_execpath is available");
+  const agents = path.join(os.homedir(), "Library", "LaunchAgents");
+  const plist = path.join(agents, "edu.charlotte.geo.backup.plist");
+  fs.mkdirSync(path.join(process.cwd(), "backups"), { recursive: true });
+  fs.mkdirSync(agents, { recursive: true });
+  fs.writeFileSync(plist, nightlyLaunchAgent(process.cwd(), process.execPath, npmCli), { mode: 0o600 });
+  const domain = `gui/${process.getuid?.()}`;
+  spawnSync("launchctl", ["bootout", domain, plist], { stdio: "ignore" });
+  const loaded = spawnSync("launchctl", ["bootstrap", domain, plist], { stdio: "inherit" });
+  if (loaded.status !== 0) throw new Error(`launchctl could not load ${plist}`);
+  console.log(`nightly 02:00 local backup installed: ${plist}`);
 }
 
 async function main() {
@@ -105,11 +230,14 @@ async function main() {
     case "backup":
       backup();
       break;
+    case "nightly-install":
+      nightlyInstall();
+      break;
     case "restore":
       await restore(args[0], args[1]);
       break;
     default:
-      console.log("usage: tsx scripts/db.ts <up|setup|migrate|backup|restore>");
+      console.log("usage: tsx scripts/db.ts <up|setup|migrate|backup|restore|nightly-install>");
       process.exit(1);
   }
 }

@@ -50,6 +50,13 @@
       "when": 1793955000000,
       "tag": "0006_content_prompts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793970000000,
+      "tag": "0007_wave1_database_foundation",
+      "breakpoints": true
     }
   ]
 }

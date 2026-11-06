@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   customType,
   date,
   index,
@@ -116,6 +117,7 @@ export const scanStatusEnum = pgEnum("scan_status", [
   "estimating",
   "awaiting_approval",
   "running",
+  "paused",
   "partial",
   "complete",
   "failed",
@@ -137,6 +139,16 @@ export const sourceClassEnum = pgEnum("source_class", [
 ]);
 export const verdictEnum = pgEnum("verdict", ["supported", "contradicted", "unverifiable"]);
 export const recommendationKindEnum = pgEnum("recommendation_kind", ["gap", "content", "technical", "earned_media"]);
+export const recommendationLeverEnum = pgEnum("recommendation_lever", [
+  "technical",
+  "on_page",
+  "truth_layer",
+  "listing",
+  "earned_media",
+  "community",
+  "original_data",
+]);
+export const evidenceGradeEnum = pgEnum("evidence_grade", ["A", "B", "C", "D"]);
 export const recommendationStatusEnum = pgEnum("recommendation_status", [
   "open",
   "in_progress",
@@ -163,12 +175,21 @@ export const entityCandidateKindEnum = pgEnum("entity_candidate_kind", [
 export const extractionMethodEnum = pgEnum("extraction_method", ["schema", "title", "heading", "navigation", "text"]);
 export const reviewStatusEnum = pgEnum("review_status", ["proposed", "confirmed", "rejected"]);
 export const botLogFormatEnum = pgEnum("bot_log_format", ["common", "combined", "cloudflare_json"]);
+export const citationFetchStatusEnum = pgEnum("citation_fetch_status", [
+  "pending",
+  "fetched",
+  "blocked",
+  "error",
+  "skipped",
+]);
 
 // ---------- 3.1 tenancy and access ----------
 export const organizations = pgTable("organizations", {
   id: id(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  isDemo: boolean("is_demo").notNull().default(false),
+  themeConfig: jsonb("theme_config").notNull().default(sql`'{}'::jsonb`),
   createdAt: createdAt(),
 });
 
@@ -395,9 +416,16 @@ export const crawlPages = pgTable(
     fetchError: text("fetch_error"),
     embedding: vector("embedding"),
     embeddingModel: text("embedding_model"),
+    embeddingDimension: integer("embedding_dimension"),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("crawl_pages_run_url").on(t.crawlRunId, t.url)],
+  (t) => [
+    uniqueIndex("crawl_pages_run_url").on(t.crawlRunId, t.url),
+    check(
+      "crawl_pages_embedding_dimension_positive",
+      sql`${t.embeddingDimension} is null or ${t.embeddingDimension} > 0`,
+    ),
+  ],
 );
 
 export const auditRules = pgTable("audit_rules", {
@@ -583,6 +611,10 @@ export const personas = pgTable(
     key: text("key"),
     /** Draft first-person prefix for persona_mode=prefix variants. Content team must approve. */
     draftPrefix: text("draft_prefix"),
+    /** Optional geographic context for canonical and custom Phase 4 personas. */
+    region: text("region"),
+    /** Typical questions guide generation; they are prompts-to-consider, not measured demand. */
+    typicalQuestions: text("typical_questions").array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("personas_key_unique").on(t.key).where(sql`${t.key} is not null`)],
@@ -665,6 +697,7 @@ export const prompts = pgTable(
     version: integer("version").notNull().default(1),
     embedding: vector("embedding"),
     embeddingModel: text("embedding_model"),
+    embeddingDimension: integer("embedding_dimension"),
     note: text("note"),
     /** CSV prompt_id for neutrals; `{prompt_id}:{persona_key}` for variants. Idempotency key. */
     externalId: text("external_id"),
@@ -677,7 +710,9 @@ export const prompts = pgTable(
   },
   (t) => [
     index("prompts_campaign").on(t.campaignId),
+    index("prompts_campaign_status_persona").on(t.campaignId, t.status, t.personaId),
     uniqueIndex("prompts_campaign_external").on(t.campaignId, t.externalId).where(sql`${t.externalId} is not null`),
+    check("prompts_embedding_dimension_positive", sql`${t.embeddingDimension} is null or ${t.embeddingDimension} > 0`),
   ],
 );
 
@@ -722,17 +757,21 @@ export const rawPayloads = pgTable("raw_payloads", {
   createdAt: createdAt(),
 });
 
-export const demandSignals = pgTable("demand_signals", {
-  id: id(),
-  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
-  source: demandSourceEnum("source").notNull(),
-  term: text("term").notNull(),
-  regionId: uuid("region_id").references(() => regions.id),
-  value: jsonb("value"),
-  rawPayloadId: text("raw_payload_id").references(() => rawPayloads.sha256),
-  fetchedAt: ts("fetched_at").notNull().defaultNow(),
-  createdAt: createdAt(),
-});
+export const demandSignals = pgTable(
+  "demand_signals",
+  {
+    id: id(),
+    campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
+    source: demandSourceEnum("source").notNull(),
+    term: text("term").notNull(),
+    regionId: uuid("region_id").references(() => regions.id),
+    value: jsonb("value"),
+    rawPayloadId: text("raw_payload_id").references(() => rawPayloads.sha256),
+    fetchedAt: ts("fetched_at").notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("demand_signals_campaign_source_fetched").on(t.campaignId, t.source, t.fetchedAt.desc())],
+);
 
 export const searchConsoleQueries = pgTable("search_console_queries", {
   id: id(),
@@ -789,6 +828,12 @@ export const scans = pgTable(
     approvedAt: ts("approved_at"),
     // Schedule period this scan covers: YYYY-MM (monthly) or YYYY-Www (biweekly). Null for unscheduled scans.
     periodKey: text("period_key"),
+    // Automatic stop-loss defaults from BUILD_TO_PILOT; enforcement is a later backend unit.
+    stopLossConfig: jsonb("stop_loss_config")
+      .notNull()
+      .default(sql`'{"first_draws":60,"error_or_blocked_rate":0.2,"cost_over_estimate_rate":0.25}'::jsonb`),
+    pausedReason: text("paused_reason"),
+    pausedAt: ts("paused_at"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -796,6 +841,7 @@ export const scans = pgTable(
     uniqueIndex("scans_schedule_period")
       .on(t.scheduleId, t.periodKey)
       .where(sql`${t.scheduleId} is not null and ${t.periodKey} is not null`),
+    index("scans_campaign_created").on(t.campaignId, t.createdAt.desc()),
   ],
 );
 
@@ -837,16 +883,21 @@ export const draws = pgTable(
   (t) => [
     uniqueIndex("draws_unique_cell").on(t.scanId, t.promptId, t.engine, t.runner, t.regionId, t.drawIndex, t.attempt),
     index("draws_prompt").on(t.promptId),
+    index("draws_scan_dashboard").on(t.scanId, t.engine, t.runner, t.status),
   ],
 );
 
-export const fanoutQueries = pgTable("fanout_queries", {
-  id: id(),
-  drawId: uuid("draw_id").notNull().references(() => draws.id),
-  query: text("query").notNull(),
-  source: fanoutSourceEnum("source").notNull(),
-  createdAt: createdAt(),
-});
+export const fanoutQueries = pgTable(
+  "fanout_queries",
+  {
+    id: id(),
+    drawId: uuid("draw_id").notNull().references(() => draws.id),
+    query: text("query").notNull(),
+    source: fanoutSourceEnum("source").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("fanout_queries_draw").on(t.drawId)],
+);
 
 export const serpSnapshots = pgTable(
   "serp_snapshots",
@@ -901,69 +952,105 @@ export const judgeRuns = pgTable(
     sentimentSpanEnd: integer("sentiment_span_end"),
     createdAt: createdAt(),
   },
-  (t) => [index("judge_runs_draw").on(t.drawId)],
+  (t) => [
+    index("judge_runs_draw").on(t.drawId),
+    index("judge_runs_draw_latest").on(t.drawId, t.createdAt.desc()),
+  ],
 );
 
-export const mentions = pgTable("mentions", {
-  id: id(),
-  judgeRunId: uuid("judge_run_id").notNull().references(() => judgeRuns.id),
-  entityType: mentionEntityEnum("entity_type").notNull(),
-  entityId: uuid("entity_id").notNull(),
-  aliasMatched: text("alias_matched"),
-  spanStart: integer("span_start"),
-  spanEnd: integer("span_end"),
-  listPosition: integer("list_position"),
-  prominence: prominenceEnum("prominence"),
-  createdAt: createdAt(),
-});
+export const mentions = pgTable(
+  "mentions",
+  {
+    id: id(),
+    judgeRunId: uuid("judge_run_id").notNull().references(() => judgeRuns.id),
+    entityType: mentionEntityEnum("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    aliasMatched: text("alias_matched"),
+    spanStart: integer("span_start"),
+    spanEnd: integer("span_end"),
+    listPosition: integer("list_position"),
+    prominence: prominenceEnum("prominence"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("mentions_judge_run").on(t.judgeRunId)],
+);
 
-export const citations = pgTable("citations", {
-  id: id(),
-  drawId: uuid("draw_id").notNull().references(() => draws.id),
-  url: text("url").notNull(),
-  canonicalUrl: text("canonical_url"),
-  domain: text("domain").notNull(),
-  position: integer("position"),
-  // Null when the source did not say whether the citation was a link.
-  linked: boolean("linked"),
-  sourceClass: sourceClassEnum("source_class").notNull(),
-  title: text("title"),
-  // Character span in draws.answer_text where the citation is attached, when the provider or judge gives one.
-  spanStart: integer("span_start"),
-  spanEnd: integer("span_end"),
-  createdAt: createdAt(),
-});
+export const citations = pgTable(
+  "citations",
+  {
+    id: id(),
+    drawId: uuid("draw_id").notNull().references(() => draws.id),
+    url: text("url").notNull(),
+    canonicalUrl: text("canonical_url"),
+    domain: text("domain").notNull(),
+    position: integer("position"),
+    // Null when the source did not say whether the citation was a link.
+    linked: boolean("linked"),
+    sourceClass: sourceClassEnum("source_class").notNull(),
+    title: text("title"),
+    // Character span in draws.answer_text where the citation is attached, when the provider or judge gives one.
+    spanStart: integer("span_start"),
+    spanEnd: integer("span_end"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("citations_draw").on(t.drawId),
+    index("citations_canonical_url").on(t.canonicalUrl).where(sql`${t.canonicalUrl} is not null`),
+  ],
+);
 
-export const claims = pgTable("claims", {
-  id: id(),
-  judgeRunId: uuid("judge_run_id").notNull().references(() => judgeRuns.id),
-  text: text("text").notNull(),
-  spanStart: integer("span_start"),
-  spanEnd: integer("span_end"),
-  factId: uuid("fact_id").references(() => facts.id),
-  verdict: verdictEnum("verdict").notNull(),
-  createdAt: createdAt(),
-});
+export const claims = pgTable(
+  "claims",
+  {
+    id: id(),
+    judgeRunId: uuid("judge_run_id").notNull().references(() => judgeRuns.id),
+    text: text("text").notNull(),
+    spanStart: integer("span_start"),
+    spanEnd: integer("span_end"),
+    factId: uuid("fact_id").references(() => facts.id),
+    verdict: verdictEnum("verdict").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("claims_judge_run").on(t.judgeRunId)],
+);
 
-export const citedPages = pgTable("cited_pages", {
-  id: id(),
-  canonicalUrl: text("canonical_url").notNull().unique(),
-  fetchedAt: ts("fetched_at"),
-  statusCode: integer("status_code"),
-  title: text("title"),
-  h1: text("h1"),
-  h2s: text("h2s").array().notNull().default(sql`'{}'::text[]`),
-  publishedAt: ts("published_at"),
-  updatedAt: ts("updated_at"),
-  wordCount: integer("word_count"),
-  schemaTypes: text("schema_types").array().notNull().default(sql`'{}'::text[]`),
-  faq: jsonb("faq"),
-  contentType: text("content_type"),
-  textRef: text("text_ref"),
-  embedding: vector("embedding"),
-  embeddingModel: text("embedding_model"),
-  createdAt: createdAt(),
-});
+export const citedPages = pgTable(
+  "cited_pages",
+  {
+    id: id(),
+    canonicalUrl: text("canonical_url").notNull().unique(),
+    fetchedAt: ts("fetched_at"),
+    statusCode: integer("status_code"),
+    title: text("title"),
+    h1: text("h1"),
+    h2s: text("h2s").array().notNull().default(sql`'{}'::text[]`),
+    publishedAt: ts("published_at"),
+    updatedAt: ts("updated_at"),
+    wordCount: integer("word_count"),
+    schemaTypes: text("schema_types").array().notNull().default(sql`'{}'::text[]`),
+    faq: jsonb("faq"),
+    contentType: text("content_type"),
+    fetchStatus: citationFetchStatusEnum("fetch_status").notNull().default("pending"),
+    fetchError: text("fetch_error"),
+    robotsResult: jsonb("robots_result"),
+    fetchUserAgent: text("fetch_user_agent"),
+    outboundLinks: jsonb("outbound_links"),
+    // Explicit Phase 6 evidence such as listicle, answer capsule, statistics and named quotes.
+    structuredFeatures: jsonb("structured_features").notNull().default(sql`'{}'::jsonb`),
+    // Full page text remains file-backed through text_ref; it is never stored in this row.
+    textRef: text("text_ref"),
+    embedding: vector("embedding"),
+    embeddingModel: text("embedding_model"),
+    embeddingDimension: integer("embedding_dimension"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check(
+      "cited_pages_embedding_dimension_positive",
+      sql`${t.embeddingDimension} is null or ${t.embeddingDimension} > 0`,
+    ),
+  ],
+);
 
 export const goldLabels = pgTable("gold_labels", {
   id: id(),
@@ -975,29 +1062,44 @@ export const goldLabels = pgTable("gold_labels", {
 });
 
 // ---------- 3.8 action and outcomes ----------
-export const recommendations = pgTable("recommendations", {
-  id: id(),
-  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
-  kind: recommendationKindEnum("kind").notNull(),
-  payload: jsonb("payload").notNull(),
-  evidence: jsonb("evidence"),
-  targetPromptIds: uuid("target_prompt_ids").array().notNull().default(sql`'{}'::uuid[]`),
-  status: recommendationStatusEnum("status").notNull().default("open"),
-  baselineScanId: uuid("baseline_scan_id").references(() => scans.id),
-  publishedAt: ts("published_at"),
-  followupScanId: uuid("followup_scan_id").references(() => scans.id),
-  createdAt: createdAt(),
-});
+export const recommendations = pgTable(
+  "recommendations",
+  {
+    id: id(),
+    campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
+    // Existing broad kind is preserved; leverType is the separate seven-value Playbook taxonomy.
+    kind: recommendationKindEnum("kind").notNull(),
+    leverType: recommendationLeverEnum("lever_type"),
+    owner: text("owner"),
+    evidenceGrade: evidenceGradeEnum("evidence_grade"),
+    payload: jsonb("payload").notNull(),
+    evidence: jsonb("evidence"),
+    targetPromptIds: uuid("target_prompt_ids").array().notNull().default(sql`'{}'::uuid[]`),
+    status: recommendationStatusEnum("status").notNull().default("open"),
+    baselineScanId: uuid("baseline_scan_id").references(() => scans.id),
+    publishedAt: ts("published_at"),
+    followupScanId: uuid("followup_scan_id").references(() => scans.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("recommendations_campaign_status").on(t.campaignId, t.status, t.createdAt.desc()),
+    index("recommendations_campaign_lever").on(t.campaignId, t.leverType).where(sql`${t.leverType} is not null`),
+  ],
+);
 
-export const strategyReports = pgTable("strategy_reports", {
-  id: id(),
-  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
-  topic: text("topic").notNull(),
-  inputs: jsonb("inputs").notNull(),
-  output: jsonb("output").notNull(),
-  createdBy: uuid("created_by").references(() => users.id),
-  createdAt: createdAt(),
-});
+export const strategyReports = pgTable(
+  "strategy_reports",
+  {
+    id: id(),
+    campaignId: uuid("campaign_id").notNull().references(() => campaigns.id),
+    topic: text("topic").notNull(),
+    inputs: jsonb("inputs").notNull(),
+    output: jsonb("output").notNull(),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("strategy_reports_campaign_created").on(t.campaignId, t.createdAt.desc())],
+);
 
 // ---------- 3.9 ops ----------
 export const providerAccounts = pgTable(
@@ -1039,7 +1141,10 @@ export const costLedger = pgTable(
     promptId: uuid("prompt_id").references(() => prompts.id),
     createdAt: createdAt(),
   },
-  (t) => [index("cost_ledger_provider_at").on(t.provider, t.at)],
+  (t) => [
+    index("cost_ledger_provider_at").on(t.provider, t.at),
+    index("cost_ledger_org_at").on(t.orgId, t.at.desc()),
+  ],
 );
 
 // One fixed prompt per engine before every scan. A failed canary refuses that engine for the scan.
@@ -1088,16 +1193,25 @@ export const modelEvents = pgTable("model_events", {
   createdAt: createdAt(),
 });
 
-export const alerts = pgTable("alerts", {
-  id: id(),
-  orgId: uuid("org_id").notNull().references(() => organizations.id),
-  campaignId: uuid("campaign_id").references(() => campaigns.id),
-  kind: alertKindEnum("kind").notNull(),
-  payload: jsonb("payload"),
-  status: alertStatusEnum("status").notNull().default("open"),
-  acknowledgedBy: uuid("acknowledged_by").references(() => users.id),
-  createdAt: createdAt(),
-});
+export const alerts = pgTable(
+  "alerts",
+  {
+    id: id(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id),
+    campaignId: uuid("campaign_id").references(() => campaigns.id),
+    kind: alertKindEnum("kind").notNull(),
+    payload: jsonb("payload"),
+    status: alertStatusEnum("status").notNull().default("open"),
+    acknowledgedBy: uuid("acknowledged_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("alerts_org_status_created").on(t.orgId, t.status, t.createdAt.desc()),
+    index("alerts_campaign_status_created")
+      .on(t.campaignId, t.status, t.createdAt.desc())
+      .where(sql`${t.campaignId} is not null`),
+  ],
+);
 
 export const auditLog = pgTable(
   "audit_log",

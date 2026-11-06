@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-06: Wave 1 database and operations foundation
+
+Additive migration `0007` prepares the contracts for Phases 6, 4, 7 and 8 without changing existing IDs or raw ledgers.
+
+- Organizations now identify demo tenants and carry per-org theme config.
+- Cited pages record fetch status/error, robots evidence, identifying user agent, outbound links and structured page features; full text remains file-backed through `text_ref`.
+- Personas add optional region and typical questions. Prompt, crawl-page and cited-page embeddings record their dimension.
+- Recommendations retain their existing broad kind and add the separate seven-value GEO Playbook lever, owner and evidence grade.
+- Scans can be paused with stop-loss config, reason and time. The default contract is 20% error/blocked in the first 60 draws or 25% over estimate; enforcement remains a backend unit.
+- Added dashboard and Phase 4/6/7/8 indexes for scans/draws, latest judge runs, analysis foreign keys, cost, alerts, demand, recommendations and strategy.
+- Local backups are now bundles containing `pg_dump`, a separate `data/raw/` copy and a manifest. Added an opt-in macOS 02:00 launchd installer and conflict-safe raw restore; see `docs/BACKUPS.md`.
+
+Verification: focused schema/backup tests and typecheck are recorded in the Wave 1 handoff. A `geo_test` bundle restored into `geo_wave1_restore` with the same 60 public tables, 7 Wave 1 contract columns and 6 immutability triggers. Raw-file copy/conflict behavior is covered by a focused test (the scratch bundle contained no raw files). No paid calls were made.
+
 ## 2026-11-06: Content-team prompt import (AI, Energy, Internships)
 
 Stakeholder CSV import only (not Phase 4 generation). `inputs/` is gitignored (public repo). Source: `inputs/content-team/content_team_prompts_v1.csv` (PDF optional later).

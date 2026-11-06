@@ -17,6 +17,15 @@ export default function SettingsPage() {
           View provider status
         </Link>
       </section>
+      <section className="rounded border border-uncc-rule bg-white p-6">
+        <h2 className="font-serif text-xl font-semibold">Demand sources</h2>
+        <p className="mt-2 text-sm text-uncc-ink/75">
+          Trends, Search Console, PAA, autocomplete, Exa, keywords, and LLM Mentions. Missing keys show as not connected.
+        </p>
+        <Link href="/settings/demand" className="mt-4 inline-block text-uncc-green underline">
+          View demand connection status
+        </Link>
+      </section>
     </div>
   );
 }

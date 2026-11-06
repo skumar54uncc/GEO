@@ -206,6 +206,34 @@ describe("Phase 6 citation aggregates", () => {
     expect(body.domains).toHaveLength(1);
     expect(body.domains[0]).toMatchObject({ domain: "kept.edu", count: 2, n: 2, rate: 1 });
     expect(body.domains[0].ci95.low).toBeGreaterThan(0);
+    expect(body.otherShare).toMatchObject({ sourceClass: "other", count: 0, n: 2, rate: 0 });
+    expect(body.topUnclassifiedDomains).toEqual([]);
+
+    const [otherDraw] = await db
+      .insert(draws)
+      .values({
+        scanId: context.scanId,
+        promptId: prompt.id,
+        engine: "chatgpt",
+        runner: "ui_provider",
+        fidelity: "high",
+        provider: "fixture",
+        regionId: region.id,
+        drawIndex: 99,
+        status: "ok",
+        answerText: "answer",
+        capturedAt: new Date(),
+      })
+      .returning();
+    await db.insert(citations).values({
+      drawId: otherDraw.id,
+      url: "https://unknown.example/x",
+      domain: "unknown.example",
+      sourceClass: "other",
+    });
+    const withOther = await json(await aggregatesGet(req(`/api/citations/aggregates?${query}`, { cookie })));
+    expect(withOther.otherShare).toMatchObject({ sourceClass: "other", count: 1, n: 3, rate: 1 / 3 });
+    expect(withOther.topUnclassifiedDomains[0]).toMatchObject({ domain: "unknown.example", count: 1, n: 3 });
 
     expect((await aggregatesGet(req(`/api/citations/aggregates?${query.replace("&runner=ui_provider", "")}`, { cookie }))).status).toBe(400);
     expect((await aggregatesGet(req(`/api/citations/aggregates?${query.replace("index=chat", "index=google")}`, { cookie }))).status).toBe(400);

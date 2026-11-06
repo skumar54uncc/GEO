@@ -30,6 +30,12 @@ describe("source taxonomy", () => {
     ["https://youtube.com/watch?v=1", "ugc", "video"],
     ["https://www.reuters.com/world/", "editorial", "news"],
     ["https://data.ed.gov/report", "gov", "government"],
+    ["https://www.charlotteobserver.com/news/", "editorial", "news"],
+    ["https://www.wfae.org/education", "editorial", "news"],
+    ["https://joinhandshake.com/explore", "editorial", "listing"],
+    ["https://www.indeed.com/q-internships.html", "editorial", "listing"],
+    ["https://www.ratemyprofessors.com/school", "ugc", "review"],
+    ["https://www.collegevine.com/schools", "ugc", "review"],
   ] as const)("%s is %s/%s", (url, sourceClass, kind) => {
     expect(classifySource(url)).toEqual({ sourceClass, kind });
   });
@@ -41,6 +47,14 @@ describe("source taxonomy", () => {
     });
     expect(classifySource("https://research.other.edu/paper")).toEqual({ sourceClass: "editorial", kind: "education" });
   });
+
+  it("applies org overrides before built-in lists", () => {
+    expect(
+      classifySource("https://www.charlotteobserver.com/x", {
+        overrides: { "charlotteobserver.com": { sourceClass: "ugc", kind: "forum" } },
+      }),
+    ).toEqual({ sourceClass: "ugc", kind: "forum" });
+  });
 });
 
 describe("GEO Playbook cited-page features", () => {
@@ -51,7 +65,11 @@ describe("GEO Playbook cited-page features", () => {
   it("extracts each feature from a saved HTML fixture", () => {
     expect(features.source).toEqual({ sourceClass: "other", kind: "other" });
     expect(features.listicle).toEqual({ present: true, itemCount: 3 });
-    expect(features.answerCapsule).toMatchObject({ present: true, question: "What makes this energy program distinctive?" });
+    expect(features.answerCapsule).toMatchObject({
+      present: true,
+      nearCapsule: true,
+      question: "What makes this energy program distinctive?",
+    });
     expect(features.answerCapsule.wordCount).toBeGreaterThanOrEqual(20);
     expect(features.answerCapsule.wordCount).toBeLessThanOrEqual(25);
     expect(features.statisticsCount).toBe(3);
@@ -69,5 +87,11 @@ describe("GEO Playbook cited-page features", () => {
     });
     expect(features.schema).toEqual({ present: true, types: ["NewsArticle"] });
     expect(inferContentType(pageUrl, page, features)).toBe("ranking_list");
+  });
+
+  it("flags near capsules outside the strict 20-25 band and still stores word count", () => {
+    const nearHtml = `<html><body><h2>Why choose this program?</h2><p>${Array.from({ length: 18 }, (_, i) => `word${i + 1}`).join(" ")}</p></body></html>`;
+    const near = extractCitationFeatures(nearHtml, "https://example.org/near");
+    expect(near.answerCapsule).toMatchObject({ present: false, nearCapsule: true, wordCount: 18 });
   });
 });

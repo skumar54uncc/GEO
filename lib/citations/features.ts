@@ -11,10 +11,20 @@ export type ContentType =
   | "government_data"
   | "other";
 
+export type AnswerCapsuleFeatures = {
+  /** Strict GEO Playbook capsule: 20 to 25 words. */
+  present: boolean;
+  /** Broader near-match: 15 to 40 words, inclusive of the strict band. */
+  nearCapsule: boolean;
+  question: string | null;
+  answer: string | null;
+  wordCount: number;
+};
+
 export type CitationFeatures = {
   source: SourceClassification;
   listicle: { present: boolean; itemCount: number };
-  answerCapsule: { present: boolean; question: string | null; answer: string | null; wordCount: number };
+  answerCapsule: AnswerCapsuleFeatures;
   statisticsCount: number;
   namedQuotes: Array<{ name: string; quote: string }>;
   credibleOutboundLinks: Array<{ url: string; text: string; kind: string }>;
@@ -45,15 +55,30 @@ function namedQuotes($: cheerio.CheerioAPI): Array<{ name: string; quote: string
   return found.slice(0, 50);
 }
 
-function answerCapsule($: cheerio.CheerioAPI) {
-  let result = { present: false, question: null as string | null, answer: null as string | null, wordCount: 0 };
+function answerCapsule($: cheerio.CheerioAPI): AnswerCapsuleFeatures {
+  let result: AnswerCapsuleFeatures = {
+    present: false,
+    nearCapsule: false,
+    question: null,
+    answer: null,
+    wordCount: 0,
+  };
   $("h2").each((_, element) => {
     if (result.present) return;
     const question = $(element).text().replace(/\s+/g, " ").trim();
     if (!question.endsWith("?")) return;
     const answer = $(element).next("p").first().text().replace(/\s+/g, " ").trim();
     const words = countWords(answer);
-    if (words >= 20 && words <= 25) result = { present: true, question, answer, wordCount: words };
+    if (words < 15 || words > 40) return;
+    const candidate: AnswerCapsuleFeatures = {
+      present: words >= 20 && words <= 25,
+      nearCapsule: true,
+      question,
+      answer,
+      wordCount: words,
+    };
+    // Prefer a strict capsule when one exists; otherwise keep the first near match.
+    if (candidate.present || !result.nearCapsule) result = candidate;
   });
   return result;
 }

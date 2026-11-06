@@ -95,6 +95,7 @@ export const demandSourceEnum = pgEnum("demand_source", [
   "related_search",
   "exa",
   "search_console",
+  "llm_mentions",
 ]);
 export const referralSourceEnum = pgEnum("referral_source", [
   "chatgpt",
@@ -973,6 +974,24 @@ export const mentions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("mentions_judge_run").on(t.judgeRunId)],
+);
+
+export const sourceClassOverrides = pgTable(
+  "source_class_overrides",
+  {
+    id: id(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id),
+    domain: text("domain").notNull(),
+    sourceClass: sourceClassEnum("source_class").notNull(),
+    kind: text("kind").notNull(),
+    note: text("note").notNull().default(""),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("source_class_overrides_org_domain").on(t.orgId, t.domain),
+    index("source_class_overrides_org").on(t.orgId),
+  ],
 );
 
 export const citations = pgTable(

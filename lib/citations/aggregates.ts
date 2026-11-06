@@ -57,10 +57,8 @@ export async function citationAggregates(db: Db, boundary: CitationBoundary) {
     .where(where)
     .as("bounded_citations");
 
-  const [totals, domains, sourceClasses] = await Promise.all([
-    db
-      .select({ citations: count(), draws: countDistinct(base.drawId) })
-      .from(base),
+  const [totals, domains, sourceClasses, unclassified] = await Promise.all([
+    db.select({ citations: count(), draws: countDistinct(base.drawId) }).from(base),
     db
       .select({ value: base.domain, count: count() })
       .from(base)
@@ -71,8 +69,16 @@ export async function citationAggregates(db: Db, boundary: CitationBoundary) {
       .from(base)
       .groupBy(base.sourceClass)
       .orderBy(sql`count(*) desc`, base.sourceClass),
+    db
+      .select({ value: base.domain, count: count() })
+      .from(base)
+      .where(eq(base.sourceClass, "other"))
+      .groupBy(base.domain)
+      .orderBy(sql`count(*) desc`, base.domain)
+      .limit(25),
   ]);
   const n = totals[0]?.citations ?? 0;
+  const otherCount = sourceClasses.find((row) => row.value === "other")?.count ?? 0;
 
   return {
     boundary: {
@@ -86,5 +92,7 @@ export async function citationAggregates(db: Db, boundary: CitationBoundary) {
     n: { citations: n, drawsWithCitations: totals[0]?.draws ?? 0 },
     domains: domains.map((row) => ({ domain: row.value, ...rate(row.count, n) })),
     sourceClasses: sourceClasses.map((row) => ({ sourceClass: row.value, ...rate(row.count, n) })),
+    otherShare: { sourceClass: "other" as const, ...rate(otherCount, n) },
+    topUnclassifiedDomains: unclassified.map((row) => ({ domain: row.value, ...rate(row.count, n) })),
   };
 }

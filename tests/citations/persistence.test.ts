@@ -3,7 +3,8 @@ import path from "path";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { enqueueCitationFetches, processCitationFetch } from "@/lib/citations/fetch";
-import { citations, citedPages, rawPayloads } from "@/lib/db/pg/schema";
+import { classifySource, loadSourceContext } from "@/lib/citations/sourceClass";
+import { citations, citedPages, rawPayloads, sourceClassOverrides } from "@/lib/db/pg/schema";
 import type { FetchResult } from "@/lib/site/net/ssrf";
 import { resetDatabase } from "../helpers";
 import { addDraw, newScan, seed } from "../metrics/dbFixtures";
@@ -28,6 +29,20 @@ function response(url: string, body: Buffer, contentType: string): FetchResult {
 
 describe("citation fetch persistence", () => {
   beforeEach(resetDatabase);
+
+  it("loads org source overrides ahead of built-in lists", async () => {
+    const context = await seed(1);
+    await context.db.insert(sourceClassOverrides).values({
+      orgId: context.orgId,
+      domain: "axios.com",
+      sourceClass: "ugc",
+      kind: "forum",
+      note: "manual override fixture",
+    });
+    const loaded = await loadSourceContext(context.db, context.orgId);
+    expect(classifySource("https://www.axios.com/local", loaded)).toEqual({ sourceClass: "ugc", kind: "forum" });
+    expect(classifySource("https://www.axios.com/local")).toEqual({ sourceClass: "editorial", kind: "news" });
+  });
 
   it("records a queue refusal instead of leaving a pending cited page", async () => {
     const context = await seed(1);

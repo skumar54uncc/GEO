@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-06: Wave 1 security hardening
+
+- Legacy compatibility APIs now refuse requests unless the active membership belongs to the original legacy organization. This closes the single-tenant `PgStore` path to demo or other organizations.
+- Only the first local account can bootstrap the first admin membership. Later accounts receive no implicit tenant access; an administrator grants an explicit org-scoped role with `npm run user:role -- <email> <role> [org-slug]`.
+- Added tests for cross-org legacy API refusal, active-org role isolation, switch auditing, protected cookies, and complete legacy-route gating.
+- API tokens remain deferred because the local pilot has no external API consumer.
+
 ## 2026-11-06: Wave 1 secure app shell
 
 - Authentication now keeps the session token and active-organization selector in separate httpOnly, sameSite=lax

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withRole } from "@/lib/auth";
+import { withLegacyRole } from "@/lib/auth";
 import { getStore } from "@/lib/db";
 import { MANUAL_SURFACES, type ManualSurface } from "@/lib/types";
 import type { UpsertResponseInput } from "@/lib/db/types";
@@ -7,7 +7,7 @@ import type { UpsertResponseInput } from "@/lib/db/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const POST = withRole("editor", async (req) => {
+export const POST = withLegacyRole("editor", async (req) => {
   const body = (await req.json()) as {
     prompt_id: number;
     location_note: string;

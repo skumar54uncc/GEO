@@ -6,6 +6,7 @@ import { GET as meGet } from "@/app/api/auth/me/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { POST as logoutPost } from "@/app/api/auth/logout/route";
 import { POST as switchOrgPost } from "@/app/api/auth/org/route";
+import { GET as legacyPromptsGet } from "@/app/api/prompts/route";
 import {
   ACTIVE_ORG_COOKIE,
   AuthError,
@@ -49,6 +50,11 @@ describe("organization-scoped sessions", () => {
     await expect(requireRole(req("/api/example", { cookie: selectedCookie }), "admin")).rejects.toMatchObject({
       status: 403,
     } satisfies Partial<AuthError>);
+    const legacy = await legacyPromptsGet(req("/api/prompts", { cookie: selectedCookie }));
+    expect(legacy.status).toBe(403);
+    expect(await legacy.json()).toEqual({
+      error: "This legacy endpoint is available only in its original organization.",
+    });
   });
 
   it("lists only memberships and returns the active demo theme", async () => {
@@ -150,6 +156,28 @@ describe("Wave 1 shell contracts", () => {
     for (const route of ["app/legacy/page.tsx", "app/demand/page.tsx"]) {
       const source = fs.readFileSync(path.join(process.cwd(), route), "utf8");
       expect(source).toContain("Legacy, not METRICS.md compliant");
+    }
+  });
+
+  it("gates every legacy API surface to its original organization", () => {
+    const routes = [
+      "app/api/analyze/route.ts",
+      "app/api/capture/route.ts",
+      "app/api/config/route.ts",
+      "app/api/coverage/route.ts",
+      "app/api/demand/route.ts",
+      "app/api/metrics/route.ts",
+      "app/api/organic/route.ts",
+      "app/api/prompts/route.ts",
+      "app/api/recommend/route.ts",
+      "app/api/serpapi/aio/route.ts",
+      "app/api/serpapi/credits/route.ts",
+      "app/api/serpapi/estimate/route.ts",
+    ];
+    for (const route of routes) {
+      const source = fs.readFileSync(path.join(process.cwd(), route), "utf8");
+      expect(source, route).toContain("withLegacyRole");
+      expect(source, route).not.toMatch(/\bwithRole\s*\(/);
     }
   });
 

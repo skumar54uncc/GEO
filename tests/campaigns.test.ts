@@ -17,13 +17,14 @@ async function json(res: Response) {
 describe("auth", () => {
   beforeEach(resetDatabase);
 
-  it("first user becomes admin, later users viewer", async () => {
+  it("bootstraps only the first admin and refuses silent membership assignment", async () => {
     const a = await loginRoute(req("/api/auth/login", { method: "POST", body: { email: "First@charlotte.edu" } }));
     expect(a.status).toBe(200);
     expect((await json(a)).user.role).toBe("admin");
     expect(a.headers.get("set-cookie")).toMatch(/geo_session=.*HttpOnly/i);
     const b = await loginRoute(req("/api/auth/login", { method: "POST", body: { email: "second@charlotte.edu" } }));
-    expect((await json(b)).user.role).toBe("viewer");
+    expect(b.status).toBe(403);
+    expect((await json(b)).error).toMatch(/No organization membership/);
   });
 
   it("rejects bad emails and disallowed domains", async () => {

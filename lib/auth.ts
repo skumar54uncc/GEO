@@ -52,7 +52,8 @@ export function allowedEmail(email: string): boolean {
 
 /**
  * Local dev login: no password, so the app must only listen on 127.0.0.1.
- * The first member of the org becomes admin; later new members start as viewer.
+ * The first account bootstraps the default org admin. Every later account needs
+ * an explicit org-scoped membership before it can create a session.
  */
 export async function createSession(
   email: string,
@@ -73,9 +74,15 @@ export async function createSession(
       .select({ admins: count() })
       .from(memberships)
       .where(and(eq(memberships.orgId, ctx.orgId), eq(memberships.role, "admin")));
+    if (admins > 0) {
+      throw new AuthError(
+        "No organization membership is assigned to this account. Ask an administrator to grant access.",
+        403,
+      );
+    }
     [membership] = await db
       .insert(memberships)
-      .values({ orgId: ctx.orgId, userId: user.id, role: admins === 0 ? "admin" : "viewer" })
+      .values({ orgId: ctx.orgId, userId: user.id, role: "admin" })
       .returning();
   }
 
@@ -203,6 +210,13 @@ export async function requireRole(req: Request, required: Role, db: Db = getDb()
   return user;
 }
 
+export async function assertLegacyOrganization(orgId: string, db: Db = getDb()): Promise<void> {
+  const legacy = await legacyContext(db);
+  if (orgId !== legacy.orgId) {
+    throw new AuthError("This legacy endpoint is available only in its original organization.", 403);
+  }
+}
+
 export type AuditInput = {
   orgId: string | null;
   userId: string | null;
@@ -260,4 +274,17 @@ export function withRole<P = Record<string, string>>(required: Role, handler: Ha
       return NextResponse.json({ error: message }, { status: 500 });
     }
   };
+}
+
+/** Restricts compatibility routes backed by PgStore to the one organization that owns that legacy dataset. */
+export function withLegacyRole<P = Record<string, string>>(required: Role, handler: Handler<P>) {
+  return withRole<P>(required, async (req, ctx) => {
+    try {
+      await assertLegacyOrganization(ctx.user.orgId);
+    } catch (err) {
+      if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+      throw err;
+    }
+    return handler(req, ctx);
+  });
 }

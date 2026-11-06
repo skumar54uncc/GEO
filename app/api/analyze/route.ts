@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withRole } from "@/lib/auth";
+import { withLegacyRole } from "@/lib/auth";
 import { getStore } from "@/lib/db";
 import { analyzeBatch } from "@/lib/judge";
 import type { JudgeJson } from "@/lib/types";
@@ -7,7 +7,7 @@ import type { JudgeJson } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = withRole("viewer", async (req) => {
+export const GET = withLegacyRole("viewer", async (req) => {
   const url = new URL(req.url);
   const responseId = url.searchParams.get("response_id");
   const store = getStore();
@@ -33,7 +33,7 @@ export const GET = withRole("viewer", async (req) => {
   return NextResponse.json({ rows });
 });
 
-export const POST = withRole("editor", async (req) => {
+export const POST = withLegacyRole("editor", async (req) => {
   const body = (await req.json()) as { response_ids?: number[]; all_unanalyzed?: boolean };
   const store = getStore();
   let ids = body.response_ids ?? [];
@@ -44,7 +44,7 @@ export const POST = withRole("editor", async (req) => {
   return NextResponse.json({ results });
 });
 
-export const PATCH = withRole("editor", async (req) => {
+export const PATCH = withLegacyRole("editor", async (req) => {
   const body = (await req.json()) as { response_id: number; judge_json: JudgeJson };
   const store = getStore();
   const existing = await store.getAnalysisByResponse(body.response_id);

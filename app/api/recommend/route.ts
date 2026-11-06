@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { withRole } from "@/lib/auth";
+import { withLegacyRole } from "@/lib/auth";
 import { generateRecommendations } from "@/lib/content";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const POST = withRole("editor", async () => {
+export const POST = withLegacyRole("editor", async () => {
   try {
     const result = await generateRecommendations();
     return NextResponse.json(result);

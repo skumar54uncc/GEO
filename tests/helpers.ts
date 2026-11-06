@@ -1,6 +1,6 @@
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createSession, SESSION_COOKIE, type Role } from "@/lib/auth";
-import { resetLegacyContextCache } from "@/lib/db/pg/bootstrap";
+import { legacyContext, resetLegacyContextCache } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
 import { memberships, users } from "@/lib/db/pg/schema";
 
@@ -17,12 +17,26 @@ export async function resetDatabase(): Promise<void> {
 /** Signs a user in and forces their role. Returns a Cookie header value. */
 export async function cookieFor(email: string, role: Role): Promise<string> {
   const db = getDb();
-  const { token, user } = await createSession(email);
+  const ctx = await legacyContext(db);
+  const normalized = email.trim().toLowerCase();
+  let [existingUser] = await db.select().from(users).where(eq(users.email, normalized));
+  if (!existingUser) {
+    [existingUser] = await db.insert(users).values({ email: normalized }).returning();
+  }
   await db
-    .update(memberships)
-    .set({ role })
-    .where(and(eq(memberships.userId, user.userId), eq(memberships.orgId, user.orgId)));
+    .insert(memberships)
+    .values({ orgId: ctx.orgId, userId: existingUser.id, role })
+    .onConflictDoUpdate({
+      target: [memberships.orgId, memberships.userId],
+      set: { role },
+    });
+  const { token, user } = await createSession(email);
+  expectRole(user.role, role);
   return `${SESSION_COOKIE}=${token}`;
+}
+
+function expectRole(actual: Role, expected: Role): void {
+  if (actual !== expected) throw new Error(`test membership role mismatch: expected ${expected}, got ${actual}`);
 }
 
 export function req(url: string, init: { method?: string; cookie?: string; body?: unknown } = {}): Request {

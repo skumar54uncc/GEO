@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { withRole } from "@/lib/auth";
+import { withLegacyRole } from "@/lib/auth";
 import { getStore, storeBackend } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = withRole("viewer", async () => {
+export const GET = withLegacyRole("viewer", async () => {
   const store = getStore();
   const cfg = await store.getConfig();
   return NextResponse.json({
@@ -17,7 +17,7 @@ export const GET = withRole("viewer", async () => {
   });
 });
 
-export const PUT = withRole("admin", async (req) => {
+export const PUT = withLegacyRole("admin", async (req) => {
   const body = (await req.json()) as {
     serpapi_starting_balance?: number;
     serpapi_credits_remaining?: number;

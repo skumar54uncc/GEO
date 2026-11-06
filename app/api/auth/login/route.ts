@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { ACTIVE_ORG_COOKIE, AuthError, createSession, SESSION_COOKIE } from "@/lib/auth";
+import {
+  ACTIVE_ORG_COOKIE,
+  assertDevEmailLoginAllowed,
+  AuthError,
+  createSession,
+  SESSION_COOKIE,
+} from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as { email?: string; name?: string };
   try {
+    assertDevEmailLoginAllowed(req);
+    const body = (await req.json().catch(() => ({}))) as { email?: string; name?: string };
     const { token, user } = await createSession(body.email ?? "", body.name);
     const res = NextResponse.json({ user });
     res.cookies.set(SESSION_COOKIE, token, {

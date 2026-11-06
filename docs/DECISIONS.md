@@ -1,5 +1,14 @@
 # Decisions Log
 
+## 2026-11-06
+
+- Passwordless email login is a local-development convenience only. It refuses
+  `NODE_ENV=production`, any configured bind other than
+  `APP_BIND_HOST=127.0.0.1`, and requests not addressed to `127.0.0.1`.
+- This is a known limitation, not production authentication. Magic-link
+  authentication or university SSO is required before any hosting, LAN
+  exposure, reverse proxy, or public deployment.
+
 ## 2026-10-21
 
 - Laptop hosting for now, multi-tenant design from day one. (ARCHITECTURE section 12)

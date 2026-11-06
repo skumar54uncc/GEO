@@ -50,6 +50,29 @@ export function allowedEmail(email: string): boolean {
   return domains.includes(domain);
 }
 
+export function assertDevEmailLoginAllowed(req: Request): void {
+  if (process.env.NODE_ENV === "production") {
+    throw new AuthError(
+      "Passwordless email login is disabled in production. Configure magic-link authentication or university SSO.",
+      403,
+    );
+  }
+  if (process.env.APP_BIND_HOST !== "127.0.0.1") {
+    throw new AuthError(
+      "Passwordless email login requires the server to bind explicitly to 127.0.0.1 (APP_BIND_HOST=127.0.0.1).",
+      403,
+    );
+  }
+  const requestHost = new URL(req.url).hostname;
+  const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim().split(":")[0];
+  if (requestHost !== "127.0.0.1" || (forwardedHost && forwardedHost !== "127.0.0.1")) {
+    throw new AuthError(
+      "Passwordless email login is available only through 127.0.0.1. Use real authentication before hosting.",
+      403,
+    );
+  }
+}
+
 /**
  * Local dev login: no password, so the app must only listen on 127.0.0.1.
  * The first account bootstraps the default org admin. Every later account needs

@@ -39,6 +39,44 @@ describe("auth", () => {
     }
   });
 
+  it("refuses passwordless login in production or outside an explicit 127.0.0.1 bind", async () => {
+    const env = process.env as Record<string, string | undefined>;
+    const originalNodeEnv = env.NODE_ENV;
+    const originalBindHost = env.APP_BIND_HOST;
+    try {
+      env.NODE_ENV = "production";
+      let res = await loginRoute(
+        req("/api/auth/login", { method: "POST", body: { email: "prod@charlotte.edu" } }),
+      );
+      expect(res.status).toBe(403);
+      expect((await json(res)).error).toMatch(/disabled in production/);
+
+      env.NODE_ENV = "test";
+      env.APP_BIND_HOST = "0.0.0.0";
+      res = await loginRoute(
+        req("/api/auth/login", { method: "POST", body: { email: "lan@charlotte.edu" } }),
+      );
+      expect(res.status).toBe(403);
+      expect((await json(res)).error).toMatch(/bind explicitly to 127\.0\.0\.1/);
+
+      env.APP_BIND_HOST = "127.0.0.1";
+      res = await loginRoute(
+        new Request("http://localhost:3000/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "localhost@charlotte.edu" }),
+        }),
+      );
+      expect(res.status).toBe(403);
+      expect((await json(res)).error).toMatch(/only through 127\.0\.0\.1/);
+    } finally {
+      if (originalNodeEnv === undefined) delete env.NODE_ENV;
+      else env.NODE_ENV = originalNodeEnv;
+      if (originalBindHost === undefined) delete env.APP_BIND_HOST;
+      else env.APP_BIND_HOST = originalBindHost;
+    }
+  });
+
   it("stores only a hash of the session token", async () => {
     const res = await loginRoute(req("/api/auth/login", { method: "POST", body: { email: "a@charlotte.edu" } }));
     const token = /geo_session=([^;]+)/.exec(res.headers.get("set-cookie") ?? "")![1];

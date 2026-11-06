@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-06: Local-only passwordless login guard
+
+- The development email login now refuses production, any bind other than explicit `127.0.0.1`, and requests addressed to another host.
+- `APP_BIND_HOST=127.0.0.1` is required and set by the local `dev` and `start` scripts. Real hosting requires magic-link authentication or university SSO.
+- Added tests for production, `0.0.0.0`, and `localhost` refusal.
+
 ## 2026-11-06: Wave 1 security hardening
 
 - Legacy compatibility APIs now refuse requests unless the active membership belongs to the original legacy organization. This closes the single-tenant `PgStore` path to demo or other organizations.

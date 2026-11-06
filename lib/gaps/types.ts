@@ -1,5 +1,5 @@
 import type { Engine, Runner } from "@/lib/capture/types";
-import { CORRELATION_LABEL, MIN_CITED_PAGES_PER_COHORT } from "@/lib/contracts/gaps";
+import { CORRELATION_LABEL, MIN_CITED_PAGES_PER_COHORT, type GapLeverType } from "@/lib/contracts/gaps";
 
 export { CORRELATION_LABEL, MIN_CITED_PAGES_PER_COHORT };
 
@@ -185,3 +185,63 @@ export type TruthConflict = {
   conflictingValue: string;
   sourceUrl: string;
 };
+
+/** Compact view for recommendation cards / writer. */
+export type ClosestOwnedPage = {
+  crawlPageId: string | null;
+  similarity: number | null;
+  /** True when similarity is below the configured threshold (or no page exists). */
+  noMatchingPage: boolean;
+  embeddingsDisabled?: boolean;
+  message?: string;
+};
+
+export type LostPromptCell = {
+  scanId: string;
+  engine: Engine;
+  runner: Runner;
+  regionId: string | null;
+  personaId: string | null;
+  branded: boolean;
+  /** Prompts not won in this cell (never pooled across indexes or runners). */
+  promptIds: string[];
+};
+
+/**
+ * Inputs the recommendation card / writer need from gap analysis.
+ */
+export type GapEvidenceBundle = {
+  campaignId: string;
+  scanId: string;
+  leverType: GapLeverType;
+  lost: LostPromptCell;
+  termLifts: TermLiftRow[];
+  citedPageIds: string[];
+  closestOwnedPage: ClosestOwnedPage;
+  /** Opaque evidence row ids already persisted or ready to attach. */
+  evidenceIds: string[];
+};
+
+export type LostCohortSelectOpts = {
+  engine: Engine;
+  runner: Runner;
+  regionId?: string | null;
+  personaId?: string | null;
+  branded?: boolean;
+};
+
+/** Implemented by cohort selection: prompts not won for one series cell. */
+export interface LostCohortSelector {
+  select(scanId: string, opts: LostCohortSelectOpts): Promise<LostPromptCell>;
+}
+
+export type TermLiftPage = {
+  citedPageId: string;
+  /** Tokenized headline / H1 / H2 terms already extracted. */
+  terms: string[];
+};
+
+/** Implemented by term-lift: log-odds lifts between cohorts. */
+export interface TermLiftComputer {
+  compute(won: readonly TermLiftPage[], lost: readonly TermLiftPage[]): TermLiftRow[];
+}

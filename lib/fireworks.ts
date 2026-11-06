@@ -1,11 +1,31 @@
 const FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
 
+export class WriterModelConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WriterModelConfigError";
+  }
+}
+
 export function judgeModel(): string {
   return process.env.JUDGE_MODEL || "accounts/fireworks/models/deepseek-v4-pro";
 }
 
+/**
+ * Writer model for recommendations / content briefs.
+ * Must be set explicitly via CONTENT_MODEL and must differ from the resolved judge model —
+ * never fall back to JUDGE_MODEL (ARCHITECTURE: the writer never grades itself).
+ */
 export function contentModel(): string {
-  return process.env.CONTENT_MODEL || process.env.JUDGE_MODEL || "accounts/fireworks/models/deepseek-v4-pro";
+  const content = process.env.CONTENT_MODEL?.trim();
+  if (!content) {
+    throw new WriterModelConfigError("CONTENT_MODEL is required and must differ from JUDGE_MODEL.");
+  }
+  const judge = judgeModel();
+  if (content === judge) {
+    throw new WriterModelConfigError("CONTENT_MODEL must differ from JUDGE_MODEL.");
+  }
+  return content;
 }
 
 export async function fireworksChat(opts: {

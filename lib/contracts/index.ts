@@ -3,6 +3,7 @@ export * from "./exports";
 export * from "./gaps";
 export * from "./measurement";
 export * from "./personas";
+export * from "./recommendations";
 export * from "./shell";
 export * from "./stopLoss";
 export * from "./strategy";

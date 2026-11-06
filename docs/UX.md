@@ -122,6 +122,12 @@ The five existing content-team seeded records retain their current database IDs 
 | `research_partner` | Research partner | Research partner |
 | `business_leader` | Business leader (hiring interns) | Employer — hiring goal |
 
+All five seeded rows and IDs remain unchanged so imported prompts retain valid
+foreign keys. `business_partner` is the selectable canonical Employer persona.
+`business_leader` remains a historical alias row for existing prompt references;
+future generation resolves it to Employer and does not present it as a twelfth
+persona. No historical prompt is repointed or rewritten.
+
 Legacy imported audience records also keep their IDs and `legacy_key`: `undergrad` → Prospective first year; `grad` → Grad applicant; `industry` → Employer or industry partner; `hel` → Higher ed leader; `government` → Government or policy staff. These migration labels remain available for historical data and are not presented as additional library personas.
 
 ## 6. Exact six end-to-end journeys

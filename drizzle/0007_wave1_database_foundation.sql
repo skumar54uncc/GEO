@@ -32,7 +32,7 @@ ALTER TABLE "scans" ADD COLUMN "paused_reason" text;--> statement-breakpoint
 ALTER TABLE "scans" ADD COLUMN "paused_at" timestamp with time zone;--> statement-breakpoint
 
 CREATE INDEX "draws_scan_dashboard" ON "draws" USING btree ("scan_id","engine","runner","status");--> statement-breakpoint
-CREATE INDEX "judge_runs_draw_latest" ON "judge_runs" USING btree ("draw_id","created_at" DESC);--> statement-breakpoint
+CREATE INDEX "judge_runs_draw_latest" ON "judge_runs" USING btree ("draw_id","seq" DESC);--> statement-breakpoint
 CREATE INDEX "mentions_judge_run" ON "mentions" USING btree ("judge_run_id");--> statement-breakpoint
 CREATE INDEX "claims_judge_run" ON "claims" USING btree ("judge_run_id");--> statement-breakpoint
 CREATE INDEX "citations_draw" ON "citations" USING btree ("draw_id");--> statement-breakpoint

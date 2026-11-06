@@ -134,7 +134,7 @@ describe("persona contracts", () => {
     expect(
       LEGACY_PERSONA_MIGRATION.find(({ legacyKey }) => legacyKey === "business_leader")
         ?.idDecision,
-    ).toBe("alias_and_repoint_to_business_partner_id");
+    ).toBe("preserve_existing_id_as_legacy_alias");
   });
 });
 

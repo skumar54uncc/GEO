@@ -954,7 +954,7 @@ export const judgeRuns = pgTable(
   },
   (t) => [
     index("judge_runs_draw").on(t.drawId),
-    index("judge_runs_draw_latest").on(t.drawId, t.createdAt.desc()),
+    index("judge_runs_draw_latest").on(t.drawId, t.seq.desc()),
   ],
 );
 

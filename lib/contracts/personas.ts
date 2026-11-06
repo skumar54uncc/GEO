@@ -62,15 +62,16 @@ export const LEGACY_PERSONA_MIGRATION = [
   {
     legacyKey: "business_leader",
     canonicalKey: "employer",
-    idDecision: "alias_and_repoint_to_business_partner_id",
+    idDecision: "preserve_existing_id_as_legacy_alias",
   },
 ] as const;
 
 /**
  * `business_partner` owns the canonical employer row and keeps its existing ID.
- * `business_leader` becomes an alias; references are repointed to that same ID
- * before its duplicate row is retired. This avoids assigning two meanings to
- * either key and guarantees one canonical persona has one semantic identity.
+ * `business_leader` keeps its existing row and ID so imported prompts remain
+ * valid, but is a legacy alias rather than a second selectable persona. Future
+ * generation resolves both keys to the one canonical employer meaning without
+ * rewriting historical prompt references.
  */
 export const personaMigrationDecisionSchema = z.discriminatedUnion("idDecision", [
   z
@@ -84,7 +85,7 @@ export const personaMigrationDecisionSchema = z.discriminatedUnion("idDecision",
     .object({
       legacyKey: z.literal("business_leader"),
       canonicalKey: z.literal("employer"),
-      idDecision: z.literal("alias_and_repoint_to_business_partner_id"),
+      idDecision: z.literal("preserve_existing_id_as_legacy_alias"),
     })
     .strict(),
 ]);

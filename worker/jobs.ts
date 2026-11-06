@@ -5,8 +5,9 @@ import { planRetry, runRetry, runScan } from "@/lib/capture/batch";
 import { computeCalibration } from "@/lib/capture/calibration";
 import { planFanout, runFanout } from "@/lib/capture/fanout";
 import { judgeScan } from "@/lib/capture/service";
+import { enqueueCitationFetches, processCitationFetch, type CitationFetchData } from "@/lib/citations/fetch";
 import { getDb } from "@/lib/db/pg/client";
-import { campaigns, crawlRuns, scans } from "@/lib/db/pg/schema";
+import { campaigns, crawlRuns, draws, scans } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
 import { rollupScan } from "@/lib/metrics/rollup";
 import { tickSchedules } from "@/lib/schedules";
@@ -175,10 +176,19 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
     const orgId = await assertScanOrg(db, job.data.scan_id, job.data.org_id);
     const res = await judgeScan(db, orgId, job.data.scan_id, log);
     log(`[worker] judge.run ${job.data.scan_id}: ${res.judged} judged, ${res.failed} failed`);
+    const drawRows = await db.select({ id: draws.id }).from(draws).where(eq(draws.scanId, job.data.scan_id));
+    const citationJobs = await enqueueCitationFetches(db, boss, QUEUES.citationFetch, drawRows.map((row) => row.id), JOB_OPTIONS);
+    log(`[worker] citation.fetch queued: ${citationJobs.queued}, cached or invalid: ${citationJobs.skipped}`);
     // Judging is done: roll up metrics, then check alerts. Neither calls a paid provider.
     await boss.send(QUEUES.metricsRollup, { scan_id: job.data.scan_id, org_id: orgId } satisfies MetricsRollupData, JOB_OPTIONS);
     await boss.send(QUEUES.alertsEvaluate, { scan_id: job.data.scan_id, org_id: orgId } satisfies AlertsEvaluateData, JOB_OPTIONS);
     return res;
+  });
+
+  await boss.work<CitationFetchData>(QUEUES.citationFetch, async ([job]) => {
+    const result = await processCitationFetch(getDb(), job.data.canonical_url);
+    log(`[worker] citation.fetch ${job.data.canonical_url}: ${result.status}`);
+    return result;
   });
 
   await boss.work<MetricsRollupData>(QUEUES.metricsRollup, async ([job]) => {

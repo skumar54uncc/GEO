@@ -9,6 +9,7 @@ export const QUEUES = {
   captureRetry: "capture.retry",
   fanoutRun: "fanout.run",
   judgeRun: "judge.run",
+  citationFetch: "citation.fetch",
   metricsRollup: "metrics.rollup",
   alertsEvaluate: "alerts.evaluate",
 } as const;

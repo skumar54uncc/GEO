@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-06: Wave 2c — Phase 7 gap analysis
+
+- Persona fix: `business_partner` → canonical `industry_partner`; `business_leader` →
+  `employer`. Both IDs preserved; 459 imported prompts unchanged. Library is 12 selectable
+  personas. Metrics helpers assert the two are never combined.
+- Lost cohorts per engine × runner using METRICS won rules; branded excluded; `api_search`
+  requires `search_used`.
+- Fan-out → organic join is fixture-only and estimate-gated. Term lift uses Dirichlet prior,
+  requires ≥10 cited pages per cohort, shows n, and labels `correlation, not cause`.
+- Nearest owned page reports `dedupe`/embedding disabled or `no matching page, consider a new page`.
+- Recommendation cards: playbook lever, owner, evidence grade, grounded writer (evidence IDs
+  required; unknown IDs rejected). `CONTENT_MODEL` must differ from `JUDGE_MODEL`. Writer path
+  is estimate → approval → cost guard.
+- Truth layer shows our fact, conflicting value, and source URL (no auto-correct).
+- Pre-registration locks targets, baseline scan, and prompt-set hash; McNemar outcomes are
+  improvement / decline / within noise on matching hashes only.
+- End-to-end fixture: lost energy prompt → recommendation → publish → follow-up → outcome.
+
+Verification: 436 tests pass; typecheck passes; lint passes with one pre-existing
+`app/analyze/page.tsx` hook warning. No paid provider calls.
+
 ## 2026-11-06: Wave 2b — Phase 4 personas and prompt generation
 
 - Citation follow-ups before Phase 4: org-scoped `source_class_overrides`, Charlotte/higher-ed domain

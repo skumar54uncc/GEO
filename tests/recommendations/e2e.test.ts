@@ -81,6 +81,7 @@ describe("Phase 7 recommendation e2e fixture", () => {
           logOddsLift: 1.2,
           won: { matches: 12, n: 20 },
           lost: { matches: 2, n: 20 },
+          label: "correlation, not cause",
         },
       ],
       citedPageIds: [],

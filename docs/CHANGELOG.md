@@ -14,6 +14,12 @@ Additive migration `0007` prepares the contracts for Phases 6, 4, 7 and 8 withou
 
 Verification: focused schema/backup tests and typecheck are recorded in the Wave 1 handoff. A `geo_test` bundle restored into `geo_wave1_restore` with the same 60 public tables, 7 Wave 1 contract columns and 6 immutability triggers. Raw-file copy/conflict behavior is covered by a focused test (the scratch bundle contained no raw files). No paid calls were made.
 
+## 2026-11-06: Wave 1 shared contracts
+
+Added a contract-only `lib/contracts/` module for Phases 6, 4, 7, 8 and 9. Zod schemas now pin demo export banners, unpooled measurement metadata, safe cited-page fetch/export boundaries, the 11 canonical personas and seeded-key migration, seven evidence-backed gap levers, strategy evidence IDs, and strict pilot stop-loss thresholds. API tokens remain deferred; no schema, provider, route, or UI code changed.
+
+Verification: typecheck and all 9 focused contract tests pass. The full suite reached 337 passed and 1 skipped; 5 unrelated tests failed because this isolated worktree does not contain the gitignored content-team CSV or a Playwright browser binary (the remaining failures are downstream assertions in those suites).
+
 ## 2026-11-06: Content-team prompt import (AI, Energy, Internships)
 
 Stakeholder CSV import only (not Phase 4 generation). `inputs/` is gitignored (public repo). Source: `inputs/content-team/content_team_prompts_v1.csv` (PDF optional later).

@@ -1,3 +1,6 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EXPECTED_NEUTRAL, EXPECTED_VARIANTS, importContentTeamCsv } from "@/lib/contentTeam/import";
@@ -7,20 +10,57 @@ import { closeDb, getDb } from "@/lib/db/pg/client";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { campaigns, prompts } from "@/lib/db/pg/schema";
 import { freezePromptSet } from "@/lib/promptSets";
-import path from "path";
 
-const CSV = path.resolve("inputs/content-team/content_team_prompts_v1.csv");
+const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "geo-content-team-"));
+const CSV = path.join(fixtureDir, "content_team_prompts_fixture.csv");
+
+function writeSyntheticCsv(): void {
+  const header = [
+    "prompt_id",
+    "pillar",
+    "question_id",
+    "region",
+    "branded",
+    "text",
+    "doc_personas",
+    "suggested_personas",
+    "note",
+  ].join(",");
+  const rows = Array.from({ length: EXPECTED_NEUTRAL }, (_, index) => {
+    const number = index + 1;
+    const pillar = ["AI", "Energy", "Internships"][index % 3];
+    const promptId = index === 10 ? "IN11" : `FIX${String(number).padStart(3, "0")}`;
+    const personas =
+      index < 105
+        ? "undergrad;grad;business_partner"
+        : "undergrad;research_partner";
+    return [
+      promptId,
+      pillar,
+      index === 10 ? "IN11" : `Q${String(number).padStart(3, "0")}`,
+      "Charlotte",
+      index === 10 ? "true" : "false",
+      `Synthetic fixture prompt ${number}`,
+      "content team",
+      personas,
+      "",
+    ].join(",");
+  });
+  fs.writeFileSync(CSV, [header, ...rows].join("\n"));
+}
 
 describe("content-team prompt import", () => {
   let orgId: string;
 
   beforeAll(async () => {
+    writeSyntheticCsv();
     const db = getDb();
     ({ orgId } = await legacyContext(db));
   });
 
   afterAll(async () => {
     await closeDb();
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
   });
 
   it("seeds personas and campaigns without touching legacy Energy", async () => {

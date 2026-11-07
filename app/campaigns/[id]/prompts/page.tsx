@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OperatorOnly, canMutate } from "@/components/CanAct";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { PageTitle } from "@/components/scout/primitives";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Role } from "@/lib/auth";
+import { personaTaxonomyLabel } from "@/lib/ui/labels";
 
 type PromptRow = {
   id: string;
@@ -91,6 +93,10 @@ export default function PromptReviewPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Prompts · Scout";
+  }, []);
+
   const allSelected = useMemo(
     () => Boolean(prompts?.length) && (prompts?.every((p) => selected.has(p.id)) ?? false),
     [prompts, selected],
@@ -154,17 +160,16 @@ export default function PromptReviewPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
-            <Link href="/campaigns" className="underline">
+          <p className="text-xs uppercase tracking-wide text-scout-muted">
+            <Link href="/campaigns" className="font-medium text-scout-brand underline">
               Campaigns
             </Link>{" "}
-            / prompt review
+            · Prompts
           </p>
-          <h1 className="font-serif text-2xl font-semibold text-uncc-ink">Prompt review</h1>
-          <p className="mt-1 max-w-2xl text-sm text-uncc-ink/70">
-            A persona changes how the prompt is written, not who is logged in. Draft prefixes need content-team approval.
-            Near-duplicates are highlighted; do not auto-delete them.
-          </p>
+          <PageTitle
+            title="Prompts"
+            subtitle="Prompt review — a persona changes how the prompt is written, not who is logged in. Draft prefixes need content-team approval. Near-duplicates are highlighted; do not auto-delete them."
+          />
         </div>
         {counts ? (
           <div className="space-y-1 text-right text-sm text-uncc-ink/70">
@@ -184,7 +189,7 @@ export default function PromptReviewPage() {
       {error ? <ErrorState message={error} /> : null}
       {dedupeStatus === "disabled" ? (
         <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Dedupe disabled — local embedding model is unavailable. Near-duplicates will not be filtered automatically.
+          Dedupe disabled. Local embedding model is unavailable. Near-duplicates will not be filtered automatically.
         </p>
       ) : null}
       {counts?.unbrandedWarning ? (
@@ -248,10 +253,10 @@ export default function PromptReviewPage() {
           </p>
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded border border-uncc-rule bg-white">
+        <div className="overflow-x-auto rounded-[12px] border border-scout-border bg-scout-card shadow-scout">
           <table className="min-w-full text-left text-sm" data-testid="prompt-review-table">
             <caption className="sr-only">Campaign prompts</caption>
-            <thead className="border-b border-uncc-rule bg-uncc-mist/40 text-xs uppercase tracking-wide text-uncc-ink/60">
+            <thead className="border-b border-scout-border bg-scout-page text-xs uppercase tracking-wide text-scout-muted">
               <tr>
                 {canMutate(role) ? <th className="px-3 py-2" /> : null}
                 <th className="px-3 py-2">QID</th>
@@ -302,17 +307,19 @@ export default function PromptReviewPage() {
                       p.text
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs">{p.persona_key ?? "neutral"}</td>
+                  <td className="px-3 py-2 text-xs">
+                    {personaTaxonomyLabel(p.persona_key, p.persona_name) ?? "neutral"}
+                  </td>
                   <td className="px-3 py-2 text-xs">
                     <div>{p.provenance}</div>
                     {p.intent ? <div className="text-uncc-ink/60">{p.intent}</div> : null}
                   </td>
                   <td className="px-3 py-2 text-xs text-uncc-ink/80">{p.demand_evidence_label}</td>
                   <td className="px-3 py-2 text-xs">
-                    <div>doc: {p.doc_personas.join("; ") || "—"}</div>
-                    <div>suggested: {p.suggested_personas.join("; ") || "—"}</div>
+                    <div>doc: {p.doc_personas.join("; ") || "n/a"}</div>
+                    <div>suggested: {p.suggested_personas.join("; ") || "n/a"}</div>
                   </td>
-                  <td className="max-w-xs px-3 py-2 text-xs text-uncc-ink/70">{p.note ?? "—"}</td>
+                  <td className="max-w-xs px-3 py-2 text-xs text-uncc-ink/70">{p.note ?? "n/a"}</td>
                   <td className="px-3 py-2">{p.status}</td>
                   {canMutate(role) ? (
                     <td className="space-y-1 px-3 py-2">

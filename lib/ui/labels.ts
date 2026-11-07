@@ -1,7 +1,9 @@
 /**
  * Leadership-facing labels. Never show ui_provider / api_search jargon on screens.
- * Technical ids stay available inside “How this is measured.”
+ * Runner technical ids in “How this is measured” are editor/admin-only when SessionRoleContext is present.
  */
+
+import { PERSONA_LIBRARY } from "@/lib/personas/library";
 
 export const RUNNER_PLAIN: Record<string, string> = {
   ui_provider: "collected from the real app",
@@ -14,8 +16,16 @@ export const RUNNER_PLAIN: Record<string, string> = {
 export const FIDELITY_PLAIN: Record<string, string> = {
   high: "closest to what a person sees",
   medium: "useful, but not identical to the consumer app",
-  low: "parametric or limited — treat carefully",
+  low: "parametric or limited, treat carefully",
 };
+
+/** Display name for a persona key from the taxonomy library, falling back to the stored name. */
+export function personaTaxonomyLabel(key: string | null | undefined, storedName?: string | null): string | null {
+  if (!key && !storedName) return null;
+  if (!key) return storedName ?? null;
+  const def = PERSONA_LIBRARY.find((p) => p.dbKey === key);
+  return def?.name ?? storedName ?? key;
+}
 
 export const ENGINE_PLAIN: Record<string, string> = {
   chatgpt: "ChatGPT",
@@ -36,6 +46,28 @@ export function fidelityPlain(fidelity: string): string {
 
 export function enginePlain(engine: string): string {
   return ENGINE_PLAIN[engine] ?? engine;
+}
+
+/** Plain-language name for a search index (chat vs google); used on citations and partial notices. */
+export function searchIndexPlain(index: string): string {
+  if (index === "chat") return "Chat engines";
+  if (index === "google") return "Google AI surfaces";
+  return index.replace(/_/g, " ");
+}
+
+const SOURCE_CLASS_PLAIN: Record<string, string> = {
+  owned: "Our site",
+  competitor: "Peer or competitor",
+  editorial: "News or editorial",
+  gov: "Government",
+  ranking: "Rankings or lists",
+  forum: "Forums or community",
+  other: "Other",
+};
+
+/** Plain label for a citation source class token. */
+export function sourceClassPlain(sourceClass: string): string {
+  return SOURCE_CLASS_PLAIN[sourceClass] ?? sourceClass.replace(/_/g, " ");
 }
 
 /** Short hash for captions (first 8 of sha256). */

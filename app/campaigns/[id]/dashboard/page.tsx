@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ChartCaption, HowMeasured } from "@/components/HowMeasured";
+import { MetricValue } from "@/components/metrics/MetricValue";
+import { ShowRawToggle } from "@/components/metrics/ShowRawToggle";
+import { useMetricShowRaw } from "@/components/metrics/ShowRawContext";
+import { useSessionRole } from "@/components/SessionRoleContext";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { PageTitle } from "@/components/scout/primitives";
+import { VisibilityChart } from "@/components/scout/VisibilityChart";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { ENGINES, fidelityFor } from "@/lib/capture/types";
 import type { CellRollup, ScanRollup } from "@/lib/metrics/rollup";
 import type { SeriesComparison } from "@/lib/metrics/compare";
+import { displayable } from "@/lib/metrics/displayable";
 import type { PromptsWon, RateWithCi } from "@/lib/metrics/types";
 import { enginePlain, formatScanDate, runnerPlain } from "@/lib/ui/labels";
 
@@ -51,30 +58,19 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return json as T;
 }
 
-/** A rate always shows its n and 95% interval. Never show a zero-width interval. */
-function Rate({ r }: { r: RateWithCi }) {
-  if (r.n > 0 && r.n < 30) {
-    return <span className="text-uncc-ink/70">too few answers (n={r.n})</span>;
-  }
-  if (r.rate === null) return <span className="text-uncc-ink/50">unknown (n={r.n})</span>;
-  const zeroWidth = r.ciLow !== null && r.ciHigh !== null && r.ciLow === r.ciHigh;
-  if (zeroWidth) {
-    return <span className="text-uncc-ink/70">too few answers (n={r.n})</span>;
-  }
-  const ci = r.ciLow !== null && r.ciHigh !== null ? `${pct(r.ciLow)} to ${pct(r.ciHigh)}` : "interval unknown";
-  const approx = r.approximate ? " approximate" : "";
-  return (
-    <span className={r.tooFewDraws ? "text-uncc-ink/50" : ""}>
-      {pct(r.rate)}{" "}
-      <span className="text-xs text-uncc-ink/60">
-        ({ci}
-        {approx}, n={r.n})
-      </span>
-    </span>
-  );
-}
-
-function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDate: string; promptSetHash: string | null }) {
+function Headline({
+  cell,
+  scanDate,
+  promptSetHash,
+  showRaw,
+  canShowRaw,
+}: {
+  cell: CellRollup;
+  scanDate: string;
+  promptSetHash: string | null;
+  showRaw: boolean;
+  canShowRaw: boolean;
+}) {
   const w = cell.promptsWon;
   if (!w) return null;
   const grey = cell.tooFewDraws;
@@ -89,20 +85,7 @@ function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDat
         {engineLabel(cell.key.engine)} · {runnerLabel(cell.key.runner)}
       </p>
       <p className="mt-1 font-serif text-xl text-uncc-ink">
-        {w.won} of {w.prompts} prompts
-        {grey ? (
-          <span className="text-sm text-uncc-ink/70">
-            {" "}
-            — too few answers (n={w.draws})
-            {w.ciLow !== null && w.ciHigh !== null && w.ciLow !== w.ciHigh ? (
-              <>
-                ; approximate 95% Wilson CI {pct(w.ciLow)} to {pct(w.ciHigh)}
-              </>
-            ) : null}
-          </span>
-        ) : w.ciLow !== null && w.ciHigh !== null && w.ciLow !== w.ciHigh ? (
-          <span className="text-sm text-uncc-ink/70"> (95% CI {pct(w.ciLow)} to {pct(w.ciHigh)})</span>
-        ) : null}
+        <MetricValue value={w} showRaw={showRaw} canShowRaw={canShowRaw} grey={grey} />
       </p>
       <ChartCaption
         context={{
@@ -114,29 +97,34 @@ function Headline({ cell, scanDate, promptSetHash }: { cell: CellRollup; scanDat
           promptSetHash,
         }}
       />
-      <HowMeasured
-        context={{
-          engine: cell.key.engine,
-          runner: cell.key.runner,
-          fidelity,
-          n: w.draws,
-          scanDate,
-          promptSetHash,
-          extra: `Won means UNC Charlotte was named under the ${w.rule} rule.`,
-        }}
-      />
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <HowMeasured
+          context={{
+            engine: cell.key.engine,
+            runner: cell.key.runner,
+            fidelity,
+            n: w.draws,
+            scanDate,
+            promptSetHash,
+            extra: `Won means UNC Charlotte was named under the ${w.rule} rule.`,
+          }}
+        />
+      </div>
       {grey ? <Badge tone="muted" className="mt-2">Too few answers checked (under 30)</Badge> : null}
     </div>
   );
 }
 
 function CellTable({ cells, showWon }: { cells: CellRollup[]; showWon: boolean }) {
+  const { showRaw } = useMetricShowRaw();
+  const role = useSessionRole();
+  const canShowRaw = role === "editor" || role === "admin";
   if (cells.length === 0) return <p className="text-sm text-uncc-ink/60">No valid judged draws in this selection yet.</p>;
   return (
-    <div className="w-full overflow-x-auto rounded border border-uncc-rule/40">
+    <div className="w-full overflow-x-auto rounded-[12px] border border-scout-border">
       <table className="w-full min-w-[720px] text-left text-sm" data-testid="dashboard-metrics-table">
         <caption className="sr-only">Campaign metrics by engine and how answers were collected</caption>
-        <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
+        <thead className="bg-scout-page text-xs uppercase tracking-wide text-scout-muted">
           <tr className="border-b border-uncc-rule">
             <th className="py-2 pr-3">Engine · how collected</th>
             <th className="pr-3">Answers · prompts</th>
@@ -168,26 +156,67 @@ function CellTable({ cells, showWon }: { cells: CellRollup[]; showWon: boolean }
                 </td>
                 {showWon ? (
                   <td className="pr-3">
-                    {c.promptsWon ? `${c.promptsWon.won} of ${c.promptsWon.prompts} (${pct(c.promptsWon.rate)})` : "n/a"}
+                    {c.promptsWon ? (
+                      <MetricValue value={c.promptsWon} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
+                    ) : (
+                      "n/a"
+                    )}
                   </td>
                 ) : null}
-                <td className="pr-3"><Rate r={c.mentionRate} /></td>
-                <td className="pr-3"><Rate r={c.citationRate} /></td>
                 <td className="pr-3">
-                  <Rate r={c.firstMentionRate} />
+                  <MetricValue value={c.mentionRate} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
+                </td>
+                <td className="pr-3">
+                  <MetricValue value={c.citationRate} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
+                </td>
+                <td className="pr-3">
+                  <MetricValue value={c.firstMentionRate} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
                   {c.firstMentionUnknownSpan > 0 ? <div className="text-xs">{c.firstMentionUnknownSpan} draws without spans</div> : null}
                 </td>
                 <td className="pr-3">
-                  <Rate r={c.shareOfVoice} />
+                  <MetricValue value={c.shareOfVoice} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
                 </td>
-                <td className="pr-3">{c.position.median === null ? "none" : c.position.median} <span className="text-xs text-uncc-ink/60">(n={c.position.n})</span></td>
                 <td className="pr-3">
-                  {c.consistency.value === null ? "unknown" : pct(c.consistency.value)}{" "}
-                  <span className="text-xs text-uncc-ink/60">(n={c.consistency.prompts} prompts)</span>
+                  {(() => {
+                    const dec = displayable({ n: c.position.n, prompts: c.prompts });
+                    if (dec.kind !== "show") {
+                      return (
+                        <span data-testid="metric-suppressed" data-metric-kind={dec.kind}>
+                          {dec.message}
+                        </span>
+                      );
+                    }
+                    if (c.position.median === null) return <>none</>;
+                    return (
+                      <>
+                        {c.position.median}{" "}
+                        <span className="text-xs text-uncc-ink/60">(n={c.position.n})</span>
+                      </>
+                    );
+                  })()}
+                </td>
+                <td className="pr-3">
+                  {(() => {
+                    const dec = displayable({ n: c.draws, prompts: c.consistency.prompts });
+                    if (dec.kind !== "show") {
+                      return (
+                        <span data-testid="metric-suppressed" data-metric-kind={dec.kind}>
+                          {dec.message}
+                        </span>
+                      );
+                    }
+                    if (c.consistency.value === null) return <>unknown</>;
+                    return (
+                      <>
+                        {pct(c.consistency.value)}{" "}
+                        <span className="text-xs text-uncc-ink/60">(n={c.consistency.prompts} prompts)</span>
+                      </>
+                    );
+                  })()}
                 </td>
                 <td>
                   {acc && acc.rate !== null ? (
-                    <Rate r={{ ...acc, n: c.accuracy.claims }} />
+                    <MetricValue value={{ ...acc, n: c.accuracy.claims }} showRaw={showRaw} canShowRaw={canShowRaw} grey={c.tooFewDraws} />
                   ) : (
                     <span className="text-uncc-ink/50">no claims</span>
                   )}
@@ -209,9 +238,9 @@ function Comparisons({ rows, regions }: { rows: SeriesComparison[]; regions: Arr
   if (rows.length === 0) return <p className="text-sm text-uncc-ink/60">No previous scan of this prompt set to compare with.</p>;
   const regionName = (id: string) => regions.find((r) => r.id === id)?.label ?? id.slice(0, 8);
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-[12px] border border-scout-border">
       <table className="w-full min-w-[760px] text-left text-sm">
-        <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
+        <thead className="bg-scout-page text-xs uppercase tracking-wide text-scout-muted">
           <tr className="border-b border-uncc-rule">
             <th className="py-2 pr-3">Series</th>
             <th className="pr-3">Prompts won, paired</th>
@@ -228,7 +257,8 @@ function Comparisons({ rows, regions }: { rows: SeriesComparison[]; regions: Arr
                 <td className="py-2 pr-3">
                   {engineLabel(c.series.engine)} · {runnerLabel(c.series.runner)}
                   <div className="text-xs text-uncc-ink/50">
-                    {c.series.provider} · {regionName(c.series.regionId)} · {c.series.branded ? "branded prompts" : "unbranded prompts"}
+                    {c.series.provider} · {regionName(c.series.regionId)} ·{" "}
+                    {c.series.branded ? "location-biased prompts" : "location-neutral prompts"}
                   </div>
                 </td>
                 <td className="pr-3">
@@ -264,12 +294,15 @@ function Comparisons({ rows, regions }: { rows: SeriesComparison[]; regions: Arr
 }
 
 function TrendTable({ trend }: { trend: Trend[] }) {
+  const { showRaw } = useMetricShowRaw();
+  const role = useSessionRole();
+  const canShowRaw = role === "editor" || role === "admin";
   const seriesKeys = [...new Set(trend.flatMap((t) => t.series.map((s) => `${s.engine}|${s.runner}`)))].sort();
   if (trend.length === 0 || seriesKeys.length === 0) return null;
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-[12px] border border-scout-border">
       <table className="w-full text-left text-sm">
-        <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
+        <thead className="bg-scout-page text-xs uppercase tracking-wide text-scout-muted">
           <tr className="border-b border-uncc-rule">
             <th className="py-2 pr-3">Scan</th>
             {seriesKeys.map((k) => {
@@ -291,10 +324,7 @@ function TrendTable({ trend }: { trend: Trend[] }) {
                 return (
                   <td key={k} className={`pr-3 ${s?.tooFewDraws ? "text-uncc-ink/50" : ""}`}>
                     {s ? (
-                      <>
-                        {s.won} of {s.prompts}
-                        {s.ciLow !== null && s.ciHigh !== null ? <span className="text-xs text-uncc-ink/60"> ({pct(s.ciLow)} to {pct(s.ciHigh)})</span> : null}
-                      </>
+                      <MetricValue value={s} showRaw={showRaw} canShowRaw={canShowRaw} grey={s.tooFewDraws} />
                     ) : (
                       "none"
                     )}
@@ -313,6 +343,9 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
   const [regionId, setRegionId] = useState<string>("");
   /** "" = overall; "group:<key>" = audience group; "persona:<id>" = specific persona (n≥30 only). */
   const [audienceFilter, setAudienceFilter] = useState<string>("");
+  const { showRaw } = useMetricShowRaw();
+  const role = useSessionRole();
+  const canShowRaw = role === "editor" || role === "admin";
   const cells = view.rollup.cells;
   const detailPersonas = data.personas.filter((p) =>
     cells.some((c) => c.key.personaId === p.id && c.key.personaGroup == null && c.draws >= 30),
@@ -331,6 +364,7 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
     });
   const unbranded = pick(false);
   const branded = pick(true);
+  const visCell = [...unbranded].sort((a, b) => b.draws - a.draws)[0] ?? null;
   const ex = view.rollup.excluded;
   const excludedTotal = ex.notOk + ex.searchNotUsed + ex.experimental + ex.unjudged;
   return (
@@ -346,6 +380,11 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {canShowRaw ? (
+          <div className="flex justify-end">
+            <ShowRawToggle />
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="space-y-1">
             <Label htmlFor={`region-${view.promptSetId}`}>Region</Label>
@@ -392,7 +431,7 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
         </div>
 
         <section className="space-y-3">
-          <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won (unbranded prompts only)</h3>
+          <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won (location-neutral prompts only)</h3>
           {unbranded.length ? (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {unbranded.map((c) => (
@@ -401,15 +440,18 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
                   cell={c}
                   scanDate={view.latestScan.createdAt}
                   promptSetHash={view.sha256}
+                  showRaw={showRaw}
+                  canShowRaw={canShowRaw}
                 />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-uncc-ink/60">No judged unbranded AI answers yet for this selection.</p>
+            <p className="text-sm text-uncc-ink/60">No judged location-neutral AI answers yet for this selection.</p>
           )}
-          <p className="text-xs text-uncc-ink/60">
-            One card per engine and collection method. Collection methods are never averaged and the chat and Google
-            indexes are never pooled.
+          <p className="text-xs text-uncc-ink/60" data-testid="location-biased-note">
+            Location-biased prompts (those that name a brand alias or the city) are excluded from these headline
+            numbers and shown in their own series below. One card per engine and collection method. Collection methods
+            are never averaged and the chat and Google indexes are never pooled.
           </p>
         </section>
 
@@ -420,7 +462,9 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
 
         {branded.length ? (
           <section className="space-y-2">
-            <h3 className="font-serif text-base font-semibold text-uncc-ink">Branded prompts (separate series, not in the headline)</h3>
+            <h3 className="font-serif text-base font-semibold text-uncc-ink">
+              Location-biased prompts (separate series, not in the headline)
+            </h3>
             <CellTable cells={branded} showWon={false} />
           </section>
         ) : null}
@@ -435,6 +479,21 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
 
         <section className="space-y-2">
           <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won over scans</h3>
+          {visCell ? (
+            <div className="rounded-[12px] border border-scout-border bg-white p-3">
+              <VisibilityChart
+                trend={view.trend}
+                engine={visCell.key.engine}
+                runner={visCell.key.runner}
+                events={data.modelEvents.map((e) => ({ engine: e.engine, occurredOn: e.occurredOn, note: e.note }))}
+                showRaw={showRaw}
+                canShowRaw={canShowRaw}
+              />
+              <p className="mt-2 text-xs text-uncc-ink/60">
+                Chart uses the engine and collection method with the most answers in this table ({engineLabel(visCell.key.engine)} · {runnerLabel(visCell.key.runner)}).
+              </p>
+            </div>
+          ) : null}
           <TrendTable trend={view.trend} />
         </section>
 
@@ -472,6 +531,10 @@ export default function CampaignDashboardPage() {
       .catch(() => setRole(null));
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Visibility · Scout";
+  }, []);
+
   async function addEvent() {
     setMessage(null);
     try {
@@ -504,19 +567,27 @@ export default function CampaignDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <Link href="/campaigns" className="text-sm text-uncc-green underline">
-          Campaigns
-        </Link>
-        <h1 className="font-serif text-2xl font-semibold text-uncc-ink">{data.campaign.name}: dashboard</h1>
-        {data.campaign.topic ? <p className="text-sm text-uncc-ink/75">{data.campaign.topic}</p> : null}
-        <p className="max-w-3xl text-xs text-uncc-ink/60">
+        <p className="text-xs uppercase tracking-wide text-scout-muted">
+          <Link href="/campaigns" className="font-medium text-scout-brand underline">
+            Campaigns
+          </Link>
+        </p>
+        <PageTitle
+          title={`${data.campaign.name}: dashboard`}
+          subtitle={data.campaign.topic ? `Visibility · ${data.campaign.topic}` : "Visibility across engines"}
+        />
+        <p className="max-w-3xl text-xs text-scout-muted">
           Rates describe sampled AI answers from each collection method, not all users. Every rate shows n and a 95%
           interval. Answers inside one prompt are correlated, so intervals come from a bootstrap over prompts.
         </p>
       </div>
 
       {message ? (
-        <p className={`text-sm ${message.tone === "error" ? "text-red-700" : "text-uncc-green"}`} role="status">
+        <p
+          className={`text-sm ${message.tone === "error" ? "" : "text-uncc-green"}`}
+          style={message.tone === "error" ? { color: "var(--status-decline-fg)" } : undefined}
+          role="status"
+        >
           {message.text}
         </p>
       ) : null}
@@ -560,7 +631,7 @@ export default function CampaignDashboardPage() {
             <p className="text-sm text-uncc-ink/60">No model events recorded for this campaign&apos;s engines.</p>
           ) : (
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-uncc-ink/60">
+              <thead className="bg-scout-page text-xs uppercase tracking-wide text-scout-muted">
                 <tr className="border-b border-uncc-rule">
                   <th className="py-2 pr-3">Date</th>
                   <th className="pr-3">Engine</th>

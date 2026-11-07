@@ -6,8 +6,10 @@ import { legacyContext } from "./db/pg/bootstrap";
 import { ImmutableViolation, isImmutableDbError } from "./db/pg/immutable";
 import { safeOrganizationTheme, type OrganizationTheme } from "./contracts/shell";
 import { auditLog, memberships, organizations, sessions, users } from "./db/pg/schema";
+import { roleAtLeast, type Role } from "./auth/roles";
 
-export type Role = "admin" | "editor" | "viewer";
+export type { Role };
+export { roleAtLeast };
 export type SessionUser = { userId: string; email: string; name: string | null; orgId: string; role: Role };
 export type OrganizationAccess = {
   id: string;
@@ -21,12 +23,6 @@ export type OrganizationAccess = {
 export const SESSION_COOKIE = "geo_session";
 export const ACTIVE_ORG_COOKIE = "geo_active_org";
 const SESSION_DAYS = 7;
-const RANK: Record<Role, number> = { viewer: 0, editor: 1, admin: 2 };
-
-export function roleAtLeast(role: Role, required: Role): boolean {
-  return RANK[role] >= RANK[required];
-}
-
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
@@ -297,8 +293,8 @@ export function withRole<P = Record<string, string>>(required: Role, handler: Ha
       if (err instanceof ImmutableViolation || isImmutableDbError(err)) {
         return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 409 });
       }
-      const message = err instanceof Error ? err.message : String(err);
-      return NextResponse.json({ error: message }, { status: 500 });
+      console.error("withRole handler error:", err);
+      return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
     }
   };
 }

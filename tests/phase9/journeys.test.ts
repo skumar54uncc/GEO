@@ -404,9 +404,9 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
       await page.goto("/login");
       await expectVisible(page.locator("#email"));
       await page.fill("#email", leadershipEmail);
-      await page.fill("#name", "Leadership Viewer");
+      await page.fill("#name", "Lauren");
       const loginRes = await page.request.post(`${server!.baseUrl}/api/auth/login`, {
-        data: { email: leadershipEmail, name: "Leadership Viewer" },
+        data: { email: leadershipEmail, name: "Lauren" },
         headers: { Origin: server!.baseUrl, Referer: `${server!.baseUrl}/login` },
       });
       if (!loginRes.ok()) {
@@ -442,7 +442,7 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
       await assertPageA11yBasics(page);
 
       await page.goto("/overview");
-      const orgSelect = page.locator("header.global-header label:has-text(\"Organization\") select");
+      const orgSelect = page.getByTestId("org-switcher");
       await expectVisible(orgSelect);
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/auth/org") && r.request().method() === "POST"),

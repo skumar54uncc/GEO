@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, EvidenceBadge, Message, SafeLink, SeverityBadge, SitePicker, useSites } from "@/components/site/client";
 import { EmptyState, ErrorState, LoadingState, PartialDataNotice } from "@/components/PageStates";
+import { PageTitle } from "@/components/scout/primitives";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -44,7 +45,7 @@ function DetailList({ detail }: { detail: Record<string, unknown> }) {
       {entries.map(([k, v]) => (
         <div key={k} className="contents">
           <dt className="text-uncc-ink/50">{k.replace(/_/g, " ")}</dt>
-          <dd className="break-all">{Array.isArray(v) ? v.join(", ") : v === null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>
+          <dd className="break-all">{Array.isArray(v) ? v.join(", ") : v === null ? "n/a" : typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>
         </div>
       ))}
     </dl>
@@ -77,6 +78,10 @@ export default function AuditPage() {
     });
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Site audit · Scout";
+  }, []);
+
   const openPage = async (id: string) => {
     try {
       setPage(await api<PageDetail>(`/api/audit/pages/${id}?audit_run_id=${report?.audit_run.id ?? ""}`));
@@ -104,11 +109,10 @@ export default function AuditPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl space-y-1">
-          <h1 className="font-serif text-2xl font-semibold text-uncc-ink">AI readiness audit</h1>
-          <p className="text-sm leading-6 text-uncc-ink/75">
-            Each finding states why it may matter and how strong the evidence is that it affects AI answers. Counts are findings, not rates.
-            Rerunning the audit on the same crawl gives identical findings; the fingerprint below proves it.
-          </p>
+          <PageTitle
+            title="AI readiness audit"
+            subtitle="Each finding states why it may matter and how strong the evidence is. Counts are findings, not rates. Rerunning the audit on the same crawl gives identical findings; the fingerprint below proves it."
+          />
         </div>
         {sites ? <SitePicker sites={sites} siteId={siteId} onChange={setSiteId} /> : null}
       </div>
@@ -244,7 +248,7 @@ export default function AuditPage() {
                       {(["status_code", "title", "h1", "meta_description", "canonical", "word_count", "raw_word_count", "render_mode", "lastmod", "robots_meta", "fetch_error"] as const).map((k) => (
                         <div key={k} className="contents">
                           <dt className="text-uncc-ink/50">{k.replace(/_/g, " ")}</dt>
-                          <dd className="break-all">{page.page[k] === null || page.page[k] === undefined ? "—" : String(page.page[k])}</dd>
+                          <dd className="break-all">{page.page[k] === null || page.page[k] === undefined ? "n/a" : String(page.page[k])}</dd>
                         </div>
                       ))}
                     </dl>

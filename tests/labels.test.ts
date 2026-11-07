@@ -5,7 +5,9 @@ import {
   fidelityPlain,
   formatScanDate,
   runnerPlain,
+  searchIndexPlain,
   shortHash,
+  sourceClassPlain,
 } from "@/lib/ui/labels";
 
 describe("lib/ui/labels", () => {
@@ -29,5 +31,12 @@ describe("lib/ui/labels", () => {
   it("answersChecked pluralization", () => {
     expect(answersChecked(1)).toBe("1 AI answer checked");
     expect(answersChecked(3)).toBe("3 AI answers checked");
+  });
+
+  it("searchIndexPlain and sourceClassPlain", () => {
+    expect(searchIndexPlain("chat")).toBe("Chat engines");
+    expect(searchIndexPlain("google")).toBe("Google AI surfaces");
+    expect(sourceClassPlain("owned")).toBe("Our site");
+    expect(sourceClassPlain("custom_type")).toBe("custom type");
   });
 });

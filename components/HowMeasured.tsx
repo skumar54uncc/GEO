@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useSessionRole } from "@/components/SessionRoleContext";
+import { roleAtLeast } from "@/lib/auth/roles";
 import { answersChecked, enginePlain, fidelityPlain, formatScanDate, runnerPlain, shortHash } from "@/lib/ui/labels";
 
 export type MeasurementContext = {
@@ -21,11 +23,13 @@ export type MeasurementContext = {
 export function HowMeasured({ context, className = "" }: { context: MeasurementContext; className?: string }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const sessionRole = useSessionRole();
+  const showRunnerTechnicalId = sessionRole != null && roleAtLeast(sessionRole, "editor");
   return (
     <div className={`how-measured ${className}`}>
       <button
         type="button"
-        className="text-sm font-semibold text-[#005035] underline"
+        className="text-sm font-semibold text-scout-brand underline"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
@@ -44,7 +48,9 @@ export function HowMeasured({ context, className = "" }: { context: MeasurementC
             {context.runner ? (
               <li>
                 How answers were collected: {runnerPlain(context.runner)}
-                <span className="text-uncc-ink/50"> (technical id: {context.runner})</span>
+                {showRunnerTechnicalId ? (
+                  <span className="text-uncc-ink/50"> (technical id: {context.runner})</span>
+                ) : null}
               </li>
             ) : null}
             {context.fidelity ? (

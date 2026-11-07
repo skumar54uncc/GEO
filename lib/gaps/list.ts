@@ -1,17 +1,35 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
-import { campaigns, recommendations } from "@/lib/db/pg/schema";
+import {
+  gapTitleFromPayload,
+  leverTypeToLabel,
+  parseGapEvidence,
+  sharedAmongSummary,
+  suggestedActionFromPayload,
+} from "@/lib/gaps/display";
+import { campaigns, prompts, recommendations } from "@/lib/db/pg/schema";
 
 export type GapRecommendationRow = {
   id: string;
   kind: string;
   leverType: string | null;
+  /** Plain-language lever for leadership views. */
+  leverLabel: string | null;
   owner: string | null;
   evidenceGrade: string | null;
   status: string;
   payload: unknown;
   evidence: unknown;
   targetPromptIds: string[];
+  /** Full prompt text for each target id, same order as `targetPromptIds`. */
+  lostQuestionTexts: string[];
+  /** Derived human title (no raw enum keys). */
+  displayTitle: string;
+  suggestedAction: string | null;
+  sharedAmongCitedPages: string | null;
+  sharedAmongCitedPagesN: number | null;
+  evidenceCount: number;
+  evidenceItems: Array<{ detail: string; url?: string }>;
   baselineScanId: string | null;
   publishedAt: string | null;
   createdAt: string;
@@ -33,20 +51,39 @@ export async function listCampaignGaps(
     .where(eq(recommendations.campaignId, opts.campaignId))
     .orderBy(desc(recommendations.createdAt));
 
+  const allTargetIds = [...new Set(rows.flatMap((r) => r.targetPromptIds))];
+  const textById = new Map<string, string>();
+  if (allTargetIds.length) {
+    const promptRows = await db.select({ id: prompts.id, text: prompts.text }).from(prompts).where(inArray(prompts.id, allTargetIds));
+    for (const p of promptRows) textById.set(p.id, p.text);
+  }
+
   return {
-    recommendations: rows.map((r) => ({
-      id: r.id,
-      kind: r.kind,
-      leverType: r.leverType,
-      owner: r.owner,
-      evidenceGrade: r.evidenceGrade,
-      status: r.status,
-      payload: r.payload,
-      evidence: r.evidence,
-      targetPromptIds: r.targetPromptIds,
-      baselineScanId: r.baselineScanId,
-      publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null,
-      createdAt: r.createdAt.toISOString(),
-    })),
+    recommendations: rows.map((r) => {
+      const { items, count } = parseGapEvidence(r.evidence);
+      const shared = sharedAmongSummary(r.payload);
+      return {
+        id: r.id,
+        kind: r.kind,
+        leverType: r.leverType,
+        leverLabel: leverTypeToLabel(r.leverType),
+        owner: r.owner,
+        evidenceGrade: r.evidenceGrade,
+        status: r.status,
+        payload: r.payload,
+        evidence: r.evidence,
+        targetPromptIds: r.targetPromptIds,
+        lostQuestionTexts: r.targetPromptIds.map((id) => textById.get(id) ?? "(Prompt text unavailable.)"),
+        displayTitle: gapTitleFromPayload(r.payload, r.kind),
+        suggestedAction: suggestedActionFromPayload(r.payload),
+        sharedAmongCitedPages: shared.text,
+        sharedAmongCitedPagesN: shared.n,
+        evidenceCount: count,
+        evidenceItems: items,
+        baselineScanId: r.baselineScanId,
+        publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null,
+        createdAt: r.createdAt.toISOString(),
+      };
+    }),
   };
 }

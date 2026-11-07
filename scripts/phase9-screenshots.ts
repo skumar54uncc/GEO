@@ -57,7 +57,9 @@ async function main() {
   const email = "leadership@charlotte.edu";
   let [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user) {
-    [user] = await db.insert(users).values({ email, name: "Leadership Viewer" }).returning();
+    [user] = await db.insert(users).values({ email, name: "Lauren" }).returning();
+  } else if (user.name !== "Lauren") {
+    await db.update(users).set({ name: "Lauren" }).where(eq(users.id, user.id));
   }
   await db
     .insert(memberships)
@@ -119,7 +121,13 @@ async function main() {
   }
 
   try {
-    const demoCampaignId = demo.campaignIds[0];
+    // Prefer Energy demo campaign for dashboard/gaps when present (varied scan deltas).
+    const demoCamps = await db
+      .select({ id: campaigns.id, name: campaigns.name })
+      .from(campaigns)
+      .where(eq(campaigns.orgId, demo.orgId));
+    const demoEnergy = demoCamps.find((c) => c.name === "Energy") ?? demoCamps[0];
+    const demoCampaignId = demoEnergy?.id ?? demo.campaignIds[0];
     await shot(unc.id, "/", "overview-unc.png");
     await shot(unc.id, `/campaigns/${uncCampaignId}/dashboard`, "campaign-dashboard-unc.png");
     await shot(unc.id, `/campaigns/${uncCampaignId}/answers`, "answers-unc.png");

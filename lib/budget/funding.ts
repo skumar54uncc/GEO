@@ -5,7 +5,13 @@ import type { Db } from "@/lib/db/pg/client";
 import { costLedger, organizations, providerAccounts } from "@/lib/db/pg/schema";
 import { spentThisMonth } from "@/lib/cost/guard";
 import { ensureCaptureProviders } from "@/lib/capture/accounts";
-import { BUDGET_PROVIDER_META, type ProviderBudgetRole } from "./providers";
+import type { ProviderId } from "@/lib/capture/registry";
+import {
+  BUDGET_PROVIDER_META,
+  primaryRouteUsdPerDrawByProvider,
+  providerShareForPrompts,
+  type ProviderBudgetRole,
+} from "./providers";
 
 /** Prices verified date from docs/PROVIDERS.md (rechecked Phase 3). */
 export const PRICES_VERIFIED_ON = "2026-11-03" as const;
@@ -58,12 +64,15 @@ export type FundingProviderRow = {
   provider: string;
   displayName: string;
   role: ProviderBudgetRole;
-  note: string | null;
+  roleLabel: string;
   monthlyBudgetUsd: number | null;
   perScanCapUsd: number | null;
   creditsRemaining: number | null;
   spentThisMonthUsd: number;
-  /** True when pilot or steady-state estimate exceeds this provider's monthly or per-scan cap. */
+  /** This provider's share of the pilot (primary routes only). */
+  pilotShareUsd: number | null;
+  /** This provider's share of steady-state monthly (primary routes only). */
+  monthlyShareUsd: number | null;
   estimateExceedsCap: boolean;
   capWarning: string | null;
 };
@@ -75,7 +84,6 @@ export type FundingPageData = {
   dataforseoMinTopUpUsd: typeof DATAFORSEO_MIN_TOPUP_USD;
   stopLoss: typeof STOP_LOSS_CONFIG;
   vendorComparison: typeof VENDOR_COMPARISON;
-  /** Energy core only — pilot scope. */
   pilot: {
     campaign: string | null;
     prompts: number;
@@ -87,24 +95,38 @@ export type FundingPageData = {
     usdUpper: number | null;
     note: string;
   };
-  /** All 3 content-team core sets biweekly + persona sets quarterly. */
   steadyState: {
     coreBiweeklyDraws: number;
-    coreBiweeklyUsdUpper: number | null;
+    /** Core biweekly attributed as monthly dollars. */
+    coreUsdPerMonth: number | null;
     personaQuarterlyDraws: number;
-    personaQuarterlyUsdUpper: number | null;
-    monthlyUsdUpper: number | null;
+    /** Full persona quarterly run dollars. */
+    personaQuarterlyUsd: number | null;
+    /** Persona quarterly ÷ 3. */
+    personaUsdPerMonth: number | null;
+    totalUsdPerMonth: number | null;
+    totalUsdPerYear: number | null;
     note: string;
     basedOnDrafts: boolean;
   };
+  /** Summary line for the vendor comparison table. */
+  platformSummary: { monthlyUsd: number | null; yearlyUsd: number | null };
   providers: FundingProviderRow[];
-  /** Leadership-facing warnings when an estimate exceeds an active provider cap. */
   capWarnings: string[];
   spendToDateUsd: number;
 };
 
 function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
+}
+
+function sumShares(shares: Record<ProviderId, number | null>): number | null {
+  let t = 0;
+  for (const v of Object.values(shares)) {
+    if (v === null) return null;
+    t += v;
+  }
+  return round4(t);
 }
 
 export async function buildFundingPage(db: Db, orgId: string): Promise<FundingPageData> {
@@ -123,36 +145,63 @@ export async function buildFundingPage(db: Db, orgId: string): Promise<FundingPa
 
   const coreUsd = estimates.coreUsd;
   const personaUsd = estimates.personaUsd;
-  const monthlyFromCore = coreUsd === null ? null : round4(coreUsd * 2);
-  const monthlyFromPersona = personaUsd === null ? null : round4(personaUsd / 3);
-  const monthlyUsdUpper =
-    monthlyFromCore === null || monthlyFromPersona === null ? null : round4(monthlyFromCore + monthlyFromPersona);
+  const coreUsdPerMonth = coreUsd === null ? null : round4(coreUsd * 2);
+  const personaUsdPerMonth = personaUsd === null ? null : round4(personaUsd / 3);
+  const totalUsdPerMonth =
+    coreUsdPerMonth === null || personaUsdPerMonth === null ? null : round4(coreUsdPerMonth + personaUsdPerMonth);
+  const totalUsdPerYear = totalUsdPerMonth === null ? null : round4(totalUsdPerMonth * 12);
+
+  const perDraw = primaryRouteUsdPerDrawByProvider();
+  const pilotPrompts = pilotRow?.prompts ?? 0;
+  const corePromptsAll = estimates.series.filter((s) => s.series === "core").reduce((a, s) => a + s.prompts, 0);
+  const personaPromptsAll = estimates.series.filter((s) => s.series === "persona").reduce((a, s) => a + s.prompts, 0);
+
+  const pilotShares = providerShareForPrompts(pilotPrompts, perDraw);
+  // Steady monthly: core × 2 runs/mo + persona × (1/3 run/mo)
+  const coreMonthlyShares = providerShareForPrompts(corePromptsAll * 2, perDraw);
+  const personaMonthlyShares = providerShareForPrompts(personaPromptsAll, perDraw);
+  const monthlyShares = {} as Record<ProviderId, number | null>;
+  for (const meta of BUDGET_PROVIDER_META) {
+    const c = coreMonthlyShares[meta.id];
+    const p = personaMonthlyShares[meta.id];
+    if (meta.role !== "active") {
+      monthlyShares[meta.id] = 0;
+      continue;
+    }
+    if (c === null || p === null) monthlyShares[meta.id] = null;
+    else monthlyShares[meta.id] = round4(c + p / 3);
+  }
+
+  // Keep series totals consistent with primary-route sum when available.
+  const pilotFromRoutes = sumShares(pilotShares);
+  const pilotUsd = pilotFromRoutes ?? pilotRow?.usdTotalUpper ?? null;
 
   const accounts = await db.select().from(providerAccounts).where(eq(providerAccounts.orgId, orgId));
   const byId = new Map(accounts.map((a) => [a.provider, a]));
 
-  const pilotUsd = pilotRow?.usdTotalUpper ?? null;
   const providers: FundingProviderRow[] = [];
   const capWarnings: string[] = [];
 
   for (const meta of BUDGET_PROVIDER_META) {
     const a = byId.get(meta.id);
-    const monthlyBudgetUsd = a?.monthlyBudgetUsd === null || a?.monthlyBudgetUsd === undefined ? null : Number(a.monthlyBudgetUsd);
-    const perScanCapUsd = a?.perScanCapUsd === null || a?.perScanCapUsd === undefined ? null : Number(a.perScanCapUsd);
+    const monthlyBudgetUsd = a?.monthlyBudgetUsd == null ? null : Number(a.monthlyBudgetUsd);
+    const perScanCapUsd = a?.perScanCapUsd == null ? null : Number(a.perScanCapUsd);
     const spentThisMonthUsd = a ? await spentThisMonth(db, orgId, a.provider) : 0;
+    const pilotShareUsd = pilotShares[meta.id] ?? 0;
+    const monthlyShareUsd = monthlyShares[meta.id] ?? 0;
 
     let estimateExceedsCap = false;
     let capWarning: string | null = null;
     if (meta.role === "active") {
       const reasons: string[] = [];
-      if (monthlyBudgetUsd !== null && monthlyUsdUpper !== null && monthlyUsdUpper > monthlyBudgetUsd) {
+      if (monthlyBudgetUsd !== null && monthlyShareUsd !== null && monthlyShareUsd > monthlyBudgetUsd) {
         reasons.push(
-          `Steady-state monthly upper estimate ($${monthlyUsdUpper.toFixed(2)}) exceeds the ${meta.displayName} monthly cap ($${monthlyBudgetUsd.toFixed(2)}).`,
+          `${meta.displayName} steady-state share ($${monthlyShareUsd.toFixed(2)}/mo) exceeds its monthly cap ($${monthlyBudgetUsd.toFixed(2)}).`,
         );
       }
-      if (perScanCapUsd !== null && pilotUsd !== null && pilotUsd > perScanCapUsd) {
+      if (perScanCapUsd !== null && pilotShareUsd !== null && pilotShareUsd > perScanCapUsd) {
         reasons.push(
-          `Pilot upper estimate ($${pilotUsd.toFixed(2)}) exceeds the ${meta.displayName} per-scan cap ($${perScanCapUsd.toFixed(2)}).`,
+          `${meta.displayName} pilot share ($${pilotShareUsd.toFixed(2)}) exceeds its per-scan cap ($${perScanCapUsd.toFixed(2)}).`,
         );
       }
       if (reasons.length) {
@@ -166,11 +215,13 @@ export async function buildFundingPage(db: Db, orgId: string): Promise<FundingPa
       provider: meta.id,
       displayName: meta.displayName,
       role: meta.role,
-      note: meta.note,
+      roleLabel: meta.roleLabel,
       monthlyBudgetUsd,
       perScanCapUsd,
       creditsRemaining: a?.creditsRemaining ?? null,
       spentThisMonthUsd,
+      pilotShareUsd,
+      monthlyShareUsd,
       estimateExceedsCap,
       capWarning,
     });
@@ -198,20 +249,23 @@ export async function buildFundingPage(db: Db, orgId: string): Promise<FundingPa
       engines: pilotRow?.engines ?? 0,
       drawsPerPrompt: pilotRow?.drawsPerPrompt ?? 3,
       totalDraws: pilotRow?.totalDraws ?? 0,
-      usdUpper: pilotRow?.usdTotalUpper ?? null,
+      usdUpper: pilotUsd,
       note: pilotRow?.note ?? "No content-team Energy core prompts found for this organization.",
     },
     steadyState: {
       coreBiweeklyDraws: estimates.coreDraws * 2,
-      coreBiweeklyUsdUpper: monthlyFromCore,
+      coreUsdPerMonth,
       personaQuarterlyDraws: estimates.personaDraws,
-      personaQuarterlyUsdUpper: personaUsd,
-      monthlyUsdUpper,
+      personaQuarterlyUsd: personaUsd,
+      personaUsdPerMonth,
+      totalUsdPerMonth,
+      totalUsdPerYear,
       note: steadyBasedOnDrafts
-        ? `Steady state uses draft prompts pending approval where a series has no approved prompts. All content-team core sets twice per month, plus persona sets once per quarter (1/3 of a full persona run attributed monthly).`
-        : "Steady state: all content-team core sets twice per month, plus persona sets once per quarter (1/3 of a full persona run attributed monthly).",
+        ? "Steady state uses draft prompts pending approval where a series has no approved prompts. Core sets twice per month. Persona sets once per quarter (monthly share = full run ÷ 3). Only primary routes are costed."
+        : "Steady state: content-team core sets twice per month. Persona sets once per quarter (monthly share = full run ÷ 3). Only primary routes are costed. Fallback, calibration, and parity providers are $0 unless scheduled.",
       basedOnDrafts: steadyBasedOnDrafts,
     },
+    platformSummary: { monthlyUsd: totalUsdPerMonth, yearlyUsd: totalUsdPerYear },
     providers,
     capWarnings,
     spendToDateUsd: Number(spendRow?.spent ?? 0),

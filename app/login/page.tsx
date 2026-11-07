@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -39,14 +40,18 @@ function LoginForm() {
   return (
     <Card className="mx-auto mt-10 max-w-md">
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+        <div className="mb-3 flex items-center gap-3">
+          <Image src="/brand/logo.svg" alt="Scout" width={120} height={36} priority />
+        </div>
+        <CardTitle>Sign in · Scout</CardTitle>
         <CardDescription>
-          Local development login. There is no password, so this app only listens on 127.0.0.1.
+          Scouting what AI says about us. Local development login. There is no password, so this app only listens on
+          127.0.0.1.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {expired ? (
-          <p className="mb-4 border-l-4 border-uncc-gold pl-3 text-sm">
+          <p className="mb-4 border-l-4 border-scout-brand pl-3 text-sm text-scout-muted">
             Your local session expired. Sign in again to continue.
           </p>
         ) : null}
@@ -63,7 +68,11 @@ function LoginForm() {
             <Label htmlFor="name">Name (optional)</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          {error ? (
+            <p className="text-sm" style={{ color: "var(--status-decline-fg)" }} role="alert">
+              {error}
+            </p>
+          ) : null}
           <Button type="submit" disabled={busy}>
             {busy ? "Signing in…" : "Sign in"}
           </Button>

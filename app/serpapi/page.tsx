@@ -102,12 +102,12 @@ export default function SerpApiPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded border border-uncc-rule bg-white p-5">
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">Credits remaining</p>
-          <p className="mt-2 font-serif text-4xl tabular">{credits?.credits_remaining ?? "—"}</p>
-          <p className="mt-1 text-xs text-uncc-ink/60">Starting balance {credits?.starting_balance ?? "—"}</p>
+          <p className="mt-2 font-serif text-4xl tabular">{credits?.credits_remaining ?? "n/a"}</p>
+          <p className="mt-1 text-xs text-uncc-ink/60">Starting balance {credits?.starting_balance ?? "n/a"}</p>
         </div>
         <div className="rounded border border-uncc-rule bg-white p-5">
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">Per-run cap</p>
-          <p className="mt-2 font-serif text-4xl tabular">{credits?.per_run_cap ?? "—"}</p>
+          <p className="mt-2 font-serif text-4xl tabular">{credits?.per_run_cap ?? "n/a"}</p>
           <p className="mt-1 text-xs text-uncc-ink/60">Batch refuses if estimated calls exceed this.</p>
         </div>
         <div className="rounded border border-uncc-rule bg-white p-5">

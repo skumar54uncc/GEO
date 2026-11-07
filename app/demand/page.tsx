@@ -111,7 +111,7 @@ export default function DemandPage() {
         <div className="rounded border border-uncc-rule bg-white p-5">
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">Current visibility</p>
           <p className="mt-2 font-serif text-4xl tabular text-uncc-green">
-            {vis?.rate == null ? "—" : `${(vis.rate * 100).toFixed(0)}%`}
+            {vis?.rate == null ? "n/a" : `${(vis.rate * 100).toFixed(0)}%`}
           </p>
           <p className="mt-2 font-mono text-xs">{vis?.label ?? "Run Analyze first"}</p>
         </div>
@@ -134,9 +134,9 @@ export default function DemandPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded border border-uncc-rule bg-white p-5">
           <p className="text-xs uppercase tracking-wide text-uncc-ink/60">This fetch</p>
-          <p className="mt-2 font-serif text-3xl tabular">{estimate?.estimated_uncached_calls ?? "—"}</p>
+          <p className="mt-2 font-serif text-3xl tabular">{estimate?.estimated_uncached_calls ?? "n/a"}</p>
           <p className="mt-1 text-xs text-uncc-ink/60">
-            uncached of {estimate?.estimated_calls ?? "—"} · remaining {estimate?.credits_remaining ?? "—"} · cap {estimate?.per_run_cap ?? "—"}
+            uncached of {estimate?.estimated_calls ?? "n/a"} · remaining {estimate?.credits_remaining ?? "n/a"} · cap {estimate?.per_run_cap ?? "n/a"}
           </p>
         </div>
         <div className="rounded border border-uncc-rule bg-white p-5 md:col-span-2 flex items-center justify-between gap-4">
@@ -171,7 +171,7 @@ export default function DemandPage() {
         </div>
         {selected ? (
           <p className="mt-3 font-mono text-xs">
-            Average index — US {avg("US") ?? "—"} · NC {avg("US-NC") ?? "—"} · SC {avg("US-SC") ?? "—"}
+            Average index, US {avg("US") ?? "n/a"} · NC {avg("US-NC") ?? "n/a"} · SC {avg("US-SC") ?? "n/a"}
             {line.length ? ` · ${line.length} weeks` : ""}
           </p>
         ) : null}
@@ -186,7 +186,7 @@ export default function DemandPage() {
           <p className="mt-1 text-xs text-uncc-ink/60">
             The lists under each prompt are <span className="font-medium">not</span> Autocomplete and{" "}
             <span className="font-medium">not</span> Trends. They are People Also Ask and related searches from the same
-            Google search that fetched the AI Overview — no extra credit.
+            Google search that fetched the AI Overview, no extra credit.
           </p>
           {snapshot?.google_questions?.length ? (
             <>
@@ -203,7 +203,7 @@ export default function DemandPage() {
               ))}
             </>
           ) : (
-            <p className="mt-2 text-sm text-uncc-ink/60">Run Google AIO on SerpAPI first — those questions land here for free.</p>
+            <p className="mt-2 text-sm text-uncc-ink/60">Run Google AIO on SerpAPI first. Those questions land here for free.</p>
           )}
           {snapshot?.phrases?.some((p) => p.suggestions.length) ? (
             <div className="mt-4">

@@ -48,7 +48,7 @@ export default function DashboardPage() {
         <section className="rounded border border-uncc-green bg-white p-6 md:col-span-2">
           <p className="text-xs uppercase tracking-[0.16em] text-uncc-green">Visibility rate</p>
           <p className="mt-2 font-serif text-6xl tabular text-uncc-green">
-            {vis.rate === null ? "—" : `${(vis.rate * 100).toFixed(1)}%`}
+            {vis.rate === null ? "n/a" : `${(vis.rate * 100).toFixed(1)}%`}
           </p>
           <p className="mt-3 font-mono text-sm text-uncc-ink">{vis.label}</p>
           <p className="mt-2 text-xs text-uncc-ink/60">
@@ -57,7 +57,7 @@ export default function DashboardPage() {
         </section>
         <section className="rounded border border-uncc-rule bg-white p-6">
           <p className="text-xs uppercase tracking-[0.16em] text-uncc-ink/60">Citation rate</p>
-          <p className="mt-2 font-serif text-4xl tabular">{data.overall.citation.rate === null ? "—" : `${(data.overall.citation.rate * 100).toFixed(1)}%`}</p>
+          <p className="mt-2 font-serif text-4xl tabular">{data.overall.citation.rate === null ? "n/a" : `${(data.overall.citation.rate * 100).toFixed(1)}%`}</p>
           <p className="mt-2 font-mono text-xs text-uncc-ink/80">{data.overall.citation.label}</p>
         </section>
       </div>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                     const cell = data.gapMatrix.cells.find((c) => c.audience === aud && c.subtopic === s.id)!;
                     return (
                       <td key={s.id} className={`py-2 pr-3 tabular ${cell.flagged ? "bg-amber-50 font-medium text-amber-950" : ""}`}>
-                        {cell.n === 0 ? "—" : `${cell.target_mentions}/${cell.competitor_mentions} (n=${cell.n})`}
+                        {cell.n === 0 ? "n/a" : `${cell.target_mentions}/${cell.competitor_mentions} (n=${cell.n})`}
                       </td>
                     );
                   })}
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                   <td className="py-2 tabular">
                     {c.mention_count} / {c.n_runs}
                   </td>
-                  <td className="py-2 tabular">{c.average_rank === null ? "—" : c.average_rank.toFixed(1)} {c.rank_n ? `(n=${c.rank_n})` : ""}</td>
+                  <td className="py-2 tabular">{c.average_rank === null ? "n/a" : c.average_rank.toFixed(1)} {c.rank_n ? `(n=${c.rank_n})` : ""}</td>
                 </tr>
               ))}
             </tbody>
@@ -185,11 +185,11 @@ export default function DashboardPage() {
                   <tr key={row.prompt_id} className="border-b border-uncc-rule/50 align-top">
                     <td className="max-w-sm py-2 pr-3">{row.text}</td>
                     <td className="py-2 pr-3 tabular">
-                      {row.target_ranked ? `#${row.target_position}` : row.has_organic ? "not in top 10" : "—"}
+                      {row.target_ranked ? `#${row.target_position}` : row.has_organic ? "not in top 10" : "n/a"}
                     </td>
-                    <td className="py-2 pr-3">{row.aio_shown === null ? "—" : row.aio_shown ? "yes" : "no"}</td>
-                    <td className="py-2 pr-3">{row.aio_mentioned === null ? "—" : row.aio_mentioned ? "yes" : "no"}</td>
-                    <td className="py-2 pr-3">{row.aio_cited === null ? "—" : row.aio_cited ? "yes" : "no"}</td>
+                    <td className="py-2 pr-3">{row.aio_shown === null ? "n/a" : row.aio_shown ? "yes" : "no"}</td>
+                    <td className="py-2 pr-3">{row.aio_mentioned === null ? "n/a" : row.aio_mentioned ? "yes" : "no"}</td>
+                    <td className="py-2 pr-3">{row.aio_cited === null ? "n/a" : row.aio_cited ? "yes" : "no"}</td>
                     <td className="py-2 pr-3">{row.finding}</td>
                   </tr>
                 ))

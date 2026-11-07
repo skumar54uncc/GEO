@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { HowMeasured } from "@/components/HowMeasured";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { PageTitle } from "@/components/scout/primitives";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { leverTypeToLabel } from "@/lib/gaps/display";
 
 type ReportListItem = { id: string; topic: string; createdAt: string };
 type StrategyItem = {
@@ -78,6 +80,10 @@ export default function StrategyPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Strategy · Scout";
+  }, []);
+
   if (error && !reports) return <ErrorState message={error} />;
   if (!reports) return <LoadingState label="Loading strategy reports…" />;
 
@@ -85,21 +91,20 @@ export default function StrategyPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
-            <Link href="/campaigns" className="underline">
+          <p className="text-xs uppercase tracking-wide text-scout-muted">
+            <Link href="/campaigns" className="font-medium text-scout-brand underline">
               Campaigns
             </Link>{" "}
             · Strategy
           </p>
-          <h1 className="font-serif text-3xl text-uncc-ink">Content strategy</h1>
-          <p className="mt-1 max-w-2xl text-sm text-uncc-ink/70">
-            Demand → landscape → supply → gaps → plan. Scored items use demand × gap × effort. Missing Trends,
-            Search Console, or keywords never score as zero — they stay in the unscored list.
-          </p>
+          <PageTitle
+            title="Content strategy"
+            subtitle="Demand → landscape → supply → gaps → plan. Scored items use demand × gap × effort. Missing Trends, Search Console, or keywords never score as zero; they stay in the unscored list."
+          />
         </div>
         {report ? (
           <a
-            className="inline-flex h-9 items-center rounded border border-uncc-rule bg-white px-3 text-sm"
+            className="inline-flex h-9 items-center rounded border border-scout-border bg-scout-card px-3 text-sm text-scout-text shadow-scout"
             href={`/api/campaigns/${campaignId}/strategy/export?reportId=${report.id}`}
             data-testid="strategy-export-csv"
           >
@@ -113,7 +118,7 @@ export default function StrategyPage() {
       <HowMeasured
         context={{
           extra:
-            "The recommendation writer is a different model from the visibility judge. Unavailable demand sources stay unknown and unscored — never treated as zero.",
+            "The recommendation writer is a different model from the visibility judge. Unavailable demand sources stay unknown and unscored, never treated as zero.",
         }}
       />
 
@@ -143,12 +148,12 @@ export default function StrategyPage() {
                     <li key={item.id} className="rounded border border-uncc-rule bg-white p-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-uncc-ink">{item.promptCluster}</p>
-                        <Badge tone="muted">{item.leverType}</Badge>
+                        <Badge tone="muted">{leverTypeToLabel(item.leverType) ?? item.leverType}</Badge>
                         <Badge tone="muted">grade {item.evidenceGrade}</Badge>
                       </div>
                       <p className="mt-1 text-sm text-uncc-ink/70">
                         {item.persona} · {item.owner} · publish by {item.publishBy} · score{" "}
-                        {item.score === null ? "—" : item.score.toFixed(3)}
+                        {item.score === null ? "n/a" : item.score.toFixed(3)}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-3">
                         <Factor label="demand" f={item.factors.demand} />
@@ -167,7 +172,7 @@ export default function StrategyPage() {
                 <ul className="space-y-2">
                   {report.output.unscoredItems.map((item) => (
                     <li key={item.id} className="rounded border border-dashed border-uncc-rule p-3 text-sm">
-                      {item.promptCluster} · {item.leverType} · demand unknown
+                      {item.promptCluster} · {leverTypeToLabel(item.leverType) ?? item.leverType} · demand unknown
                     </li>
                   ))}
                 </ul>
@@ -185,7 +190,7 @@ export default function StrategyPage() {
                 <p className="text-sm text-uncc-ink/60">No off-site gaps in this report.</p>
               ) : (
                 <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase text-uncc-ink/60">
+                  <thead className="bg-scout-page text-xs uppercase text-scout-muted">
                     <tr>
                       <th className="py-1">Domain</th>
                       <th>Peer cites</th>

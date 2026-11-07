@@ -26,13 +26,16 @@ function minimalFunding(over: Partial<FundingPageData["organization"]> = {}): Fu
     },
     steadyState: {
       coreBiweeklyDraws: 120,
-      coreBiweeklyUsdUpper: 50,
+      coreUsdPerMonth: 50,
       personaQuarterlyDraws: 40,
-      personaQuarterlyUsdUpper: 25,
-      monthlyUsdUpper: 75,
+      personaQuarterlyUsd: 75,
+      personaUsdPerMonth: 25,
+      totalUsdPerMonth: 75,
+      totalUsdPerYear: 900,
       note: "fixture",
       basedOnDrafts: false,
     },
+    platformSummary: { monthlyUsd: 75, yearlyUsd: 900 },
     providers: [],
     capWarnings: [],
     spendToDateUsd: 0,
@@ -44,6 +47,8 @@ describe("fundingPdfHtml", () => {
     const html = fundingPdfHtml(minimalFunding());
     expect(html).toContain(UPPER_ESTIMATE_LABEL);
     expect(html).toContain("Every cost figure is an");
+    expect(html).toContain("This platform, upper estimate");
+    expect(html).toContain("$75.00/mo");
     expect(html).not.toContain(DEMO_DATA_BANNER);
   });
 

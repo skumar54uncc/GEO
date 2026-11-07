@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded border border-uncc-rule bg-white", className)} {...props} />;
+  return <div className={cn("rounded-scout border border-scout-border bg-scout-card shadow-scout", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -11,7 +11,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   // h2 under page h1 — keeps Lighthouse heading-order sequential (no h1→h3 skip).
-  return <h2 className={cn("font-serif text-lg font-semibold text-uncc-ink", className)} {...props} />;
+  return <h2 className={cn("text-scout-card text-scout-text", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
@@ -28,10 +28,10 @@ export function Badge({
   ...props
 }: React.HTMLAttributes<HTMLSpanElement> & { tone?: "neutral" | "green" | "gold" | "muted" }) {
   const tones = {
-    neutral: "border-uncc-rule bg-uncc-paper text-uncc-ink",
-    green: "border-uncc-green/30 bg-uncc-mist text-uncc-green",
-    gold: "border-uncc-gold/40 bg-[#f4f0e3] text-[#6b5f35]",
-    muted: "border-uncc-rule bg-white text-uncc-ink/75",
+    neutral: "border-scout-border bg-scout-page text-scout-text",
+    green: "border-scout-border bg-[var(--tile-green-bg)] text-[var(--status-gain-fg)]",
+    gold: "border-scout-border bg-[var(--status-noise-bg)] text-scout-muted",
+    muted: "border-scout-border bg-scout-card text-scout-muted",
   };
   return (
     <span

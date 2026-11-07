@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, Message, SafeLink, SitePicker, useSites } from "@/components/site/client";
 import { EmptyState, ErrorState, LoadingState, PartialDataNotice } from "@/components/PageStates";
+import { PageTitle, ScoutCard } from "@/components/scout/primitives";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -167,9 +168,9 @@ function HostsStep({ view, reload, setMsg }: { view: SiteView; reload: () => Pro
                       {h.host} {h.included_by_user ? <Badge tone="muted">your choice</Badge> : null}
                     </td>
                     <td className="pr-2 text-xs">{h.discovered_via.join(", ")}</td>
-                    <td className="pr-2 text-xs">{h.resolves === false ? "no DNS" : (h.root_status ?? "—")}</td>
-                    <td className="pr-2 text-xs">{h.robots_status ?? "—"}</td>
-                    <td className="pr-2 text-xs">{h.sitemap_url_count ?? "—"}</td>
+                    <td className="pr-2 text-xs">{h.resolves === false ? "no DNS" : (h.root_status ?? "n/a")}</td>
+                    <td className="pr-2 text-xs">{h.robots_status ?? "n/a"}</td>
+                    <td className="pr-2 text-xs">{h.sitemap_url_count ?? "n/a"}</td>
                     <td className="pr-2 text-xs text-uncc-ink/70">{h.exclude_reason ?? ""}</td>
                   </tr>
                 ))}
@@ -333,7 +334,7 @@ function EntitiesStep({ view, reloadSite, setMsg }: { view: SiteView; reloadSite
                     <td className="py-1">{c.source}</td>
                     <td>{c.field}</td>
                     <td>
-                      {c.observed?.value === null || c.observed?.value === undefined ? "—" : String(c.observed.value)}
+                      {c.observed?.value === null || c.observed?.value === undefined ? "n/a" : String(c.observed.value)}
                       {c.observed?.as_of ? <span className="text-xs text-uncc-ink/60"> (as of {c.observed.as_of})</span> : null}
                       {c.observed?.note ? <span className="block text-xs text-uncc-ink/60">{c.observed.note}</span> : null}
                     </td>
@@ -545,24 +546,23 @@ export default function OnboardingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <ScoutCard className="flex flex-wrap items-end justify-between gap-4" hover={false}>
         <div className="max-w-3xl space-y-1">
-          <h2 className="font-serif text-2xl font-semibold text-uncc-ink">Onboarding</h2>
-          <p className="text-sm leading-6 text-uncc-ink/75">
-            Enter a root URL. The platform finds the site&apos;s hosts, crawls the ones you include, proposes the institution&apos;s name,
-            aliases, colleges, programs and peers for you to confirm, and audits what AI crawlers can read.
-          </p>
+          <PageTitle
+            title="Onboarding"
+            subtitle="Enter a root URL. The platform finds hosts, crawls included ones, proposes names, aliases, colleges, programs and peers for confirmation, and audits what AI crawlers can read."
+          />
         </div>
         <div className="flex items-end gap-2">
           <div className="space-y-1">
             <Label htmlFor="root-url">Root URL</Label>
-            <Input id="root-url" className="h-9 w-64" placeholder="charlotte.edu" value={rootUrl} onChange={(e) => setRootUrl(e.target.value)} />
+            <Input id="root-url" className="h-9 w-64 rounded-scout-control border-scout-border" placeholder="charlotte.edu" value={rootUrl} onChange={(e) => setRootUrl(e.target.value)} />
           </div>
           <Button onClick={start} disabled={!rootUrl.trim()}>
             Start
           </Button>
         </div>
-      </div>
+      </ScoutCard>
       {error ? <ErrorState message={error} /> : null}
       {msg?.tone === "error" ? <ErrorState message={msg.text} /> : <Message msg={msg} />}
       {!sites ? <LoadingState label="Loading sites…" /> : null}

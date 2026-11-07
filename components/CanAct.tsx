@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { Role } from "@/lib/auth";
+import type { Role } from "@/lib/auth/roles";
 import { canMutate } from "@/lib/ui/rbac";
 
 export { canMutate, canApproveSpend } from "@/lib/ui/rbac";

@@ -71,7 +71,7 @@ export default function RecommendPage() {
               <dt className="text-xs uppercase tracking-wide text-uncc-ink/50">Search demand (0–100 index)</dt>
               <dd className="mt-1">
                 {b.demand
-                  ? `${b.demand.term}: US ${b.demand.us ?? "—"} · NC ${b.demand.nc ?? "—"} · SC ${b.demand.sc ?? "—"}${
+                  ? `${b.demand.term}: US ${b.demand.us ?? "n/a"} · NC ${b.demand.nc ?? "n/a"} · SC ${b.demand.sc ?? "n/a"}${
                       b.demand.rising.length ? `. Rising: ${b.demand.rising.join(", ")}` : ""
                     }`
                   : "Fetch the Demand pack to attach Trends to this brief."}

@@ -1,8 +1,8 @@
-# UNC Charlotte AI Visibility Platform
+# Scout
 
-Local measurement instrument for how AI answer engines describe UNC Charlotte, and why. Campaigns (the original Energy work is the first one) each own their prompts, engines, regions, and personas.
+**Scouting what AI says about us.** Local measurement instrument for how AI answer engines describe an institution (default org: UNC Charlotte), and why. Campaigns each own their prompts, engines, regions, and personas.
 
-This is not a marketing page. Correctness first. The archive of raw answers, raw judge JSON, and raw provider JSON is the asset, and it is immutable.
+This is not a marketing page. Correctness first. The archive of raw answers, raw judge JSON, and raw provider JSON is the asset, and it is immutable. Brand assets live in `public/brand/`.
 
 Plan and rules: `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`. Phase prompts: `docs/prompts/`. Changes: `docs/CHANGELOG.md`.
 

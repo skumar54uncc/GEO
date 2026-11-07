@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { Engine, Runner } from "@/lib/capture/types";
 import type { Db } from "@/lib/db/pg/client";
 import { campaigns, draws, mentions, personas, prompts, scans, judgeRuns } from "@/lib/db/pg/schema";
+import { personaTaxonomyLabel } from "@/lib/ui/labels";
 
 export type AnswerListItem = {
   drawId: string;
@@ -18,6 +19,7 @@ export type AnswerListItem = {
   status: string;
   personaKey: string | null;
   personaLabel: string | null;
+  drawIndex: number;
 };
 
 export async function listCampaignAnswers(
@@ -56,8 +58,8 @@ export async function listCampaignAnswers(
     .innerJoin(prompts, eq(prompts.id, draws.promptId))
     .leftJoin(personas, eq(personas.id, prompts.personaId))
     .where(and(eq(draws.scanId, scanId), eq(draws.status, "ok")))
-    .orderBy(desc(draws.capturedAt))
-    .limit(opts.limit ?? 100);
+    .orderBy(asc(prompts.text), asc(draws.engine), asc(draws.drawIndex))
+    .limit(opts.limit ?? 2000);
 
   const out: AnswerListItem[] = [];
   for (const row of rows) {
@@ -90,7 +92,8 @@ export async function listCampaignAnswers(
       mentionedBrand,
       status: row.draw.status,
       personaKey: row.personaKey,
-      personaLabel: row.personaName,
+      personaLabel: personaTaxonomyLabel(row.personaKey, row.personaName),
+      drawIndex: row.draw.drawIndex,
     });
   }
   return { answers: out, scanId };

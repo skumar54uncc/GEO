@@ -5,9 +5,10 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ChartCaption, HowMeasured } from "@/components/HowMeasured";
 import { EmptyState, ErrorState, LoadingState, PartialDataNotice } from "@/components/PageStates";
+import { PageTitle } from "@/components/scout/primitives";
 import { fidelityFor } from "@/lib/capture/types";
 import { ENGINE_INDEX } from "@/lib/metrics/indexes";
-import { enginePlain, runnerPlain } from "@/lib/ui/labels";
+import { enginePlain, runnerPlain, searchIndexPlain, sourceClassPlain } from "@/lib/ui/labels";
 
 const ENGINES = ["chatgpt", "claude", "gemini", "perplexity", "google_aio", "google_ai_mode"] as const;
 const RUNNERS = ["ui_provider", "serp_provider", "api_search", "api_parametric", "manual_paste"] as const;
@@ -58,20 +59,23 @@ export default function CitationsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Citations · Scout";
+  }, []);
+
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs uppercase tracking-wide text-uncc-ink/60">
-          <Link href={`/campaigns/${campaignId}/dashboard`} className="underline">
+        <p className="text-xs uppercase tracking-wide text-scout-muted">
+          <Link href={`/campaigns/${campaignId}/dashboard`} className="font-medium text-scout-brand underline">
             Campaign
           </Link>{" "}
-          · Citations &amp; Off-site
+          · Citations &amp; off-site
         </p>
-        <h1 className="font-serif text-3xl font-semibold">Citations &amp; Off-site</h1>
-        <p className="mt-2 max-w-2xl text-sm text-uncc-ink/75">
-          Top cited domains and source types for one engine and collection method at a time. Chat engines and Google
-          surfaces are never mixed.
-        </p>
+        <PageTitle
+          title="Citations"
+          subtitle="Top cited domains and source types for one engine and collection method at a time. Chat engines and Google surfaces are never mixed."
+        />
       </header>
 
       <div className="flex flex-wrap gap-3 text-sm">
@@ -108,16 +112,16 @@ export default function CitationsPage() {
       {!loading && !error && data && data.draws > 0 ? (
         <>
           <PartialDataNotice>
-            Showing {enginePlain(engine)} only, {runnerPlain(runner)}. Index: {index}.
+            Showing {enginePlain(engine)} only, {runnerPlain(runner)}. Index: {searchIndexPlain(index)}.
           </PartialDataNotice>
           <ChartCaption context={{ engine, runner, fidelity, n: data.draws }} />
           <HowMeasured context={{ engine, runner, fidelity, n: data.draws }} />
 
-          <section className="rounded border border-uncc-rule bg-white p-4">
-            <h2 className="font-serif text-lg font-semibold">Top cited domains</h2>
+          <section className="rounded-scout border border-scout-border bg-scout-card p-4 shadow-scout">
+            <h2 className="text-scout-card text-scout-text">Top cited domains</h2>
             <table className="mt-2 w-full text-left text-sm">
               <caption className="sr-only">Top cited domains with counts</caption>
-              <thead className="text-xs uppercase text-uncc-ink/60">
+              <thead className="bg-scout-page text-xs uppercase text-scout-muted">
                 <tr>
                   <th className="py-1">Domain</th>
                   <th>Citations</th>
@@ -138,12 +142,12 @@ export default function CitationsPage() {
             </table>
           </section>
 
-          <section className="rounded border border-uncc-rule bg-white p-4">
-            <h2 className="font-serif text-lg font-semibold">Source types</h2>
+          <section className="rounded-scout border border-scout-border bg-scout-card p-4 shadow-scout">
+            <h2 className="text-scout-card text-scout-text">Source types</h2>
             <ul className="mt-2 space-y-1 text-sm">
               {(data.sourceClassMix ?? []).map((s) => (
                 <li key={s.sourceClass}>
-                  <span className="font-mono text-xs">{s.sourceClass}</span>: {s.citations} citations (n={s.n})
+                  <span className="font-medium">{sourceClassPlain(s.sourceClass)}</span>: {s.citations} citations (n={s.n})
                   {s.rate !== null ? ` · ${(s.rate * 100).toFixed(1)}%` : ""}
                 </li>
               ))}

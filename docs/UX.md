@@ -59,25 +59,26 @@ Viewer controls are absent or clearly disabled with “Leadership access is read
 ```text
 Skip to main content
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [Organization mark] GEO  [Organization ▾] [Campaign ▾]   [?] [User]│
+│ Outside chrome (#E9EEF3) · window with soft shadow                   │
 ├──────────────┬───────────────────────────────────────────────────────┤
-│ Overview     │ [DEMO DATA, not real results — when demo org]        │
-│ Campaigns    │ Breadcrumbs                         Page actions      │
-│ Prompts      │ Page title and plain-language purpose                │
-│ Answers      │ Date / scan / runner context                          │
-│ Citations    │ Main content                                         │
-│ Gaps         │                                                       │
-│ Strategy     │                                                       │
-│ Site Audit   │                                                       │
-│ Budget       │                                                       │
-│ Settings     │                                                       │
+│ Scout mark   │ Greeting + “what AI said about <org>”                 │
+│ + tagline    │ Campaign · Alerts · Scan · Download                   │
+│ ───────────  │ [DEMO DATA banner when demo org]                      │
+│ Search (/)   │ Page title · Scout                                    │
+│ Insight…     │ Main content (cards, KPIs, tables)                    │
+│ Content…     │                                                       │
+│ Settings…    │                                                       │
+│ Account card │                                                       │
+│ Open budget  │                                                       │
 └──────────────┴───────────────────────────────────────────────────────┘
 ```
 
-- The left navigation collapses to a labeled menu at narrow widths. It preserves keyboard order and does not rely on icons alone.
-- The selected destination uses text, weight, and a visible indicator, not color alone.
-- The user menu shows name, role in plain language, sign out, and session status.
-- The page header owns exports, create actions, and “How this is measured”; global context does not move when data loads.
+Product name is **Scout** (“Scouting what AI says about us”). Charlotte Green is an accent; Niner Gold is logo-only and never text. Page titles use “`<Page> · Scout`”.
+
+- The left navigation (270px) collapses to icons below 1280px and becomes a drawer below 1024px. Keyboard order is preserved; icons alone are never the only cue when labels are visible.
+- The selected destination uses a gray pill with the icon in brand green, not color alone.
+- The account card shows org mark, name, role, and spend-versus-cap bars per active provider, plus Open budget.
+- The page header owns greeting, campaign switcher, alerts, scan selector, and download; global context does not move when data loads.
 
 ### Organization switcher
 

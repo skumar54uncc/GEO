@@ -15,10 +15,14 @@ import {
 } from "recharts";
 import { SURFACE_LABELS, type Surface } from "@/lib/types";
 
-const TARGET = "#005035";
-const MUTED = "#8aa193";
-const GOLD = "#A49665";
-const INK = "#14231c";
+const BRAND = "var(--brand)";
+const MUTED = "var(--text-muted)";
+const CHART = "var(--chart)";
+const CHART_2 = "var(--chart-2)";
+const CHART_4 = "var(--chart-4)";
+const CHART_5 = "var(--chart-5)";
+const GRID = "var(--chart-grid)";
+const INK = "var(--text)";
 
 export function VisibilityBySurface({
   data,
@@ -35,13 +39,13 @@ export function VisibilityBySurface({
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
-          <CartesianGrid stroke="#e7eee9" vertical={false} />
+          <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: INK }} interval={0} angle={-18} textAnchor="end" height={60} />
-          <YAxis unit="%" tick={{ fontSize: 11 }} domain={[0, 100]} />
+          <YAxis unit="%" tick={{ fontSize: 11, fill: INK }} domain={[0, 100]} />
           <Tooltip
             formatter={(v, _n, p) => [`${v}%`, (p.payload as { label: string }).label]}
           />
-          <Bar dataKey="rate" fill={TARGET} radius={[2, 2, 0, 0]} />
+          <Bar dataKey="rate" fill={BRAND} radius={[2, 2, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -60,7 +64,7 @@ export function ShareOfVoiceBar({
   label: string;
 }) {
   const data = [
-    { name: "UNC Charlotte", value: target, fill: TARGET },
+    { name: "UNC Charlotte", value: target, fill: BRAND },
     { name: "Competitors", value: competitors, fill: MUTED },
   ];
   return (
@@ -69,9 +73,9 @@ export function ShareOfVoiceBar({
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ left: 24, right: 16 }}>
-            <CartesianGrid stroke="#e7eee9" horizontal={false} />
-            <XAxis type="number" allowDecimals={false} />
-            <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
+            <CartesianGrid stroke={GRID} horizontal={false} />
+            <XAxis type="number" allowDecimals={false} tick={{ fill: INK }} />
+            <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: INK }} />
             <Tooltip />
             <Bar dataKey="value" radius={[0, 2, 2, 0]}>
               {data.map((d) => (
@@ -104,18 +108,18 @@ export function ConsistencyStacked({
     },
   ];
   const colors: Record<string, string> = {
-    "3 of 3": TARGET,
-    "2 of 3": "#3d7a62",
-    "1 of 3": GOLD,
-    "0 of 3": "#b9c4bd",
-    "Partial (<3 runs)": "#d9c58a",
+    "3 of 3": BRAND,
+    "2 of 3": CHART_2,
+    "1 of 3": CHART,
+    "0 of 3": CHART_4,
+    "Partial (<3 runs)": CHART_5,
   };
   return (
     <div className="h-48">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 20, right: 16 }}>
-          <XAxis type="number" allowDecimals={false} />
-          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+          <XAxis type="number" allowDecimals={false} tick={{ fill: INK }} />
+          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: INK }} />
           <Tooltip />
           <Legend />
           {Object.keys(colors).map((k) => (
@@ -137,13 +141,13 @@ export function CitedDomainsBar({
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 16, right: 16 }}>
-          <CartesianGrid stroke="#e7eee9" horizontal={false} />
-          <XAxis type="number" allowDecimals={false} />
-          <YAxis type="category" dataKey="domain" width={140} tick={{ fontSize: 11 }} />
+          <CartesianGrid stroke={GRID} horizontal={false} />
+          <XAxis type="number" allowDecimals={false} tick={{ fill: INK }} />
+          <YAxis type="category" dataKey="domain" width={140} tick={{ fontSize: 11, fill: INK }} />
           <Tooltip />
           <Bar dataKey="count" radius={[0, 2, 2, 0]}>
             {data.map((d) => (
-              <Cell key={d.domain} fill={d.is_target ? GOLD : TARGET} />
+              <Cell key={d.domain} fill={d.is_target ? BRAND : MUTED} />
             ))}
           </Bar>
         </BarChart>
@@ -168,13 +172,13 @@ export function TrendsInterestLine({
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height={256}>
         <LineChart data={series} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
-          <CartesianGrid stroke="#e7eee9" />
-          <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+          <CartesianGrid stroke={GRID} />
+          <XAxis dataKey="date" tick={{ fontSize: 10, fill: INK }} interval="preserveStartEnd" />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="us" name="United States" stroke={TARGET} dot={false} strokeWidth={2} />
-          <Line type="monotone" dataKey="nc" name="North Carolina" stroke={GOLD} dot={false} strokeWidth={2} />
+          <Line type="monotone" dataKey="us" name="United States" stroke={BRAND} dot={false} strokeWidth={2} />
+          <Line type="monotone" dataKey="nc" name="North Carolina" stroke={CHART} dot={false} strokeWidth={2} />
           <Line type="monotone" dataKey="sc" name="South Carolina" stroke={MUTED} dot={false} strokeWidth={2} />
         </LineChart>
       </ResponsiveContainer>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { PageTitle, ScoutCard } from "@/components/scout/primitives";
 import { Badge } from "@/components/ui/card";
 import type { Role } from "@/lib/auth";
 
@@ -50,6 +51,10 @@ export default function SettingsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    document.title = "Settings · Scout";
+  }, []);
+
   if (error) return <ErrorState message={error} />;
   if (!me || !providers) return <LoadingState label="Loading settings…" />;
 
@@ -58,27 +63,26 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-uncc-green">Settings</p>
-        <h1 className="font-serif text-3xl font-semibold">Platform settings</h1>
-        <p className="mt-2 max-w-2xl text-uncc-ink/75">
-          Providers, budgets, schedules, evaluation quality, and users. Signed in as {audience} ({me.user?.role}).
-        </p>
+        <PageTitle
+          title="Settings"
+          subtitle={`Platform settings — providers, budgets, schedules, evaluation quality, and users. Signed in as ${audience} (${me.user?.role}).`}
+        />
       </header>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="tokens-title">
+      <ScoutCard>
         <h2 id="tokens-title" className="font-serif text-xl font-semibold">
           API tokens
         </h2>
-        <p className="mt-2 text-sm text-uncc-ink/75">Deferred — the local pilot does not need them.</p>
-      </section>
+        <p className="mt-2 text-sm text-scout-muted">Deferred. The local pilot does not need them.</p>
+      </ScoutCard>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="providers-title">
+      <ScoutCard>
         <h2 id="providers-title" className="font-serif text-xl font-semibold">
           Providers
         </h2>
         <p className="mt-1 text-sm text-uncc-ink/70">
           Connection state and caps. Secret values are never shown.{" "}
-          <Link href="/settings/providers" className="text-uncc-green underline">
+          <Link href="/settings/providers" className="font-medium text-scout-brand underline">
             Provider detail
           </Link>
         </p>
@@ -89,7 +93,7 @@ export default function SettingsPage() {
         ) : (
           <table className="mt-3 w-full text-left text-sm">
             <caption className="sr-only">Provider connection status</caption>
-            <thead className="text-xs uppercase text-uncc-ink/60">
+            <thead className="bg-scout-page text-xs uppercase text-scout-muted">
               <tr>
                 <th className="py-1">Provider</th>
                 <th>Status</th>
@@ -111,33 +115,33 @@ export default function SettingsPage() {
             </tbody>
           </table>
         )}
-      </section>
+      </ScoutCard>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="demand-title">
+      <ScoutCard>
         <h2 id="demand-title" className="font-serif text-xl font-semibold">
           Demand sources
         </h2>
         <p className="mt-2 text-sm text-uncc-ink/75">
           Trends, Search Console, PAA, autocomplete, Exa, keywords, and LLM Mentions. Missing keys show as not connected.
         </p>
-        <Link href="/settings/demand" className="mt-4 inline-block text-uncc-green underline">
+        <Link href="/settings/demand" className="mt-4 inline-block font-medium text-scout-brand underline">
           View demand connection status
         </Link>
-      </section>
+      </ScoutCard>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="budget-title">
+      <ScoutCard>
         <h2 id="budget-title" className="font-serif text-xl font-semibold">
           Budgets &amp; funding
         </h2>
         <p className="mt-2 text-sm text-uncc-ink/75">
           Pilot and steady-state estimates, spend, caps, and stop-loss live on the Budget page.
         </p>
-        <Link href="/budget" className="mt-4 inline-block text-uncc-green underline" data-testid="settings-budget-link">
+        <Link href="/budget" className="mt-4 inline-block font-medium text-scout-brand underline" data-testid="settings-budget-link">
           Open Budget &amp; Funding
         </Link>
-      </section>
+      </ScoutCard>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="users-title">
+      <ScoutCard>
         <h2 id="users-title" className="font-serif text-xl font-semibold">
           Users &amp; roles
         </h2>
@@ -159,16 +163,19 @@ export default function SettingsPage() {
         {me.user?.role === "viewer" ? (
           <p className="mt-3 text-sm text-uncc-ink/60">Leadership access is read-only. User management is an admin action.</p>
         ) : null}
-      </section>
+      </ScoutCard>
 
-      <section className="rounded border border-uncc-rule bg-white p-6" aria-labelledby="eval-title">
+      <ScoutCard>
         <h2 id="eval-title" className="font-serif text-xl font-semibold">
           Evaluation quality
         </h2>
         <p className="mt-2 text-sm text-uncc-ink/75">
           Judge agreement scores against the gold set will appear here after evaluation runs. See docs/EVALS.md.
         </p>
-      </section>
+        <Link href="/settings/gold-labels" className="mt-4 inline-block font-medium text-scout-brand underline">
+          Pull gold-label sample (50 random draws)
+        </Link>
+      </ScoutCard>
     </div>
   );
 }

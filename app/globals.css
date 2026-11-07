@@ -4,10 +4,106 @@
 
 :root {
   color-scheme: light;
-  --org-primary: #005035;
-  --org-accent: #a49665;
-  --font-sans: Arial, "Arial Narrow", system-ui, sans-serif;
-  --font-serif: Cambria, Georgia, "Times New Roman", serif;
+  /* Scout design tokens (from scout-overview-v2.html). Never use gold as text. */
+  --bg-app: #e9eef3;
+  --bg-page: #fafbfc;
+  --bg-card: #ffffff;
+  --bg-sidebar-from: #ffffff;
+  --bg-sidebar-via: #fbf9f7;
+  --bg-sidebar-to: #f8f4f1;
+  --border: #eef0f3;
+  --border-input: #e5e7eb;
+  --border-nav: #f0f1f4;
+  --text: #111827;
+  /* Darkened from #6B7280 so captions/banners pass WCAG AA on --bg-page / cards. */
+  --text-muted: #4b5563;
+  --text-nav: #1f2937;
+  --text-nav-icon: #4b5563;
+  --nav-active-bg: #f1f2f4;
+  --chart: #3b82f6;
+  --chart-fill-from: #93b8fb;
+  --chart-fill-to: #dce8fe;
+  /* Secondary chart series (never use gold for text) */
+  --chart-2: #3d7a62;
+  --chart-3: #64748b;
+  --chart-4: #94a3b8;
+  --chart-5: #cbd5e1;
+  --chart-grid: #e7eee9;
+  --brand: #005035;
+  --brand-accent: #a49665;
+  --ink-button: #111827;
+  --ink-button-fg: #ffffff;
+  --tile-blue-bg: #eaf1ff;
+  /* Darkened for small UI labels; icon tiles still read clearly on --tile-blue-bg. */
+  --tile-blue-fg: #1d4ed8;
+  --tile-green-bg: #eaf7ee;
+  --tile-green-fg: #1e9e57;
+  --tile-amber-bg: #fff6e5;
+  --tile-amber-fg: #e09500;
+  --tile-purple-bg: #f3ecff;
+  --tile-purple-fg: #8b5cf6;
+  --intent-comparison-bg: #eaf1ff;
+  --intent-comparison-fg: #2f5fd0;
+  --intent-discovery-bg: #eaf7ee;
+  --intent-discovery-fg: #16804a;
+  --intent-evaluation-bg: #fff6e5;
+  --intent-evaluation-fg: #a16207;
+  --intent-decision-bg: #f3ecff;
+  --intent-decision-fg: #6d3fc7;
+  --status-gain-bg: #eaf7ee;
+  --status-gain-fg: #16804a;
+  --status-noise-bg: #f3f4f6;
+  --status-noise-fg: #4b5563;
+  --status-decline-bg: #fdecec;
+  --status-decline-fg: #b42318;
+  --alert-green: #1e9e57;
+  --alert-red: #e5484d;
+  --alert-amber: #f0a500;
+  --spend-amber: #f0b33c;
+  --demo-bg: #fff7e6;
+  --demo-border: #fcd9a0;
+  --demo-fg: #6b4208;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-window: 0 20px 50px rgba(15, 23, 42, 0.1);
+  --shadow-hover: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --radius-card: 16px;
+  --radius-control: 11px;
+  --radius-pill: 999px;
+  --sidebar-width: 270px;
+  --org-primary: var(--brand);
+  --org-accent: var(--brand-accent);
+  --font-sans: "Inter", "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-serif: "Inter", "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif;
+}
+
+.dark {
+  color-scheme: dark;
+  --chart-grid: #2a3441;
+  --chart-3: #64748b;
+  --chart-4: #475569;
+  --chart-5: #334155;
+  --bg-app: #0f1419;
+  --bg-page: #151b22;
+  --bg-card: #1c2430;
+  --bg-sidebar-from: #1a2129;
+  --bg-sidebar-via: #1a2129;
+  --bg-sidebar-to: #161c24;
+  --border: #2a3441;
+  --border-input: #3a4556;
+  --border-nav: #2a3441;
+  --text: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-nav: #e5e7eb;
+  --text-nav-icon: #9ca3af;
+  --nav-active-bg: #243041;
+  --ink-button: #f3f4f6;
+  --ink-button-fg: #111827;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-window: 0 20px 50px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --demo-bg: #3a2e14;
+  --demo-border: #92680a;
+  --demo-fg: #fcd9a0;
 }
 
 html,
@@ -16,9 +112,11 @@ body {
 }
 
 body {
-  background: #f6f4ef;
-  color: #14231c;
+  background: var(--bg-app);
+  color: var(--text);
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
   margin: 0;
 }
 
@@ -27,158 +125,93 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--org-accent);
-  outline-offset: 3px;
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .skip-link {
-  background: white;
-  color: #14231c;
+  background: var(--bg-card);
+  color: var(--text);
   left: 1rem;
   padding: 0.75rem 1rem;
   position: fixed;
   top: -5rem;
   z-index: 100;
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-card);
 }
 
 .skip-link:focus {
   top: 1rem;
 }
 
-.global-header {
-  align-items: center;
-  background: white;
-  border-bottom: 1px solid #d5ddd7;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  min-height: 4.5rem;
-  padding: 0.75rem 1.5rem;
-}
-
-.product-name {
-  color: var(--org-primary);
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.context-control {
-  display: grid;
-  font-size: 0.75rem;
-  gap: 0.25rem;
-}
-
-.context-control select,
-.campaign-context button {
-  border: 1px solid #9aa79f;
-  border-radius: 0.25rem;
-  min-height: 2.5rem;
-  padding: 0.4rem 0.6rem;
-}
-
-.campaign-context,
-.user-context {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 0.8rem;
-  gap: 0.5rem;
-}
-
-.user-context {
-  margin-left: auto;
-}
-
-.user-context button {
-  text-decoration: underline;
-}
-
 .demo-banner {
-  background: #fff3cd;
-  border-bottom: 2px solid #7a5a00;
-  color: #392b00;
-  font-weight: 700;
-  padding: 0.75rem 1.5rem;
-  text-align: center;
-}
-
-.shell-grid {
-  display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr);
-  min-height: calc(100vh - 4.5rem);
-}
-
-.primary-nav {
-  background: white;
-  border-right: 1px solid #d5ddd7;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1.5rem 1rem;
-}
-
-.nav-heading {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.5rem;
-  text-transform: uppercase;
-}
-
-.primary-nav a,
-.primary-nav span {
-  border-left: 4px solid transparent;
-  color: #26362e;
-  min-height: 2.75rem;
-  padding: 0.65rem 0.75rem;
-  text-decoration: none;
-}
-
-.primary-nav a:hover {
-  background: #eef3ef;
-}
-
-.primary-nav a[aria-current="page"] {
-  border-left-color: var(--org-primary);
-  font-weight: 700;
-}
-
-.primary-nav span[aria-disabled="true"] {
-  /* AA for small "Unavailable" label on white (≥4.5:1). */
-  color: #4a544e;
-}
-
-.primary-nav small {
-  display: block;
-  font-size: 0.65rem;
-}
-
-.main-content {
-  margin: 0 auto;
-  max-width: 80rem;
-  padding: 2rem 1.5rem;
+  background: var(--demo-bg);
+  border: 1px solid var(--demo-border);
+  border-radius: 9px;
+  color: var(--demo-fg);
+  font-size: 11.5px;
+  font-weight: 500;
+  margin: 14px 0 0;
   width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* PageStates / Scout: loading skeleton shimmer */
+@keyframes scout-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--border);
+  border-radius: var(--radius-control);
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--bg-card) 55%, transparent),
+    transparent
+  );
+  animation: scout-shimmer 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+  }
 }
 
 .read-only-notice {
-  border-left: 4px solid var(--org-accent);
+  border-left: 4px solid var(--brand);
   margin: 0 0 1rem;
   padding: 0.5rem 0.75rem;
+  font-size: 13.5px;
+  color: var(--text);
+  font-weight: 500;
 }
 
-/* Answer Explorer: brand vs competitor highlights use pattern + label, not color alone. */
+/* Answer Explorer highlights */
 mark.mention-brand {
-  background: #dcefe4;
-  border-bottom: 2px solid var(--org-primary);
+  background: var(--tile-green-bg);
+  border-bottom: 2px solid var(--brand);
   font-weight: 600;
   padding: 0 0.1em;
 }
 mark.mention-competitor,
 mark.mention-peer {
-  background: #f4f0e3;
-  border-bottom: 2px dashed var(--org-accent);
+  background: var(--tile-amber-bg);
+  border-bottom: 2px dashed var(--tile-amber-fg);
   font-style: italic;
   padding: 0 0.1em;
 }
@@ -195,45 +228,88 @@ mark.mention-peer {
   width: 1px;
 }
 
-/*
- * Tailwind /60 and /50 on #14231c against paper/white miss WCAG AA at 12px.
- * Bump those utility classes to AA-safe muted ink (~#4a544e ≈ 7:1 on white).
- */
+/* Motion */
+@keyframes scout-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes scout-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.scout-rise {
+  animation: scout-rise 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.scout-col {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: scout-grow 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scout-rise,
+  .scout-col,
+  .scout-hover-lift {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.scout-hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.scout-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scout-hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* Legacy uncc-* utilities map onto Scout tokens so older screens inherit the system. */
+.text-uncc-green {
+  color: var(--brand) !important;
+}
+.text-uncc-ink {
+  color: var(--text) !important;
+}
 .text-uncc-ink\/50,
-.text-uncc-ink\/60 {
-  color: #4a544e !important;
+.text-uncc-ink\/60,
+.text-uncc-ink\/70,
+.text-uncc-ink\/75 {
+  color: var(--text-muted) !important;
 }
-.text-uncc-ink\/70 {
-  color: #3f4842 !important;
+.bg-uncc-paper,
+.bg-uncc-mist {
+  background: var(--bg-page) !important;
 }
-
-@media (max-width: 1024px) {
-  .shell-grid {
-    grid-template-columns: 12rem minmax(0, 1fr);
-  }
-
-  .main-content {
-    padding: 1.5rem 1rem;
-  }
+.border-uncc-rule {
+  border-color: var(--border) !important;
 }
-
-@media (max-width: 760px) {
-  .user-context {
-    margin-left: 0;
-  }
-
-  .shell-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .primary-nav {
-    border-bottom: 1px solid #d5ddd7;
-    border-right: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .nav-heading {
-    grid-column: 1 / -1;
-  }
+.bg-uncc-green {
+  background: var(--brand) !important;
+}
+.text-uncc-gold {
+  /* Gold must never be used as text; fall back to muted. */
+  color: var(--text-muted) !important;
+}
+.border-uncc-gold {
+  border-color: var(--border-input) !important;
+}
+.border-uncc-green {
+  border-color: var(--brand) !important;
 }

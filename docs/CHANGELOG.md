@@ -1,5 +1,106 @@
 # Changelog
 
+## 2026-11-06: Pilot ready, pending funding and prompt approval
+
+- Wave 5 complete: stop-loss enforced in `runScan`, fixture rehearsal (`npm run pilot:rehearse`), `docs/PILOT_RUNBOOK.md`, `docs/FUNDING_BRIEF.md`, gold-label sample UI/API.
+- **Do not** freeze `energy-core-v1` or run paid capture until content-team approval and funding decision.
+- Budget one-page PDF remains `/api/budget/pdf` (estimator-backed).
+
+## 2026-11-06: Wave 4 closed (exit evidence)
+
+- `npx tsx scripts/audit-metrics.ts` → **25 checks, 0 mismatches**.
+- `tests/security/crossOrgApiRoutes.test.ts` walks every `app/api/**/route.ts` (61 files); skips unauthenticated `/api/health`, logout (session destroy), and citations aggregates echo heuristic — all other handlers probed with foreign-org ids.
+- `npm audit` (omit=dev snapshot varies): Next **14.2.35** still lists critical/high Image Optimizer / RSC DoS advisories; **not exploitable** in our setup (app binds `127.0.0.1`, no `images.remotePatterns`, no untrusted uploads). PostCSS highs are transitive via Next; fix requires Next 15/16 major. Dev-tool transitive highs (Lighthouse/Puppeteer/eslint) accepted.
+- **DNS rebinding deferral:** `guardedFetch` already resolves once and pins that address on the socket (`lib/site/net/ssrf.ts`). Deferred work is optional deeper hardening (re-pin every redirect hop against a malicious resolver in production egress) beyond the current pin-on-connect path — not required for localhost pilot.
+- **`.env.local` hygiene:** File is gitignored and was never committed in this Wave. Keys live only on the laptop. **Rotate any key that was ever printed in a shared log, pasted into chat, or committed on another branch.** No key material was printed by Wave 4/5 scripts in this closeout; if earlier sessions logged provider secrets, rotate those provider keys in the vendor consoles.
+
+## 2026-11-06: Wave 5 in progress (pilot readiness)
+
+- **Docs:** `docs/PILOT_RUNBOOK.md`, `docs/FUNDING_BRIEF.md` (pilot upper **$12.888** from estimator).
+- **Rehearsal:** `npm run pilot:rehearse` (Demo University fixtures + fault modes).
+- **Gold-label pull:** Settings → Gold-label sample + `scripts/export-gold-label-sample.ts`.
+
+## 2026-11-06: Wave 4 e2e follow-up (suppression / RBAC / shell)
+
+- Client Role types import from `lib/auth/roles` (not server `lib/auth`) in AppShell / SessionRole / CanAct / rbac.
+- Viewer on legacy operator URLs: hard `window.location.replace("/")` so RBAC e2e always leaves the route.
+- Visibility: `ShowRawToggle` always at prompt-set card level for editors (not only inside headline cards).
+- Suppression e2e asserts on `metric-suppressed` text (no brittle `td` xpath).
+
+## 2026-11-06: Wave 4 implementers pass (security + UX)
+
+**Fixed (high)**
+
+- CSV strategy export: `csvEscape` prefixes cells starting with `=`, `+`, `-`, `@` to block formula injection; `tests/strategy/csvEscape.test.ts`.
+- `next.config.mjs`: `Content-Security-Policy`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Content-Type-Options: nosniff` on all routes (**production only** so `next dev` + Playwright keep working).
+- AppShell **Alerts** navigates to Overview `#alerts` and scrolls; **Download** opens `/api/budget/pdf` (printable budget) with clear labels.
+- Prompts table **Persona** uses `personaTaxonomyLabel` from `lib/ui/labels.ts` instead of raw `persona_key`.
+
+**Fixed (medium)**
+
+- `withRole`: unexpected handler errors return generic `{ error: "Something went wrong." }` (500); details logged with `console.error`.
+- `HowMeasured`: “technical id: {runner}” visible to editor/admin only when `SessionRoleProvider` is present; hidden from viewers (uses client-safe `lib/auth/roles.ts` so the shell does not bundle server auth).
+- AppShell: viewer redirect off legacy operator URLs no longer skips loading campaigns (restores `campaign-switcher` for e2e).
+- Citations: plain-language index labels (`searchIndexPlain`); `sourceClassPlain` for source type list.
+- Strategy: lever badges use `leverTypeToLabel` from `lib/gaps/display.ts`.
+- Budget vendor note: user-facing copy (no internal doc filenames).
+- Overview Questions table: `sr-only` `<caption>`.
+- AppShell icon rail: removed duplicate `sr-only` expand control (one focusable expand remains).
+- Dependencies: `next` **14.2.35**, `zod` **^4.6.6** (installed 4.6.7).
+- `GET /api/health`: returns `{ ok, backend }` only (no prompt/credit counts; no error strings on 503).
+
+**Remaining lows / accepted risk (reviews + audit)**
+
+- `.env.local` on disk (gitignored): rotate keys if shared; never commit (security review high → ops hygiene).
+- `npm audit`: **Next** and **PostCSS** still flagged critical/high in the advisory database for the 14.2.x line; **accept** until a planned major upgrade (Wave 4 exit asked for zero high/critical — unmet without Next 15/16). **Transitive highs** from **Lighthouse** / **Puppeteer** / **chromium-bidi** (nested **zod** &lt;4.6.6), **glob** via **eslint-config-next**, **esbuild** via **drizzle-kit**, **Crawlee**/**minimatch** tree: accept as dev-only / tooling.
+- DNS rebinding: full resolver hardening deferred; `lib/site/net/ssrf.ts` documents pin-on-connect expectation (security review).
+- Restore bundle timing in CI: ops follow-up (security review).
+- UX review lows: em dash copy polish; shell budget fetch failure silent; `/` search when icon rail; Overview Activity placeholder; site-audit route vs sitemap — unchanged this pass.
+- Statistics.md lows (Reviewer 1): unchanged this pass.
+- Citations aggregates echo of query `campaign_id` on empty results (security low).
+
+## 2026-11-06: Wave 4 Reviewer 2 (security report + tests)
+
+- `docs/reviews/security.md`: findings (IDOR/citations aggregates note, CSV formula injection, missing security headers, npm audit counts, health exposure, secrets hygiene, backups timing TBD, SSRF/DNS caveat).
+- `tests/security/crossOrgApiRoutes.test.ts`, `tests/security/viewerWriteRoutes.test.ts`: automated API probes (`npx vitest run tests/security`).
+
+## 2026-11-06: Wave 4 steps 0A–0C (metric display, questions tabs, copy)
+
+- **0A:** `MetricValue` / `MetricValueScout` centralize displayable suppression; `ShowRawToggle` + `SessionRoleProvider` / `MetricShowRawProvider` in `AppShell`. Overview, Visibility dashboard, and Competitors use them; visibility chart uses hatched columns when suppressed (`data-suppressed="1"`, no `data-rate` for viewers). Position and consistency cells use `displayable()` for k/n thresholds.
+- **0B:** `listOverviewQuestions` returns `tabCounts` and `hiddenBrandedCount`; Overview Questions tabs use counts; empty state with hidden branded prompts matches the required copy and button to include branded.
+- **0C:** Overview partial notice uses unjudged count when available; overview cards expose `unjudgedCount` and `scanStatus`. KPI captions use comma before `n=`.
+- Tests: `tests/phase9/viewerMetricSuppression.test.ts`, `tests/metrics/visibilityChart.test.ts`, `tests/overview/questionsTabCounts.test.ts`.
+
+## 2026-11-06: Phase 9B — Demo peers + stalled scans
+
+- Demo seed (`lib/demo/seedMarked.ts`): inserts five named competitors (NC State, UNC Chapel Hill, Duke, Clemson, Virginia Tech) with `.edu` domains and aliases; judge `mentions` include 1–2 competitor entities per draw on a deterministic hash so share of voice is not 100%; answer text varies more by draw (`drawIdx` / angle); citations skew owned vs competitor mix by engine while McNemar signal engines keep a stable two-citation shape. Demo teardown deletes competitor aliases/domains before competitor rows.
+- Stalled scans: `lib/scans/stalled.ts` (`STALL_AFTER_MS`, `isScanStalled`, `reconcileStalledScans`), `tests/scans/stalled.test.ts`, `scripts/reconcile-stalled-scans.ts` (same `DATABASE_URL` guard as seed script).
+
+## 2026-11-06: Wave 4 Step 0 (before reviewers)
+
+- 0A: `MetricValue` + `ShowRawToggle` (editors/admins only); hatched suppressed chart columns; viewer suppression test.
+- 0B: Questions `tabCounts` + `hiddenBrandedCount` empty state (“N prompts hidden as location-biased. Show them.”).
+- 0C: Partial copy uses unjudged count; metric captions use commas before `n=`.
+- 0D: Realistic location-neutral demo prompts; fictional peers only; list positions seeded; forbid-list test.
+- 0E: `lib/metrics/apiTypes.ts` + overview parse; `noImplicitAny` explicit; headlines no longer coerce missing promptsWon to 0.
+
+## 2026-11-06: Phase 9B review fixes (pre–Wave 4)
+
+- Overview chart reads `trend.series[].promptsWon` (gradient columns + whiskers); Questions table loads real prompts via `/overview-questions` (no placeholder); institutions from dashboard peers.
+- Single suppression rule: `lib/metrics/displayable.ts` used on Overview, Visibility, Competitors.
+- KPI badges: rate KPIs get significant / within noise / no previous scan; "Needs review" only on Accuracy.
+- Stalled scans: `lib/scans/stalled.ts` + reconcile script; legacy Energy Nov 3 → partial with `stalled: true`.
+- Demo: 5 named peers, competitor mentions, varied engine/campaign results; leadership display name Lauren.
+- Contrast: muted/demo text darkened; header switchers no truncation at 1440; Answers location-biased badge + Scout filters.
+
+## 2026-11-06: Phase 9B — Scout redesign
+
+- Brand: product name **Scout** (“Scouting what AI says about us”); Inter; tokens in `globals.css` + Tailwind; Charlotte Green accent; Niner Gold logo-only (never text); lucide-react icons; favicon/logo from `public/brand/`.
+- App shell: 270px sidebar with nav groups, search (`/`), account spend bars, Open budget; header greeting + campaign/alerts/scan/download; DEMO banner full width; icon rail &lt;1280px, drawer &lt;1024px.
+- Overview rebuilt to match `scout-overview-v2` layout using `/api/overview` + dashboard APIs only (engine chips, KPI cards, visibility chart with whiskers, top engine track, questions table, activity/alerts). KPI gain badge only via `kpiStatusFromComparison` when McNemar is significant.
+- Remaining screens restyled to Scout cards/tables/pills; new Competitors page; motion (Framer + CSS) with `prefers-reduced-motion` off-switch.
+- Tests: no raw hex in app/components, no blended visibility index, within-noise KPI fixture, reduced-motion hooks.
+
 ## 2026-11-06: Phase 9 screenshot review round 2 (pre–Wave 4)
 
 - Budget: per-provider pilot/monthly shares from primary route plan only; fallback / calibration / parity are $0 unless scheduled. One role label per row (DataForSEO active; SerpAPI and Local SERP parity check only; Perplexity fallback only; OpenAI/Anthropic/Gemini calibration only; Bright Data not used, blocked by IT). Steady state as core $/mo, persona $/mo (quarterly ÷ 3), total $/mo, total $/yr. Vendor table summary row: "This platform, upper estimate: $X/mo, $Y/yr".

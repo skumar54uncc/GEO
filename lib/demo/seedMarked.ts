@@ -13,6 +13,10 @@ import {
   brands,
   campaigns,
   citations,
+  claims,
+  competitorAliases,
+  competitorDomains,
+  competitors,
   costLedger,
   draws,
   judgeRuns,
@@ -28,61 +32,40 @@ import { freezePromptSet } from "@/lib/promptSets";
 
 const DEMO_ORG_SLUG = "demo-university-leadership";
 
-const CAMPAIGN_SEED_SPECS = [
-  {
-    name: "Energy",
-    pillar: "Energy",
-    prompts: [
-      "Which universities near Charlotte have strong renewable energy research programs?",
-      "How do North Carolina public universities compare on solar and grid research?",
-      "What graduate pathways exist for someone interested in clean energy policy?",
-      "Which schools partner with industry on battery and storage research?",
-      "Where can I find faculty expertise on microgrids and distribution systems?",
-      "What undergraduate tracks blend electrical engineering with sustainability?",
-      "Which universities publish frequently on energy equity and community impact?",
-      "How should I compare energy-related labs when shortlisting schools?",
-      "What funding and fellowship options exist for energy-focused PhD students?",
-      "Where can employers find energy research collaboration opportunities at a university?",
-    ],
-  },
-  {
-    name: "AI",
-    pillar: "AI",
-    prompts: [
-      "Which universities offer applied AI programs that emphasize responsible use?",
-      "How do I evaluate a university’s AI research strength versus peer schools?",
-      "What should a prospective student ask about AI faculty and lab resources?",
-      "Which public universities in the region highlight AI in healthcare applications?",
-      "Where can I learn about industry partnerships around large language models?",
-      "What undergraduate courses prepare students for AI engineering careers?",
-      "How do universities disclose AI-related policies for students and researchers?",
-      "Which schools combine AI with robotics or autonomous systems prominently?",
-      "What signals show a university is investing in AI infrastructure long term?",
-      "How do I find AI internship pipelines tied to a specific university?",
-    ],
-  },
-  {
-    name: "Internships",
-    pillar: "Internships",
-    prompts: [
-      "Which universities have career services that place students in strong internships?",
-      "How should I compare internship placement rates across similar universities?",
-      "What questions reveal internship quality beyond a headline employer list?",
-      "Which schools highlight co-op or internship requirements for certain majors?",
-      "Where can employers post internships that reach university talent pipelines?",
-      "How do regional universities connect students to Charlotte-area internships?",
-      "What signals show sustained employer relationships versus one-off postings?",
-      "Which universities help international students navigate internship eligibility?",
-      "How do I interpret internship outcomes published by a university?",
-      "What resources help a student turn an internship into a full-time offer?",
-    ],
-  },
+/** Canonical demo campaigns (names must match `CONTENT_TEAM_CAMPAIGNS`). */
+const CAMPAIGN_ORDER = ["Energy", "AI", "Internships"] as const;
+
+const PROMPTS_PER_CAMPAIGN = 30;
+const DRAWS_PER_CELL = 3;
+
+/** Primary measurement engines: 30 prompts × 3 draws × 6 engines = 540 draws per scan. */
+const DEMO_ENGINES = ["chatgpt", "gemini", "perplexity", "claude", "google_aio", "google_ai_mode"] as const satisfies readonly Engine[];
+
+/**
+ * Fictional peers only — never real IPEDS institutions with invented numbers.
+ * Kept in sync with `lib/demo/forbiddenRealInstitutions.ts` tests.
+ */
+export const DEMO_PEER_INSTITUTIONS = [
+  { name: "Coastal State University", domain: "coastal-state.example.test", aliases: ["Coastal State University", "Coastal State"] as const },
+  { name: "Piedmont Tech", domain: "piedmont-tech.example.test", aliases: ["Piedmont Tech", "Piedmont Technical University"] as const },
+  { name: "Blue Ridge University", domain: "blueridge-u.example.test", aliases: ["Blue Ridge University", "Blue Ridge"] as const },
+  { name: "Harbor College", domain: "harbor-college.example.test", aliases: ["Harbor College", "Harbor"] as const },
+  { name: "Summit State", domain: "summit-state.example.test", aliases: ["Summit State", "Summit State University"] as const },
 ] as const;
 
 type RouteInfo = { engine: Engine; runner: Runner; provider: string };
 
 function routeForEngine(engine: Engine): RouteInfo {
   return ROUTES[engine].primary;
+}
+
+function demoHash(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }
 
 function payloadSha(body: string, salt: string): string {
@@ -106,22 +89,314 @@ async function insertRawPayload(db: Db, body: string, salt: string): Promise<str
   return sha256;
 }
 
-function answerFor(engine: Engine, promptIdx: number, drawIdx: number, mentionBrand: boolean): string {
+function answerFor(opts: {
+  engine: Engine;
+  promptIdx: number;
+  drawIdx: number;
+  mentionBrand: boolean;
+  campaignName: string;
+  scanOrdinal: 1 | 2;
+  peerLines: string[];
+}): string {
+  const { engine, promptIdx, drawIdx, mentionBrand, campaignName, scanOrdinal, peerLines } = opts;
   const brand = mentionBrand ? "Demo University" : "several regional universities";
+  const toneSeed = demoHash(`${engine}|${campaignName}|${scanOrdinal}|${promptIdx}|${drawIdx}`);
+  const angle = ["overview", "comparison", "checklist", "timeline", "FAQ-style"][toneSeed % 5];
   const cite = mentionBrand
     ? "Official program pages on demo.example.test list credentials and contact points."
-    : "Third-party summaries on example.edu-review.test rarely list primary sources.";
+    : "Third-party summaries on peer.edu-review.test rarely list primary sources.";
+  const peerBlock =
+    peerLines.length > 0
+      ? `Named peers in this answer include ${peerLines.join(" and ")}; rankings and ordering vary by source.`
+      : "Peer comparisons use common public sources; ordering is not implied.";
   return [
-    `For this query (${engine}, draw ${drawIdx}), ${brand} is ${mentionBrand ? "often cited" : "not mentioned"} in typical assistant answers.`,
-    `${mentionBrand ? "Demo University" : "Peer schools"} appear in list-style responses alongside national references.`,
+    `In a typical ${angle} answer for this ${campaignName} question (${engine}), ${brand} is ${mentionBrand ? "often cited among regional options" : "not named among the leading options"}.`,
+    `${mentionBrand ? "Demo University" : "Several regional universities"} appear in list-style responses; phrasing differs across answers.`,
+    peerBlock,
     cite,
-    `Prompt context #${promptIdx + 1}; synthetic demo narrative for leadership review only.`,
   ].join(" ");
 }
 
 /**
- * Full leadership-review dataset for Demo University: campaigns, frozen sets, scans, draws (all ROUTES engines), judges, recs, strategy, ledger.
- * Idempotent: removes prior demo org data for slug `demo-university-leadership` or name ${DEMO_ORG_NAME} with is_demo before insert.
+ * Varying mention rates by engine and campaign (deterministic). Not used for the dedicated McNemar signal engines.
+ * `scanOrdinal` and stronger drawIdx weight reduce duplicate outcomes within the same prompt.
+ */
+function baseMentionBrand(
+  engine: Engine,
+  campaignName: string,
+  promptIdx: number,
+  drawIdx: number,
+  scanOrdinal: 1 | 2,
+): boolean {
+  const engineBias = DEMO_ENGINES.indexOf(engine as (typeof DEMO_ENGINES)[number]);
+  const campBias = campaignName === "Energy" ? 2 : campaignName === "AI" ? 5 : 3;
+  const x = (promptIdx * 11 + drawIdx * 17 + engineBias * 13 + campBias * 3 + scanOrdinal * 5) % 17;
+  return x < 10;
+}
+
+type McNemarSignal =
+  | { engine: Engine; kind: "improvement_first_k"; k: number }
+  | { engine: Engine; kind: "decline_first_k"; k: number };
+
+const MCNEMAR_SIGNAL_BY_CAMPAIGN: Record<(typeof CAMPAIGN_ORDER)[number], McNemarSignal> = {
+  Energy: { engine: "google_aio", kind: "improvement_first_k", k: 6 },
+  AI: { engine: "chatgpt", kind: "decline_first_k", k: 6 },
+  Internships: { engine: "perplexity", kind: "improvement_first_k", k: 6 },
+};
+
+function mentionBrandForDraw(opts: {
+  campaignName: (typeof CAMPAIGN_ORDER)[number];
+  engine: Engine;
+  scanOrdinal: 1 | 2;
+  promptIdx: number;
+  drawIdx: number;
+}): boolean {
+  const signal = MCNEMAR_SIGNAL_BY_CAMPAIGN[opts.campaignName];
+  if (signal && opts.engine === signal.engine) {
+    if (signal.kind === "improvement_first_k") {
+      if (opts.scanOrdinal === 1) return false;
+      return opts.promptIdx < signal.k;
+    }
+    if (signal.kind === "decline_first_k") {
+      if (opts.scanOrdinal === 1) return true;
+      return opts.promptIdx >= signal.k;
+    }
+  }
+  return baseMentionBrand(opts.engine, opts.campaignName, opts.promptIdx, opts.drawIdx, opts.scanOrdinal);
+}
+
+type SeededDemoPeer = { competitorId: string; domain: string; aliases: readonly [string, ...string[]] };
+
+/**
+ * Deterministic peer mentions: 1–2 competitors per draw, rotated by engine × campaign × prompt × draw × scan.
+ */
+function peerMentionsForDraw(
+  peerRows: readonly SeededDemoPeer[],
+  opts: {
+    engine: Engine;
+    campaignName: string;
+    scanOrdinal: 1 | 2;
+    promptIdx: number;
+    drawIdx: number;
+    mentionBrand: boolean;
+  },
+): Array<{ competitorId: string; domain: string; alias: string; line: string }> {
+  if (peerRows.length === 0) return [];
+  const h = demoHash(`${opts.engine}|${opts.campaignName}|${opts.scanOrdinal}|${opts.promptIdx}|${opts.drawIdx}|${opts.mentionBrand ? "1" : "0"}`);
+  const nPeers = 1 + (h % 2);
+  const engineBias = DEMO_ENGINES.indexOf(opts.engine as (typeof DEMO_ENGINES)[number]);
+  const campBias = opts.campaignName === "Energy" ? 1 : opts.campaignName === "AI" ? 4 : 2;
+  let start =
+    (h + engineBias * 3 + campBias * 7 + opts.promptIdx * 2 + opts.drawIdx * 5 + opts.scanOrdinal) %
+    peerRows.length;
+  const out: Array<{ competitorId: string; domain: string; alias: string; line: string }> = [];
+  for (let j = 0; j < nPeers; j++) {
+    const row = peerRows[(start + j) % peerRows.length]!;
+    const aliasPick = (h + j * 31 + engineBias) % row.aliases.length;
+    const alias = row.aliases[aliasPick]!;
+    out.push({
+      competitorId: row.competitorId,
+      domain: row.domain,
+      alias,
+      line: `${alias} is frequently referenced for program depth; see ${row.domain} for curriculum context.`,
+    });
+  }
+  const seen = new Set<string>();
+  return out.filter((m) => {
+    if (seen.has(m.competitorId)) return false;
+    seen.add(m.competitorId);
+    return true;
+  });
+}
+
+type CitationRow = { url: string; domain: string; sourceClass: "owned" | "gov" | "competitor" | "editorial"; position: number };
+
+/**
+ * Engine-skewed owned vs competitor citation mix so dashboards show different citation rates by engine.
+ * McNemar signal engines keep a stable two-citation shape (only domain/class mix shifts slightly).
+ */
+function citationsForDraw(opts: {
+  engine: Engine;
+  campaignName: string;
+  promptIdx: number;
+  peerDomain: string;
+  brandDomain: string;
+  isMcNemarSignalEngine: boolean;
+}): CitationRow[] {
+  const { engine, campaignName, promptIdx, peerDomain, brandDomain, isMcNemarSignalEngine } = opts;
+  const gov = { url: "https://example.gov/education/statistics", domain: "example.gov", sourceClass: "gov" as const, position: 2 };
+  const ed = { url: "https://news.demo-review.test/higher-ed", domain: "news.demo-review.test", sourceClass: "editorial" as const, position: 2 };
+
+  if (isMcNemarSignalEngine) {
+    const flip = promptIdx % 2 === 0;
+    if (flip) {
+      return [
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 },
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 2 },
+      ];
+    }
+    return [
+      { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 1 },
+      { url: `https://${brandDomain}/news`, domain: brandDomain, sourceClass: "owned", position: 2 },
+    ];
+  }
+
+  const rot = (demoHash(`${engine}|${campaignName}|${promptIdx}`) + DEMO_ENGINES.indexOf(engine as (typeof DEMO_ENGINES)[number])) % 6;
+  switch (engine) {
+    case "chatgpt":
+      if (rot % 3 === 0) return [{ url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 }, gov];
+      if (rot % 3 === 1) return [{ url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 1 }, ed];
+      return [
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 },
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 2 },
+        gov,
+      ];
+    case "gemini":
+      if (rot % 2 === 0)
+        return [
+          { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 1 },
+          { url: `https://${brandDomain}/facts`, domain: brandDomain, sourceClass: "owned", position: 2 },
+        ];
+      return [{ url: `https://${peerDomain}/facts`, domain: peerDomain, sourceClass: "competitor", position: 1 }, gov];
+    case "perplexity":
+      return [
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 },
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 2 },
+        { url: `https://${peerDomain}/admissions`, domain: peerDomain, sourceClass: "competitor", position: 3 },
+      ];
+    case "claude":
+      return [
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 1 },
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 2 },
+        ed,
+      ];
+    case "google_aio":
+      if (rot % 2 === 0) return [{ url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 }, gov];
+      return [
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 },
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 2 },
+      ];
+    case "google_ai_mode":
+      return [
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 1 },
+        { url: `https://${brandDomain}/facts`, domain: brandDomain, sourceClass: "owned", position: 2 },
+      ];
+    default:
+      return [
+        { url: `https://${brandDomain}/programs/overview`, domain: brandDomain, sourceClass: "owned", position: 1 },
+        { url: `https://${peerDomain}/programs`, domain: peerDomain, sourceClass: "competitor", position: 2 },
+      ];
+  }
+}
+
+/** Location-neutral question banks per campaign pillar (no brand, city, or "demo question N"). */
+const PROMPT_BANKS: Record<(typeof CAMPAIGN_ORDER)[number], readonly string[]> = {
+  AI: [
+    "Which universities in the Southeast are known for AI research?",
+    "Where can I study machine learning with strong industry partnerships?",
+    "What schools offer undergraduate AI programs with research labs?",
+    "Which universities publish open datasets for natural language processing?",
+    "Who leads in responsible AI curriculum for undergraduates?",
+    "What research universities partner with employers on AI internships?",
+    "Which schools have AI ethics centers that undergraduates can join?",
+    "Where do graduate students find applied AI projects with companies?",
+    "What universities combine computer science and public policy on AI?",
+    "Which Southeast universities host AI speaker series open to students?",
+    "Who offers a master's focused on AI systems engineering?",
+    "What schools are known for robotics and autonomous systems research?",
+    "Which universities help startups with AI commercialization support?",
+    "Where can a career switcher find an AI bootcamp affiliated with a university?",
+    "What institutions rank highly for faculty citations in machine learning?",
+    "Which universities run AI clinics that advise nonprofit organizations?",
+    "Who offers dual degrees in AI and business analytics?",
+    "What schools have GPU clusters available to graduate researchers?",
+    "Which universities publish annual AI research impact reports?",
+    "Where should a high school student look for AI summer research programs?",
+    "What universities partner with hospitals on clinical AI tools?",
+    "Which schools teach generative AI with clear academic integrity policies?",
+    "Who has a strong track record placing AI PhDs into industry labs?",
+    "What Southeast universities host hackathons focused on AI for good?",
+    "Which universities offer micro-credentials in machine learning?",
+    "Where can undergraduates join an AI research lab in their first year?",
+    "What schools are known for speech and language technology research?",
+    "Which universities collaborate on regional AI workforce alliances?",
+    "Who offers evening master's courses in applied AI for working adults?",
+    "What institutions publish open courseware for introductory AI?",
+  ],
+  Energy: [
+    "Which universities in the Southeast are known for electric grid research?",
+    "Where can I study energy systems with strong industry partnerships?",
+    "What schools offer master's programs in renewable energy engineering?",
+    "Which universities research battery storage and grid resilience?",
+    "Who partners with utilities on clean energy workforce programs?",
+    "What research universities host energy policy institutes?",
+    "Which schools have living laboratories for microgrid experiments?",
+    "Where do graduate students study offshore wind and coastal energy?",
+    "What universities publish open data on regional energy demand?",
+    "Which institutions train technicians for solar and storage installs?",
+    "Who offers dual degrees in energy engineering and public policy?",
+    "What schools research nuclear energy with strong safety curricula?",
+    "Which universities help communities plan for energy transitions?",
+    "Where can undergraduates join grid modernization research projects?",
+    "What Southeast universities host energy innovation incubators?",
+    "Which schools are known for power systems faculty and labs?",
+    "Who partners with national labs on energy storage materials?",
+    "What universities run extension programs on home energy efficiency?",
+    "Which institutions offer certificates in energy data analytics?",
+    "Where should policymakers look for university energy briefings?",
+    "What schools research hydrogen and alternative fuels?",
+    "Which universities host student competitions in energy design?",
+    "Who offers a PhD track focused on electric vehicle infrastructure?",
+    "What institutions publish annual clean energy outlook reports?",
+    "Which universities collaborate with rural co-ops on grid upgrades?",
+    "Where can career switchers find energy engineering master's options?",
+    "What schools teach building science alongside energy systems?",
+    "Which universities have strong industry advisory boards for energy?",
+    "Who runs summer institutes on climate and energy for teachers?",
+    "What Southeast universities are known for hydropower research?",
+  ],
+  Internships: [
+    "Which universities help students find paid internships in technology?",
+    "Where can undergraduates get co-op placements with regional employers?",
+    "What schools have strong career services for engineering internships?",
+    "Which universities partner with employers on summer research internships?",
+    "Who offers academic credit for structured internship programs?",
+    "What research universities place students in federal agency internships?",
+    "Which schools are known for first-generation student internship support?",
+    "Where can international students find CPT-friendly internship pathways?",
+    "What universities run internship fairs focused on public service careers?",
+    "Which institutions guarantee internship advising by the junior year?",
+    "Who partners with startups on semester-long internship residencies?",
+    "What schools help students find remote internships with mentoring?",
+    "Which universities publish internship outcome and wage reports?",
+    "Where do business students find consulting project internships?",
+    "What Southeast universities place students in energy sector internships?",
+    "Which schools offer scholarships that cover unpaid internship travel?",
+    "Who has alumni networks that actively recruit interns each summer?",
+    "What universities integrate internships into the AI curriculum?",
+    "Which institutions help transfer students catch up on internship search?",
+    "Where can graduate students find industry residencies related to research?",
+    "What schools run employer-sponsored apprenticeship-style programs?",
+    "Which universities host virtual internship prep workshops year-round?",
+    "Who partners with hospitals on clinical and health-admin internships?",
+    "What institutions place education majors in paid tutoring internships?",
+    "Which universities help students find policy internships in state capitals?",
+    "Where can arts students find museum and cultural internship placements?",
+    "What schools are known for engineering co-op completion rates?",
+    "Which universities offer micro-internships during winter term?",
+    "Who provides emergency funding when internships require relocation?",
+    "What Southeast universities track internship-to-full-time conversion?",
+  ],
+};
+
+function promptTextFor(campaignName: (typeof CAMPAIGN_ORDER)[number], _pillar: string, index: number): string {
+  const bank = PROMPT_BANKS[campaignName];
+  return bank[index % bank.length]!;
+}
+
+/**
+ * Full leadership-review dataset for Demo University: campaigns, frozen sets, 2 complete scans per campaign,
+ * 30×3×6 draws each, judges, citations, gap recommendations, strategy, ledger. Idempotent via `deleteAllDataForOrg`.
  */
 export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaignIds: string[] }> {
   const [bySlug] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.slug, DEMO_ORG_SLUG));
@@ -152,29 +427,43 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
   const regionId = region.id;
 
   const campaignIdByName: Record<string, string> = {};
-  const rows = await db
-    .select({ id: campaigns.id, name: campaigns.name })
-    .from(campaigns)
-    .where(eq(campaigns.orgId, org.id));
+  const rows = await db.select({ id: campaigns.id, name: campaigns.name }).from(campaigns).where(eq(campaigns.orgId, org.id));
   for (const r of rows) campaignIdByName[r.name] = r.id;
+
+  const seededPeers: SeededDemoPeer[] = [];
+  for (let i = 0; i < DEMO_PEER_INSTITUTIONS.length; i++) {
+    const peer = DEMO_PEER_INSTITUTIONS[i]!;
+    const [compRow] = await db
+      .insert(competitors)
+      .values({ orgId: org.id, name: peer.name, source: "manual", sortOrder: i })
+      .returning({ id: competitors.id });
+    for (let a = 0; a < peer.aliases.length; a++) {
+      await db.insert(competitorAliases).values({ competitorId: compRow.id, alias: peer.aliases[a]!, sortOrder: a });
+    }
+    await db.insert(competitorDomains).values({ competitorId: compRow.id, domain: peer.domain, sortOrder: 0 });
+    seededPeers.push({ competitorId: compRow.id, domain: peer.domain, aliases: peer.aliases });
+  }
 
   const allCampaignIds: string[] = [];
 
-  const engines = Object.keys(ROUTES) as Engine[];
-
-  for (const spec of CAMPAIGN_SEED_SPECS) {
+  for (const name of CAMPAIGN_ORDER) {
+    const spec = { name, pillar: name === "AI" ? "AI" : name === "Energy" ? "Energy" : "Internships" };
     const campaignId = campaignIdByName[spec.name];
     if (!campaignId) throw new Error(`Demo seed: campaign ${spec.name} missing after ensureContentTeamCampaigns`);
     allCampaignIds.push(campaignId);
 
+    // Pilot shape: 30 core (persona_id null) for budget/headline, plus the same 30 also usable as
+    // location-neutral measured prompts. Optional persona voice lives in later content-team imports.
     const insertedPromptIds: string[] = [];
-    for (let i = 0; i < spec.prompts.length; i++) {
-      const text = spec.prompts[i];
+    for (let i = 0; i < PROMPTS_PER_CAMPAIGN; i++) {
+      const text = promptTextFor(spec.name, spec.pillar, i);
       const [p] = await db
         .insert(prompts)
         .values({
           campaignId,
           text,
+          personaId: null,
+          branded: false,
           provenance: "synthesized",
           status: "approved",
           tags: [IMPORT_TAG, "demo_seed", `pillar:${spec.pillar}`, "estimate:series"],
@@ -185,148 +474,235 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
 
     const { set: frozenSet } = await freezePromptSet(db, org.id, campaignId);
 
-    const scanLabels = ["Demo leadership scan A", "Demo leadership scan B"] as const;
-    for (const scanName of scanLabels) {
+    const scanLabels = ["Leadership complete scan 1", "Leadership complete scan 2"] as const;
+    const scanMeta: Array<{ id: string; ordinal: 1 | 2 }> = [];
+
+    for (let si = 0; si < scanLabels.length; si++) {
       const [scan] = await db
         .insert(scans)
         .values({
           campaignId,
           promptSetId: frozenSet.id,
-          name: scanName,
+          name: scanLabels[si],
           kind: "scan",
           status: "complete",
           approvedAt: new Date(),
         })
         .returning({ id: scans.id });
+      scanMeta.push({ id: scan.id, ordinal: (si + 1) as 1 | 2 });
 
       for (let pIdx = 0; pIdx < insertedPromptIds.length; pIdx++) {
         const promptId = insertedPromptIds[pIdx];
-        const drawIndex = 1;
-        for (let ei = 0; ei < engines.length; ei++) {
-          const engine = engines[ei];
-          const route = routeForEngine(engine);
-          const runner = route.runner;
-          const searchUsed = runner === "api_search" ? true : null;
-          const mentionBrand = (pIdx + ei) % 4 !== 3;
-          const body = JSON.stringify({
-            engine,
-            runner,
-            provider: route.provider,
-            promptIndex: pIdx,
-            drawIndex,
-            demo: true,
-          });
-          const rawPayloadId = await insertRawPayload(db, body, `${scan.id}-${promptId}-${engine}-${drawIndex}`);
-
-          const answerText = answerFor(engine, pIdx, drawIndex, mentionBrand);
-          const [drawRow] = await db
-            .insert(draws)
-            .values({
-              scanId: scan.id,
-              promptId,
-              promptSetId: frozenSet.id,
+        for (let drawIndex = 1; drawIndex <= DRAWS_PER_CELL; drawIndex++) {
+          for (const engine of DEMO_ENGINES) {
+            const route = routeForEngine(engine);
+            const runner = route.runner;
+            const searchUsed = runner === "api_search" ? true : null;
+            const mentionBrand = mentionBrandForDraw({
+              campaignName: spec.name as (typeof CAMPAIGN_ORDER)[number],
+              engine,
+              scanOrdinal: scanMeta[si].ordinal,
+              promptIdx: pIdx,
+              drawIdx: drawIndex,
+            });
+            const signal = MCNEMAR_SIGNAL_BY_CAMPAIGN[spec.name as (typeof CAMPAIGN_ORDER)[number]];
+            const isMcNemarSignalEngine = Boolean(signal && engine === signal.engine);
+            const peerMentions = peerMentionsForDraw(seededPeers, {
+              engine,
+              campaignName: spec.name,
+              scanOrdinal: scanMeta[si].ordinal,
+              promptIdx: pIdx,
+              drawIdx: drawIndex,
+              mentionBrand,
+            });
+            const primaryPeerDomain = peerMentions[0]?.domain ?? seededPeers[0]!.domain;
+            const body = JSON.stringify({
               engine,
               runner,
-              fidelity: fidelityFor(runner),
               provider: route.provider,
-              modelBuild: "demo-seed-unknown",
-              regionId,
+              promptIndex: pIdx,
               drawIndex,
-              status: "ok",
-              answerText,
-              rawPayloadId,
-              capturedAt: new Date(),
-              searchUsed,
-              seedMarker: DEMO_SEED_MARKER,
-              costUnits: "1",
-              costUsd: "0.01",
-            })
-            .returning({ id: draws.id });
-
-          const domains =
-            ei % 2 === 0
-              ? [
-                  { url: "https://demo.example.test/programs/overview", domain: "demo.example.test", sourceClass: "owned" as const, position: 1 },
-                  { url: "https://example.gov/education/statistics", domain: "example.gov", sourceClass: "gov" as const, position: 2 },
-                ]
-              : [
-                  { url: "https://peer-university.edu/ai", domain: "peer-university.edu", sourceClass: "competitor" as const, position: 1 },
-                  { url: "https://news.example.test/charlotte-higher-ed-roundup", domain: "news.example.test", sourceClass: "editorial" as const, position: 2 },
-                ];
-          for (const c of domains) {
-            await db.insert(citations).values({
-              drawId: drawRow.id,
-              url: c.url,
-              domain: c.domain,
-              position: c.position,
-              linked: true,
-              sourceClass: c.sourceClass,
-              title: "Demo citation title",
+              scanOrdinal: scanMeta[si].ordinal,
+              demo: true,
             });
-          }
+            const rawPayloadId = await insertRawPayload(db, body, `${scan.id}-${promptId}-${engine}-${drawIndex}`);
 
-          const spanStart = mentionBrand ? answerText.indexOf("Demo University") : 0;
-          const spanEnd = mentionBrand ? spanStart + "Demo University".length : 0;
-          const [judgeRow] = await db
-            .insert(judgeRuns)
-            .values({
-              drawId: drawRow.id,
-              judgeModel: "demo_seed_judge",
-              judgePromptVersion: "v2-demo",
-              rawOutput: JSON.stringify({ demo: true, engine }),
-              parsed: { demo: true, brandPresent: mentionBrand },
-              sentiment: mentionBrand ? "positive" : "neutral",
-              sentimentSpanStart: mentionBrand ? spanStart : null,
-              sentimentSpanEnd: mentionBrand ? spanEnd : null,
-            })
-            .returning({ id: judgeRuns.id });
+            const answerText = answerFor({
+              engine,
+              promptIdx: pIdx,
+              drawIdx: drawIndex,
+              mentionBrand,
+              campaignName: spec.name,
+              scanOrdinal: scanMeta[si].ordinal,
+              peerLines: peerMentions.map((m) => m.line),
+            });
+            const [drawRow] = await db
+              .insert(draws)
+              .values({
+                scanId: scan.id,
+                promptId,
+                promptSetId: frozenSet.id,
+                engine,
+                runner,
+                fidelity: fidelityFor(runner),
+                provider: route.provider,
+                modelBuild: "demo-seed-unknown",
+                regionId,
+                drawIndex,
+                status: "ok",
+                answerText,
+                rawPayloadId,
+                capturedAt: new Date(),
+                searchUsed,
+                seedMarker: DEMO_SEED_MARKER,
+                costUnits: "1",
+                costUsd: "0.01",
+              })
+              .returning({ id: draws.id });
 
-          if (mentionBrand && spanStart >= 0) {
-            await db.insert(mentions).values({
+            const domains = citationsForDraw({
+              engine,
+              campaignName: spec.name,
+              promptIdx: pIdx,
+              peerDomain: primaryPeerDomain,
+              brandDomain: "demo.example.test",
+              isMcNemarSignalEngine,
+            });
+            for (const c of domains) {
+              await db.insert(citations).values({
+                drawId: drawRow.id,
+                url: c.url,
+                domain: c.domain,
+                position: c.position,
+                linked: true,
+                sourceClass: c.sourceClass,
+                title: "Demo citation title",
+              });
+            }
+
+            const brandSpanStart = mentionBrand ? answerText.indexOf("Demo University") : -1;
+            const brandSpanEnd = brandSpanStart >= 0 ? brandSpanStart + "Demo University".length : 0;
+            const firstPeerAlias = peerMentions[0]?.alias;
+            const peerSpanStart = firstPeerAlias ? answerText.indexOf(firstPeerAlias) : -1;
+            const peerSpanEnd = peerSpanStart >= 0 && firstPeerAlias ? peerSpanStart + firstPeerAlias.length : 0;
+            const sentimentSpanStart =
+              mentionBrand && brandSpanStart >= 0 ? brandSpanStart : peerSpanStart >= 0 ? peerSpanStart : null;
+            const sentimentSpanEnd =
+              mentionBrand && brandSpanStart >= 0 ? brandSpanEnd : peerSpanStart >= 0 ? peerSpanEnd : null;
+            const [judgeRow] = await db
+              .insert(judgeRuns)
+              .values({
+                drawId: drawRow.id,
+                judgeModel: "demo_seed_judge",
+                judgePromptVersion: "v2-demo",
+                rawOutput: JSON.stringify({ demo: true, engine }),
+                parsed: {
+                  demo: true,
+                  brandPresent: mentionBrand,
+                  peersNamed: peerMentions.map((m) => m.alias),
+                },
+                sentiment: mentionBrand ? "positive" : peerMentions.length ? "neutral" : "none",
+                sentimentSpanStart,
+                sentimentSpanEnd,
+              })
+              .returning({ id: judgeRuns.id });
+
+            // Ranked list positions (1-indexed) so Position metrics show values.
+            const listOrder: Array<{ entityType: "brand" | "competitor"; entityId: string; alias: string }> = [];
+            if (mentionBrand) listOrder.push({ entityType: "brand", entityId: brand.id, alias: "Demo University" });
+            for (const m of peerMentions) listOrder.push({ entityType: "competitor", entityId: m.competitorId, alias: m.alias });
+            // Rotate starting rank by draw so brand is not always #1 when present.
+            const rotate = (pIdx + drawIndex) % Math.max(1, listOrder.length);
+            const ranked = [...listOrder.slice(rotate), ...listOrder.slice(0, rotate)];
+
+            if (mentionBrand && brandSpanStart >= 0) {
+              const listPosition = ranked.findIndex((r) => r.entityType === "brand") + 1;
+              await db.insert(mentions).values({
+                judgeRunId: judgeRow.id,
+                entityType: "brand",
+                entityId: brand.id,
+                aliasMatched: "Demo University",
+                spanStart: brandSpanStart,
+                spanEnd: brandSpanEnd,
+                prominence: "first_paragraph",
+                listPosition: listPosition > 0 ? listPosition : 1,
+              });
+            }
+
+            let searchFrom = 0;
+            for (const m of peerMentions) {
+              const pos = answerText.indexOf(m.alias, searchFrom);
+              if (pos < 0) continue;
+              searchFrom = pos + m.alias.length;
+              const listPosition = ranked.findIndex((r) => r.entityType === "competitor" && r.entityId === m.competitorId) + 1;
+              await db.insert(mentions).values({
+                judgeRunId: judgeRow.id,
+                entityType: "competitor",
+                entityId: m.competitorId,
+                aliasMatched: m.alias,
+                spanStart: pos,
+                spanEnd: pos + m.alias.length,
+                prominence: "body",
+                listPosition: listPosition > 0 ? listPosition : null,
+              });
+            }
+
+            const claimText = `Published program facts for ${spec.name} align with the answer's description of outcomes and partnerships.`;
+            const cStart = answerText.length;
+            const cEnd = cStart + claimText.length;
+            await db.insert(claims).values({
               judgeRunId: judgeRow.id,
-              entityType: "brand",
-              entityId: brand.id,
-              aliasMatched: "Demo University",
-              spanStart,
-              spanEnd,
-              prominence: "first_paragraph",
+              text: claimText,
+              spanStart: cStart,
+              spanEnd: cEnd,
+              verdict: "supported",
+            });
+
+            await db.insert(costLedger).values({
+              orgId: org.id,
+              provider: route.provider,
+              scanId: scan.id,
+              drawId: drawRow.id,
+              promptId,
+              engine,
+              units: "1",
+              usd: "0.01",
+              ok: true,
+              cached: false,
+              seedMarker: DEMO_SEED_MARKER,
             });
           }
-
-          await db.insert(costLedger).values({
-            orgId: org.id,
-            provider: route.provider,
-            scanId: scan.id,
-            drawId: drawRow.id,
-            promptId,
-            engine,
-            units: "1",
-            usd: "0.01",
-            ok: true,
-            cached: false,
-            seedMarker: DEMO_SEED_MARKER,
-          });
         }
       }
     }
 
-    const gapPrompts = insertedPromptIds.slice(0, 3);
+    const gapA = insertedPromptIds.slice(0, 4);
+    const gapB = insertedPromptIds.slice(4, 9);
     await db.insert(recommendations).values([
       {
         campaignId,
         kind: "gap",
         leverType: "on_page",
-        owner: "Web & Digital Communications",
+        owner: "Web and Digital Communications",
         evidenceGrade: "B",
         status: "open",
-        payload: { headlineTerms: ["Demo University", spec.pillar], format: "program_page", note: "close SERP/listicle gap" },
+        payload: {
+          headlineTerms: ["Demo University", spec.pillar],
+          format: "program_page",
+          suggestedAction: `Update the ${spec.pillar} program page with clearer outcomes and FAQs drawn from lost questions.`,
+          sharedAmongCitedPages: "Thin or listicle-style summaries without primary curriculum links",
+          sharedAmongCitedPagesN: 12,
+          note: "Owned pages trail peer listicles on discovery-style questions.",
+        },
         evidence: {
           rows: [
-            { source: "demo_seed", detail: "Owned domain underrepresented vs peers on discovery prompts." },
-            { source: "demo_seed", detail: "Synthetic evidence row for leadership UI." },
+            { source: "cited_page_sample", detail: "Peer and editorial pages often cite national rankings without linking to program prerequisites.", url: "https://news.example.test/higher-ed-roundup" },
+            { source: "cited_page_sample", detail: "Government statistics pages appear without a path back to the official program catalog.", url: "https://example.gov/education/statistics" },
+            { source: "synthetic_demo", detail: "Leadership demo evidence row for UI review." },
           ],
         },
-        targetPromptIds: gapPrompts,
+        targetPromptIds: gapA,
+        baselineScanId: scanMeta[0].id,
         seedMarker: DEMO_SEED_MARKER,
       },
       {
@@ -336,9 +712,22 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
         owner: "Provost Office",
         evidenceGrade: "C",
         status: "open",
-        payload: { headlineTerms: ["factsheet", spec.pillar], format: "faq", note: "clarify comparisons" },
-        evidence: { rows: [{ source: "demo_seed", detail: "Third-party pages outrank official program facts." }] },
-        targetPromptIds: [insertedPromptIds[3], insertedPromptIds[4]],
+        payload: {
+          headlineTerms: ["factsheet", spec.pillar, "compare"],
+          format: "faq",
+          suggestedAction: `Publish a short factsheet that answers comparison questions so assistants can cite primary sources.`,
+          sharedAmongCitedPages: "FAQ-style questions repeated across lost prompts",
+          sharedAmongCitedPagesN: gapB.length,
+          note: "Third-party pages outrank official answers on head-to-head comparisons.",
+        },
+        evidence: {
+          rows: [
+            { source: "demo_seed", detail: "Synthetic comparison gap for leadership UI, correlation not proven cause." },
+            { source: "demo_seed", detail: "Add citations to program pages referenced in gap analysis." },
+          ],
+        },
+        targetPromptIds: gapB,
+        baselineScanId: scanMeta[0].id,
         seedMarker: DEMO_SEED_MARKER,
       },
     ]);
@@ -346,8 +735,8 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
     if (spec.name === "Energy") {
       await db.insert(strategyReports).values({
         campaignId,
-        topic: "Demo leadership snapshot — AI, Energy, Internships (cross-campaign)",
-        inputs: { demo: true, pillars: CAMPAIGN_SEED_SPECS.map((s) => s.pillar), promptCountPerCampaign: spec.prompts.length },
+        topic: "Demo leadership snapshot: AI, Energy, and Internships (cross-campaign)",
+        inputs: { demo: true, pillars: [...CAMPAIGN_ORDER], promptCountPerCampaign: PROMPTS_PER_CAMPAIGN },
         output: {
           scoredItems: [
             {

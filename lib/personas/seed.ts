@@ -40,10 +40,9 @@ export async function ensureCanonicalPersonas(db: Db): Promise<PersonaSeedRow[]>
           personaGroup: def.group,
           // Sync opening onto draft_prefix for content-team rows (content team still owns approval).
           draftPrefix: def.opening,
-          // For the merged business persona, also refresh display name/goal.
-          ...(def.contentTeamKey === "business_partner" || def.contentTeamKey === "business_leader"
-            ? { name: def.name, goal: def.goal }
-            : {}),
+          // Map legacy content-team labels to the taxonomy display names.
+          name: def.name,
+          goal: def.goal,
         })
         .where(eq(personas.id, id));
       out.push({

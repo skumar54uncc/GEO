@@ -31,7 +31,7 @@ export async function ensureContentTeamPersonas(db: Db): Promise<SeedResult["per
         goal: p.goal,
         key: p.key,
         draftPrefix: p.draftPrefix,
-        notes: "Draft prefix — content team must approve before production use.",
+        notes: "Draft prefix. Content team must approve before production use.",
       })
       .returning({ id: personas.id });
     out.push({ key: p.key, id: created.id, created: true });

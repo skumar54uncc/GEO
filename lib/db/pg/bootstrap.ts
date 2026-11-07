@@ -28,13 +28,16 @@ export function regionForNote(note: string): typeof regions.$inferInsert {
   return { label: note };
 }
 
-/** Legacy audience enum to persona, per ARCHITECTURE section 4. */
+/**
+ * Legacy audience enum to persona. Display names follow docs/PERSONAS.md taxonomy
+ * where a mapping exists (undergrad/grad/industry≈business_partner/government≈state_policymaker).
+ */
 export const LEGACY_PERSONAS: Record<string, { name: string; goal: string }> = {
-  undergrad: { name: "Prospective first year student", goal: "Choose an undergraduate program and university" },
-  grad: { name: "Grad applicant", goal: "Choose a graduate program, lab, or advisor" },
-  industry: { name: "Employer or industry partner", goal: "Find research partners, talent, or testbeds" },
-  hel: { name: "Higher ed leader", goal: "Benchmark peer institutions and programs" },
-  government: { name: "Government or policy staff", goal: "Find expertise and evidence for policy decisions" },
+  undergrad: { name: "Undergraduate prospect (general)", goal: "Choose an undergraduate program and university" },
+  grad: { name: "Graduate prospect (general)", goal: "Choose a graduate program, lab, or advisor" },
+  industry: { name: "Business leader / potential partner", goal: "Find research partners, talent, or testbeds" },
+  hel: { name: "Higher ed peer (legacy)", goal: "Benchmark peer institutions and programs" },
+  government: { name: "State policymaker", goal: "Find expertise and evidence for policy decisions" },
 };
 
 export async function ensureLegacyPersonas(db: Db, orgId: string): Promise<Record<string, string>> {
@@ -45,7 +48,11 @@ export async function ensureLegacyPersonas(db: Db, orgId: string): Promise<Recor
   const map: Record<string, string> = {};
   for (const row of existing) if (row.key) map[row.key] = row.id;
   for (const [key, p] of Object.entries(LEGACY_PERSONAS)) {
-    if (map[key]) continue;
+    if (map[key]) {
+      // Keep IDs; refresh display name/goal to the taxonomy labels.
+      await db.update(personas).set({ name: p.name, goal: p.goal }).where(eq(personas.id, map[key]));
+      continue;
+    }
     const [row] = await db
       .insert(personas)
       .values({ orgId, name: p.name, goal: p.goal, legacyKey: key })
@@ -100,7 +107,21 @@ async function create(db: Db): Promise<LegacyContext> {
     };
     [campaign] = await db
       .insert(campaigns)
-      .values({ orgId: org.id, brandId: brand.id, name: "Energy", topic: "Energy research", status: "active", settings })
+      .values({
+        orgId: org.id,
+        brandId: brand.id,
+        name: "Energy (legacy captures)",
+        topic: "Energy research",
+        status: "active",
+        settings,
+      })
+      .returning();
+  } else if (campaign.name === "Energy") {
+    // Rename migrated legacy campaign; never touch content-team "Energy".
+    [campaign] = await db
+      .update(campaigns)
+      .set({ name: "Energy (legacy captures)" })
+      .where(eq(campaigns.id, campaign.id))
       .returning();
   }
 

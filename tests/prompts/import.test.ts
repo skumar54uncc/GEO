@@ -71,8 +71,15 @@ describe("content-team prompt import", () => {
     const legacy = await db
       .select()
       .from(campaigns)
-      .where(and(eq(campaigns.orgId, orgId), eq(campaigns.name, "Energy"), sql`coalesce((${campaigns.settings}->>'legacy')::boolean, false) = true`));
+      .where(
+        and(
+          eq(campaigns.orgId, orgId),
+          sql`coalesce((${campaigns.settings}->>'legacy')::boolean, false) = true`,
+          sql`${campaigns.name} like 'Energy%'`,
+        ),
+      );
     expect(legacy.length).toBeGreaterThanOrEqual(1);
+    expect(legacy[0].name).toBe("Energy (legacy captures)");
     const contentEnergy = seeded.campaigns.find((c) => c.name === "Energy")!;
     expect(contentEnergy.id).not.toBe(legacy[0].id);
   });

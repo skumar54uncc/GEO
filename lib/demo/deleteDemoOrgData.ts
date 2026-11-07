@@ -18,6 +18,8 @@ import {
   canaryRuns,
   citations,
   claims,
+  competitorAliases,
+  competitorDomains,
   competitors,
   costLedger,
   crawlPages,
@@ -194,6 +196,12 @@ export async function deleteAllDataForOrg(db: Db, orgId: string): Promise<void> 
       }
       await t.delete(brandAliases).where(eq(brandAliases.brandId, bid));
       await t.delete(brandDomains).where(eq(brandDomains.brandId, bid));
+    }
+    const compRows = await t.select({ id: competitors.id }).from(competitors).where(eq(competitors.orgId, orgId));
+    const competitorIds = compRows.map((r) => r.id);
+    if (competitorIds.length) {
+      await t.delete(competitorAliases).where(inArray(competitorAliases.competitorId, competitorIds));
+      await t.delete(competitorDomains).where(inArray(competitorDomains.competitorId, competitorIds));
     }
     await t.delete(competitors).where(eq(competitors.orgId, orgId));
     if (brandIds.length) await t.delete(brands).where(inArray(brands.id, brandIds));

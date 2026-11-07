@@ -44,7 +44,9 @@ describe("branded detection", () => {
 
     const aliases = await loadAliases(db, ctx.orgId, ctx.brandId);
     expect(aliases.some((a) => a.alias === "Charlotte" && a.requiresContext)).toBe(true);
-    expect(isBrandedPrompt("What colleges are in Charlotte?", aliases)).toBe(false);
+    // City name alone is location-biased for prompts (excluded from headline), even though
+    // answer mention detection still treats "Charlotte" as the city, not the university.
+    expect(isBrandedPrompt("What colleges are in Charlotte?", aliases)).toBe(true);
     expect(isBrandedPrompt("Is UNC Charlotte strong in data science?", aliases)).toBe(true);
     expect(isBrandedPrompt("Does UNCC offer AI majors?", aliases)).toBe(true);
   });

@@ -5,12 +5,21 @@ import { matchAliases } from "@/lib/judge/aliases";
 export const MIN_UNBRANDED_SHARE = 0.7;
 
 /**
- * Brand mention detection for prompts. Uses the alias table via matchAliases, so
- * requires_context aliases such as "Charlotte" alone never count as branded.
+ * Location-biased prompts name a brand alias or the city. They are stored in the
+ * `branded` column and excluded from headline numbers (separate series).
+ * Unlike answer mention detection, city aliases that require context (e.g. "Charlotte")
+ * DO count here, because naming the city tilts geographic answers.
  */
-export function isBrandedPrompt(text: string, aliases: AliasEntry[]): boolean {
-  const brandAliases = aliases.filter((a) => a.entityType === "brand");
+export function isLocationBiasedPrompt(text: string, aliases: AliasEntry[]): boolean {
+  const brandAliases = aliases
+    .filter((a) => a.entityType === "brand")
+    .map((a) => ({ ...a, requiresContext: false }));
   return matchAliases(text, brandAliases).some((m) => m.entityType === "brand");
+}
+
+/** @deprecated Prefer isLocationBiasedPrompt; kept for call sites that still say "branded". */
+export function isBrandedPrompt(text: string, aliases: AliasEntry[]): boolean {
+  return isLocationBiasedPrompt(text, aliases);
 }
 
 export type BrandedShare = {

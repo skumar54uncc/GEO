@@ -100,6 +100,8 @@ export function isPrivateIp(ip: string): boolean {
 
 const defaultLookup: LookupFn = (host) =>
   new Promise((resolve, reject) => {
+    // Note: mitigating DNS rebinding also requires connecting only to the validated address
+    // (see once() lookup override / pin-on-connect below), not the resolver’s freshest answer per hop.
     dns.lookup(host, { all: true, verbatim: true }, (err, addresses) => {
       if (err) reject(err);
       else resolve(addresses as Array<{ address: string; family: number }>);

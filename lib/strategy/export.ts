@@ -7,9 +7,15 @@ import {
 import type { StrategyItem, StrategyReport } from "@/lib/contracts/strategy";
 import { DEMAND_UNKNOWN_LABEL } from "./score";
 
-function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
+/**
+ * Escape a CSV cell for Excel/Sheets: quote when needed and prefix formula metacharacters
+ * (=, +, -, @) so pasted content cannot run as a formula.
+ */
+export function csvEscape(value: string): string {
+  let v = value;
+  if (/^[=+\-@]/.test(v)) v = `'${v}`;
+  if (/[",\n\r]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
+  return v;
 }
 
 function itemRows(items: StrategyItem[], list: "scored" | "unscored"): string[] {

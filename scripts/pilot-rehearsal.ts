@@ -366,6 +366,8 @@ async function runSleepFault(db: Db, orgId: string, campaignId: string, promptSe
   });
   const started = tick.filter((t) => t.action === "started");
   console.log(`[sleep] schedule tick queued ${jobs.length} job(s), started=${started.length} (expect at most one scan per schedule period; no silent burst)`);
+  // Tick creates a scan referencing this schedule; clear children before delete.
+  await db.delete(scans).where(eq(scans.scheduleId, sched.id));
   await db.delete(schedules).where(eq(schedules.id, sched.id));
 }
 

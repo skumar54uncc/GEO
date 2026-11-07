@@ -9,8 +9,8 @@ function canShowRawRole(role: ReturnType<typeof useSessionRole>): boolean {
 
 export function ShowRawToggle() {
   const role = useSessionRole();
-  if (!canShowRawRole(role)) return null;
   const { showRaw, setShowRaw } = useMetricShowRaw();
+  if (!canShowRawRole(role)) return null;
   return (
     <label
       className="inline-flex cursor-pointer items-center gap-2 text-[12.5px] text-scout-muted"

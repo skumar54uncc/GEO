@@ -78,4 +78,5 @@ export function evaluateStopLoss(inputs: StopLossInputs) {
 }
 
 export type StopLossConfig = z.infer<typeof stopLossConfigSchema>;
+export type StopLossTrigger = z.infer<typeof stopLossTriggerSchema>;
 export type StopLossState = z.infer<typeof stopLossStateSchema>;

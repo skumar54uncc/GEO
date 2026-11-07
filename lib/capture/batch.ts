@@ -1,7 +1,8 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { evaluateStopLoss, type StopLossTrigger } from "@/lib/contracts/stopLoss";
 import { checkBudget } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
-import { draws, prompts, promptSetItems, scans } from "@/lib/db/pg/schema";
+import { alerts, auditLog, draws, prompts, promptSetItems, scans } from "@/lib/db/pg/schema";
 import { ensureCaptureProviders } from "./accounts";
 import { runCanaries, type CanaryResult } from "./canary";
 import { parityStatus } from "./adapters/localSerp";
@@ -189,16 +190,93 @@ export type RunSummary = {
   status: "complete" | "partial" | "failed";
 };
 
-/** Runs at most `limit` tasks at once. */
-async function pool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+/** Runs at most `limit` tasks at once. Workers stop claiming work when `shouldAbort` is true. */
+async function pool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>, shouldAbort?: () => boolean): Promise<void> {
   let i = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (i < items.length) {
-      const item = items[i++];
-      await fn(item);
+      if (shouldAbort?.()) break;
+      const idx = i++;
+      if (idx >= items.length) break;
+      if (shouldAbort?.()) break;
+      await fn(items[idx]);
     }
   });
   await Promise.all(workers);
+}
+
+function evaluateScanStopLoss(input: {
+  firstWindowObserved: number;
+  firstWindowErrorsOrBlocked: number;
+  estimateUsd: number | null;
+  actualCostUsd: number;
+}) {
+  const hasEstimate = input.estimateUsd !== null && input.estimateUsd > 0;
+  const evaluated = evaluateStopLoss({
+    firstWindowObserved: input.firstWindowObserved,
+    firstWindowErrorsOrBlocked: input.firstWindowErrorsOrBlocked,
+    estimatedCostUsd: hasEstimate ? input.estimateUsd! : 1,
+    actualCostUsd: input.actualCostUsd,
+  });
+  if (hasEstimate) return evaluated;
+  const triggers = evaluated.triggers.filter((t) => t !== "estimate_cost_overrun");
+  return { ...evaluated, triggers, paused: triggers.length > 0 } as const;
+}
+
+async function pauseScanForStopLoss(
+  db: Db,
+  scan: typeof scans.$inferSelect,
+  orgId: string,
+  triggers: StopLossTrigger[],
+  detail: {
+    firstWindowObserved: number;
+    firstWindowErrorsOrBlocked: number;
+    estimateUsd: number | null;
+    actualCostUsd: number;
+  },
+): Promise<void> {
+  const now = new Date();
+  const pausedReason = triggers.length === 1 ? triggers[0]! : triggers.join(",");
+  const kind = triggers.includes("estimate_cost_overrun") ? "budget_threshold" : "provider_error_rate";
+  const payload = {
+    source: "stop_loss",
+    scan_id: scan.id,
+    triggers,
+    first_window_observed: detail.firstWindowObserved,
+    first_window_errors_or_blocked: detail.firstWindowErrorsOrBlocked,
+    estimated_cost_usd: detail.estimateUsd,
+    actual_cost_usd: detail.actualCostUsd,
+    message:
+      triggers.includes("first_60_error_or_blocked_rate")
+        ? `Scan paused: ${detail.firstWindowErrorsOrBlocked} of ${detail.firstWindowObserved} early draws errored or blocked (stop-loss).`
+        : `Scan paused: actual cost $${detail.actualCostUsd.toFixed(4)} exceeded stop-loss vs estimate $${(detail.estimateUsd ?? 0).toFixed(4)}.`,
+  };
+
+  await db.transaction(async (tx) => {
+    const t = tx as unknown as Db;
+    await t
+      .update(scans)
+      .set({ status: "paused", pausedReason, pausedAt: now })
+      .where(and(eq(scans.id, scan.id), eq(scans.status, "running")));
+
+    await t.insert(alerts).values({
+      orgId,
+      campaignId: scan.campaignId,
+      kind,
+      payload,
+    });
+
+    await t.insert(auditLog).values({
+      orgId,
+      userId: null,
+      action: "scan.stop_loss_paused",
+      entityType: "scan",
+      entityId: scan.id,
+      before: { status: scan.status, pausedReason: scan.pausedReason },
+      after: { status: "paused", pausedReason, triggers, ...detail },
+      at: now,
+    });
+  });
 }
 
 /**
@@ -247,22 +325,62 @@ export async function runScan(
   }
 
   const outcomes: RunSummary["outcomes"] = [];
+  const control = { aborted: false };
+  let firstWindowObserved = 0;
+  let firstWindowErrorsOrBlocked = 0;
+  let runningActualUsd = roundUsd([...(await canaryCosts(db, canaries)).values()].reduce((s, u) => s + u, 0));
+  let stopLossTail = Promise.resolve();
+
+  const considerStopLoss = (outcome: DrawOutcome) => {
+    const cost = outcome.costUsd ?? 0;
+    stopLossTail = stopLossTail.then(async () => {
+      if (control.aborted) return;
+      firstWindowObserved += 1;
+      if (outcome.status === "error" || outcome.status === "blocked") firstWindowErrorsOrBlocked += 1;
+      runningActualUsd = roundUsd(runningActualUsd + cost);
+      const evaluated = evaluateScanStopLoss({
+        firstWindowObserved,
+        firstWindowErrorsOrBlocked,
+        estimateUsd: est.totalUsd,
+        actualCostUsd: runningActualUsd,
+      });
+      if (!evaluated.paused) return;
+      control.aborted = true;
+      log(`[scan] stop-loss: ${evaluated.triggers.join(", ")} (first window ${firstWindowErrorsOrBlocked}/${firstWindowObserved}, cost $${runningActualUsd})`);
+      await pauseScanForStopLoss(db, scan, opts.orgId, evaluated.triggers, {
+        firstWindowObserved,
+        firstWindowErrorsOrBlocked,
+        estimateUsd: est.totalUsd,
+        actualCostUsd: runningActualUsd,
+      });
+    });
+    return stopLossTail;
+  };
+
   await Promise.all(
     [...plansByProvider.entries()].map(([provider, plans]) =>
-      pool(plans, opts.concurrencyPerProvider ?? 2, async (plan) => {
-        let outcome: DrawOutcome;
-        try {
-          outcome = await captureDraw(db, plan, { adapter: opts.adapters?.[provider] });
-        } catch (err) {
-          // Database failures only; provider failures are already error draws.
-          log(`[scan] draw failed to record: ${err instanceof Error ? err.message : String(err)}`);
-          return;
-        }
-        outcomes.push({ ...outcome, engine: plan.engine, runner: plan.runner, provider: plan.provider, promptId: plan.promptId, drawIndex: plan.drawIndex });
-        log(`[scan] ${plan.engine} ${plan.runner} p=${plan.promptId.slice(0, 8)} d=${plan.drawIndex}: ${outcome.status}${outcome.error ? ` (${outcome.error})` : ""}`);
-      }),
+      pool(
+        plans,
+        opts.concurrencyPerProvider ?? 2,
+        async (plan) => {
+          if (control.aborted) return;
+          let outcome: DrawOutcome;
+          try {
+            outcome = await captureDraw(db, plan, { adapter: opts.adapters?.[provider] });
+          } catch (err) {
+            // Database failures only; provider failures are already error draws.
+            log(`[scan] draw failed to record: ${err instanceof Error ? err.message : String(err)}`);
+            return;
+          }
+          outcomes.push({ ...outcome, engine: plan.engine, runner: plan.runner, provider: plan.provider, promptId: plan.promptId, drawIndex: plan.drawIndex });
+          log(`[scan] ${plan.engine} ${plan.runner} p=${plan.promptId.slice(0, 8)} d=${plan.drawIndex}: ${outcome.status}${outcome.error ? ` (${outcome.error})` : ""}`);
+          await considerStopLoss(outcome);
+        },
+        () => control.aborted,
+      ),
     ),
   );
+  await stopLossTail;
 
   const byCell = new Map<string, RunSummary["byCell"][number]>();
   for (const c of est.cells) {
@@ -281,8 +399,13 @@ export async function runScan(
   }
   const actualUsd = roundUsd([...byCell.values()].reduce((s, c) => s + c.costUsd, 0));
   const okCount = outcomes.filter((o) => o.status === "ok" || o.status === "empty").length;
-  const status = outcomes.length && okCount === outcomes.length && canaries.every((c) => c.ok) ? "complete" : okCount === 0 ? "failed" : "partial";
-  await db.update(scans).set({ status }).where(eq(scans.id, scanId));
+  let status: RunSummary["status"] =
+    outcomes.length && okCount === outcomes.length && canaries.every((c) => c.ok) ? "complete" : okCount === 0 ? "failed" : "partial";
+  if (control.aborted) {
+    status = "partial";
+  } else {
+    await db.update(scans).set({ status }).where(eq(scans.id, scanId));
+  }
   return { scanId, canaries, outcomes, byCell: [...byCell.values()], actualUsd, estimateUsd: est.totalUsd, status };
 }
 

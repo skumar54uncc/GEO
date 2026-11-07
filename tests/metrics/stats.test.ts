@@ -101,23 +101,34 @@ describe("prng and bootstrap", () => {
   });
 
   it("cluster rate reports n, interval and the too few draws flag", () => {
+    // k=2 is below MIN_PROMPTS_FOR_CLUSTER, so approximate Wilson (not cluster bootstrap).
     const r = clusterRate({ clusters: [[true, true, false], [false, false, false]] });
-    expect(r).toMatchObject({ numerator: 2, n: 6, method: "cluster_bootstrap", tooFewDraws: true });
+    expect(r).toMatchObject({ numerator: 2, n: 6, method: "wilson", tooFewDraws: true, tooFewPrompts: true, approximate: true });
     expect(r.rate).toBeCloseTo(1 / 3, 12);
     expect(r.ciLow).not.toBeNull();
+    expect(r.ciLow!).toBeLessThan(r.ciHigh!);
     expect(clusterRate({ clusters: [] })).toMatchObject({ rate: null, n: 0, tooFewDraws: true });
-    const big = clusterRate({ clusters: Array.from({ length: 10 }, () => [true, false, true]) });
+    // Varied clusters so the bootstrap interval has width (identical clusters collapse → Wilson).
+    const big = clusterRate({
+      clusters: Array.from({ length: 10 }, (_, i) => (i % 2 === 0 ? [true, true, false] : [false, false, true])),
+    });
     expect(big.n).toBe(TOO_FEW_DRAWS);
     expect(big.tooFewDraws).toBe(false);
+    expect(big.method).toBe("cluster_bootstrap");
   });
 
   it("paired difference is exactly 1 when every prompt goes from absent to present", () => {
     const prompts = Array.from({ length: 6 }, () => ({ before: [false, false, false], after: [true, true, true] }));
     const d = pairedRateDifference({ prompts });
-    expect(d).toMatchObject({ estimate: 1, ciLow: 1, ciHigh: 1, prompts: 6, drawsBefore: 18, drawsAfter: 18 });
+    expect(d.estimate).toBe(1);
+    expect(d.prompts).toBe(6);
+    expect(d.drawsBefore).toBe(18);
+    expect(d.drawsAfter).toBe(18);
+    // Degenerate bootstrap width is widened; never return a zero-width interval.
+    expect(d.ciLow).toBeLessThan(d.ciHigh);
   });
 
-  it("paired difference reproducible with same seed and zero when nothing changes", () => {
+  it("paired difference reproducible with same seed and never zero-width when nothing changes", () => {
     const same = [
       { before: [true, false, true], after: [true, false, true] },
       { before: [false, false, true], after: [false, false, true] },
@@ -125,8 +136,7 @@ describe("prng and bootstrap", () => {
     ];
     const d = pairedRateDifference({ prompts: same });
     expect(d.estimate).toBe(0);
-    expect(d.ciLow).toBe(0);
-    expect(d.ciHigh).toBe(0);
+    expect(d.ciLow).toBeLessThan(d.ciHigh);
     const mixed = [
       { before: [false, false, true], after: [true, true, true] },
       { before: [true, true, false], after: [false, false, false] },
@@ -229,33 +239,47 @@ describe("prompts won", () => {
 
   it("0 of 4 and 4 of 4 never produce a zero-width Wilson interval", () => {
     const none = promptsWon(Array.from({ length: 4 }, () => ({ mentions: 0, validDraws: 1 })));
-    expect(none).toMatchObject({ won: 0, prompts: 4, tooFewDraws: true, approximate: true });
+    expect(none).toMatchObject({ won: 0, prompts: 4, tooFewDraws: true, tooFewPrompts: true, approximate: true });
     expect(none.ciLow).not.toBeNull();
     expect(none.ciHigh).not.toBeNull();
     expect(none.ciLow!).toBeLessThan(none.ciHigh!);
 
     const all = promptsWon(Array.from({ length: 4 }, () => ({ mentions: 1, validDraws: 1 })));
-    expect(all).toMatchObject({ won: 4, prompts: 4, tooFewDraws: true, approximate: true });
+    expect(all).toMatchObject({ won: 4, prompts: 4, tooFewDraws: true, tooFewPrompts: true, approximate: true });
     expect(all.ciLow).not.toBeNull();
     expect(all.ciHigh).not.toBeNull();
     expect(all.ciLow!).toBeLessThan(all.ciHigh!);
   });
 
+  it("k=3 uses approximate Wilson, not cluster bootstrap", () => {
+    const r = clusterRate({
+      clusters: [[true, false], [true], [false, true]],
+    });
+    expect(r.method).toBe("wilson");
+    expect(r.tooFewPrompts).toBe(true);
+    expect(r.approximate).toBe(true);
+    expect(r.prompts).toBe(3);
+    expect(r.ciLow!).toBeLessThan(r.ciHigh!);
+  });
+
   it("cluster rate falls back to Wilson when bootstrap width is zero", () => {
     const allHit = clusterRate({
-      clusters: Array.from({ length: 4 }, () => [true]),
+      clusters: Array.from({ length: 12 }, () => [true, true, true]),
     });
     expect(allHit.rate).toBe(1);
     expect(allHit.approximate).toBe(true);
     expect(allHit.method).toBe("wilson");
     expect(allHit.ciLow!).toBeLessThan(allHit.ciHigh!);
+  });
 
-    const noneHit = clusterRate({
-      clusters: Array.from({ length: 4 }, () => [false]),
-    });
-    expect(noneHit.rate).toBe(0);
-    expect(noneHit.approximate).toBe(true);
-    expect(noneHit.ciLow!).toBeLessThan(noneHit.ciHigh!);
+  it("identical paired scans never return a zero-width interval", () => {
+    const pairs = Array.from({ length: 12 }, () => ({
+      before: [true, true, false],
+      after: [true, true, false],
+    }));
+    const d = pairedRateDifference({ prompts: pairs });
+    expect(d.estimate).toBe(0);
+    expect(d.ciLow).toBeLessThan(d.ciHigh);
   });
 });
 

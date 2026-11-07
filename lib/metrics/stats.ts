@@ -98,11 +98,29 @@ export function pairedRateDifference(opts: {
     iterations,
     seed,
   });
+  const drawsBefore = prompts.reduce((sum, p) => sum + p.before.length, 0);
+  const drawsAfter = prompts.reduce((sum, p) => sum + p.after.length, 0);
+  // Identical scans (or all-zero discordant pairs) can collapse paired bootstrap width to 0.
+  // Never return a zero-width interval: widen with a Wilson-style margin on the absolute rate difference.
+  if (Number.isFinite(result.ciLow) && Number.isFinite(result.ciHigh) && result.ciLow === result.ciHigh) {
+    const n = Math.max(1, prompts.length);
+    const { ci_low, ci_high } = wilsonInterval(0, n);
+    // Symmetrize a small non-zero width around the point estimate using Wilson margins on n prompts.
+    const half = Math.max(0.01, ((ci_high ?? 0) - (ci_low ?? 0)) / 2);
+    return {
+      estimate: result.estimate,
+      ciLow: result.estimate - half,
+      ciHigh: result.estimate + half,
+      prompts: prompts.length,
+      drawsBefore,
+      drawsAfter,
+    };
+  }
   return {
     ...result,
     prompts: prompts.length,
-    drawsBefore: prompts.reduce((sum, p) => sum + p.before.length, 0),
-    drawsAfter: prompts.reduce((sum, p) => sum + p.after.length, 0),
+    drawsBefore,
+    drawsAfter,
   };
 }
 
@@ -143,6 +161,9 @@ export function wonRuleLabel(validDraws: number): string {
   return `at least ${promptWonThreshold(validDraws)} of ${validDraws} draws`;
 }
 
+/** Cluster bootstrap needs enough prompts; below this we use approximate Wilson instead. */
+export const MIN_PROMPTS_FOR_CLUSTER = 10;
+
 export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDraws: number }>): PromptsWon {
   const scored = perPrompt.filter((p) => p.validDraws >= 1);
   const won = scored.filter((p) => isPromptWon(p.mentions, p.validDraws)).length;
@@ -150,6 +171,7 @@ export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDra
   const { rate, ci_low, ci_high } = wilsonInterval(won, scored.length);
   const sizes = [...new Set(scored.map((p) => p.validDraws))];
   const tooFewDraws = draws < TOO_FEW_DRAWS;
+  const tooFewPrompts = scored.length > 0 && scored.length < MIN_PROMPTS_FOR_CLUSTER;
   return {
     won,
     prompts: scored.length,
@@ -160,22 +182,27 @@ export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDra
     method: "wilson",
     rule: sizes.length === 1 ? wonRuleLabel(sizes[0]) : "at least half of valid draws",
     tooFewDraws,
-    approximate: tooFewDraws && scored.length > 0,
+    tooFewPrompts,
+    approximate: (tooFewDraws || tooFewPrompts) && scored.length > 0,
   };
 }
 
-export function wilsonRate(successes: number, n: number, draws = n): RateWithCi {
+export function wilsonRate(successes: number, n: number, draws = n, prompts?: number): RateWithCi {
   const { rate, ci_low, ci_high } = wilsonInterval(successes, n);
   const tooFewDraws = draws < TOO_FEW_DRAWS;
+  const k = prompts ?? n;
+  const tooFewPrompts = k > 0 && k < MIN_PROMPTS_FOR_CLUSTER;
   return {
     rate,
     ciLow: ci_low,
     ciHigh: ci_high,
     numerator: successes,
     n,
+    prompts: k,
     method: "wilson",
     tooFewDraws,
-    approximate: tooFewDraws && n > 0,
+    tooFewPrompts,
+    approximate: (tooFewDraws || tooFewPrompts) && n > 0,
   };
 }
 
@@ -186,16 +213,21 @@ export function clusterRate(opts: {
 }): RateWithCi {
   const { clusters, iterations, seed } = opts;
   const n = clusters.reduce((sum, c) => sum + c.length, 0);
+  const k = clusters.length;
   const numerator = clusters.reduce((sum, c) => sum + c.filter(Boolean).length, 0);
-  if (n === 0) return { rate: null, ciLow: null, ciHigh: null, numerator, n, method: "cluster_bootstrap", tooFewDraws: true };
+  if (n === 0) {
+    return { rate: null, ciLow: null, ciHigh: null, numerator, n, prompts: 0, method: "cluster_bootstrap", tooFewDraws: true, tooFewPrompts: true };
+  }
+  // Never run a cluster bootstrap with fewer than 10 prompts. Use approximate Wilson instead.
+  if (k < MIN_PROMPTS_FOR_CLUSTER) {
+    return wilsonRate(numerator, n, n, k);
+  }
   const { estimate, ciLow, ciHigh } = clusterBootstrap({ clusters, statistic: pooledRate, iterations, seed });
   const low = Number.isFinite(ciLow) ? ciLow : null;
   const high = Number.isFinite(ciHigh) ? ciHigh : null;
-  // Degenerate bootstrap (all successes or all failures) collapses to a zero-width interval.
-  // Never show that; fall back to Wilson and label it approximate.
+  // Degenerate bootstrap collapses to a zero-width interval. Fall back to Wilson, labeled approximate.
   if (low !== null && high !== null && low === high) {
-    const w = wilsonRate(numerator, n, n);
-    return { ...w, approximate: true };
+    return { ...wilsonRate(numerator, n, n, k), approximate: true };
   }
   return {
     rate: estimate,
@@ -203,7 +235,9 @@ export function clusterRate(opts: {
     ciHigh: high,
     numerator,
     n,
+    prompts: k,
     method: "cluster_bootstrap",
     tooFewDraws: n < TOO_FEW_DRAWS,
+    tooFewPrompts: false,
   };
 }

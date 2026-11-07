@@ -20,8 +20,12 @@ export type RateWithCi = {
   ciHigh: number | null;
   numerator: number;
   n: number;
+  /** Prompt (cluster) count when known. Suppression uses this, never mention count. */
+  prompts?: number;
   method: IntervalMethod;
   tooFewDraws: boolean;
+  /** Fewer than 10 prompts: do not trust a cluster bootstrap. */
+  tooFewPrompts?: boolean;
   /** True when the interval was replaced (e.g. zero-width bootstrap → Wilson). */
   approximate?: boolean;
 };
@@ -36,7 +40,8 @@ export type PromptsWon = {
   method: "wilson";
   rule: string;
   tooFewDraws: boolean;
-  /** True when n is under the too-few threshold; UI may label the Wilson interval approximate. */
+  tooFewPrompts?: boolean;
+  /** True when n or k is under threshold; UI may label the Wilson interval approximate. */
   approximate?: boolean;
 };
 

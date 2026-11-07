@@ -11,13 +11,14 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getCampaign } from "@/lib/campaigns";
 import type { Db } from "@/lib/db/pg/client";
-import { modelEvents, personas, promptSets, scans } from "@/lib/db/pg/schema";
+import { brands, competitors, modelEvents, organizations, personas, promptSets, scans } from "@/lib/db/pg/schema";
 import { listOpenAlerts } from "@/lib/alerts/service";
 import type { Engine, Runner } from "@/lib/capture/types";
 import { PERSONA_GROUP_LABELS } from "@/lib/contracts/personas";
 import { selectableDbKeyForCanonical, canonicalKeyForDbKey } from "@/lib/personas/library";
 import { compareScans, previousComparableScan, type SeriesComparison } from "./compare";
-import { assertSameIndex, ENGINE_INDEX } from "./indexes";
+import { assertSameIndex, ENGINE_INDEX, type SearchIndex } from "./indexes";
+import { institutionRanks, type InstitutionRank } from "./institutions";
 import { loadScanDraws, type ExcludedCounts, type LoadedScan, type MetricDraw, type Verdict } from "./load";
 import { buildPersonaCellMeta, type PersonaCellMeta } from "./personaCells";
 import { BOOTSTRAP_ITERS, BOOTSTRAP_SEED, clusterBootstrap, clusterRate, median, promptsWon, TOO_FEW_DRAWS, wilsonRate } from "./stats";
@@ -465,8 +466,43 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
     ? await db.select().from(modelEvents).where(inArray(modelEvents.engine, engines)).orderBy(desc(modelEvents.occurredOn), asc(modelEvents.engine))
     : [];
 
+  const [orgRow] = await db
+    .select({ name: organizations.name, brandId: brands.id, brandName: brands.name })
+    .from(organizations)
+    .innerJoin(brands, eq(brands.orgId, organizations.id))
+    .where(eq(organizations.id, opts.orgId))
+    .limit(1);
+  const competitorRows = await db
+    .select({ id: competitors.id, name: competitors.name })
+    .from(competitors)
+    .where(eq(competitors.orgId, opts.orgId));
+  const competitorNames = new Map(competitorRows.map((c) => [c.id, c.name]));
+
+  let institutions: InstitutionRank[] = [];
+  const latestView = promptSetViews[0];
+  if (latestView && orgRow) {
+    const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: latestView.latestScan.id });
+    // Prefer chat-index unbranded overall draws for the ranking panel.
+    const chatDraws = loaded.draws.filter(
+      (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("chat" as SearchIndex),
+    );
+    const googleDraws = loaded.draws.filter(
+      (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("google" as SearchIndex),
+    );
+    const pool = chatDraws.length ? chatDraws : googleDraws;
+    institutions = institutionRanks(pool, {
+      brandId: orgRow.brandId,
+      brandName: orgRow.brandName,
+      competitorNames,
+    });
+  }
+
   return {
     campaign: { id: campaign.id, name: campaign.name, topic: campaign.topic, status: campaign.status },
+    organization: orgRow
+      ? { name: orgRow.name, brandId: orgRow.brandId, brandName: orgRow.brandName }
+      : { name: "", brandId: "", brandName: "" },
+    institutions,
     engines: campaign.engines,
     regions: campaign.regions,
     personas: campaign.personas,

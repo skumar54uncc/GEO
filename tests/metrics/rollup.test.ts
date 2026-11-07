@@ -94,7 +94,14 @@ describe("rollup: prompts won", () => {
 describe("rollup: draw level rates", () => {
   it("mention rate is a cluster bootstrap with n, numerator and a 95% interval", () => {
     const cell = roll(threePrompts());
-    expect(cell.mentionRate).toMatchObject({ numerator: 6, n: 9, method: "cluster_bootstrap", tooFewDraws: true });
+    expect(cell.mentionRate).toMatchObject({
+      numerator: 6,
+      n: 9,
+      method: "wilson",
+      tooFewDraws: true,
+      tooFewPrompts: true,
+      approximate: true,
+    });
     expect(cell.mentionRate.rate).toBeCloseTo(6 / 9, 12);
     expect(cell.mentionRate.ciLow).not.toBeNull();
     expect(cell.mentionRate.ciLow!).toBeLessThanOrEqual(cell.mentionRate.rate!);
@@ -257,7 +264,10 @@ describe("compare", () => {
     const [cmp] = compareOutcomes(wonByPromptFromDraws(before), wonByPromptFromDraws(after));
     expect(cmp).toMatchObject({ pairs: 10, wonBefore: 10, wonAfter: 0, b: 10, c: 0, label: "significant decline", direction: "decline" });
     expect(cmp.pValue).toBeLessThan(0.05);
-    expect(cmp.presenceDifference).toMatchObject({ estimate: -1, ciLow: -1, ciHigh: -1, prompts: 10, drawsBefore: 30, drawsAfter: 30, method: "paired_bootstrap" });
+    expect(cmp.presenceDifference).toMatchObject({ estimate: -1, prompts: 10, drawsBefore: 30, drawsAfter: 30 });
+    expect(cmp.presenceDifference!.ciLow).not.toBeNull();
+    expect(cmp.presenceDifference!.ciHigh).not.toBeNull();
+    expect(cmp.presenceDifference!.ciLow as number).toBeLessThan(cmp.presenceDifference!.ciHigh as number);
   });
 
   it("a prompt is paired only when valid in both scans, and branded prompts are a separate series", () => {

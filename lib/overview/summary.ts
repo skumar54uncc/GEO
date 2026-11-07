@@ -16,21 +16,26 @@ export type OverviewCampaignCard = {
     id: string;
     createdAt: string;
     legacyMethod: boolean;
+    /** Scan row status from DB (e.g. complete, partial, running). */
+    scanStatus: string;
   } | null;
   promptSetHash: string | null;
   headlines: Array<{
     engine: string;
     runner: string;
     fidelity: string;
-    won: number;
-    prompts: number;
+    won: number | null;
+    prompts: number | null;
     ciLow: number | null;
     ciHigh: number | null;
     draws: number;
     tooFewDraws: boolean;
+    tooFewPrompts: boolean;
+    approximate: boolean;
   }>;
   openRecommendations: number;
   partial: boolean;
+  unjudgedCount: number;
   emptyReason: string | null;
 };
 
@@ -66,6 +71,7 @@ export async function buildOverview(db: Db, orgId: string): Promise<{ campaigns:
         headlines: [],
         openRecommendations: 0,
         partial: false,
+        unjudgedCount: 0,
         emptyReason: "No completed scan yet. Numbers will appear after the first measured scan.",
       });
       continue;
@@ -77,20 +83,25 @@ export async function buildOverview(db: Db, orgId: string): Promise<{ campaigns:
 
     let headlines: OverviewCampaignCard["headlines"] = [];
     let partial = latest.status === "partial";
+    let unjudgedCount = 0;
     try {
       const loaded = await loadScanDraws(db, { orgId, scanId: latest.id });
+      unjudgedCount = loaded.excluded.unjudged;
       const personaMeta = await loadPersonaMetaForDraws(db, loaded.draws);
       const rollup = rollupLoaded(loaded, { personaMeta, iterations: 200 });
       headlines = headlineCells(rollup.cells).map((cell) => ({
         engine: cell.key.engine,
         runner: cell.key.runner,
         fidelity: fidelityFor(cell.key.runner),
-        won: cell.promptsWon?.won ?? 0,
-        prompts: cell.promptsWon?.prompts ?? 0,
+        // Never invent zeros when promptsWon is absent (branded cells).
+        won: cell.promptsWon?.won ?? null,
+        prompts: cell.promptsWon?.prompts ?? null,
         ciLow: cell.promptsWon?.ciLow ?? null,
         ciHigh: cell.promptsWon?.ciHigh ?? null,
         draws: cell.draws,
         tooFewDraws: cell.tooFewDraws,
+        tooFewPrompts: Boolean(cell.promptsWon?.tooFewPrompts),
+        approximate: Boolean(cell.promptsWon?.approximate),
       }));
       if (loaded.excluded.unjudged > 0) partial = true;
     } catch {
@@ -115,12 +126,14 @@ export async function buildOverview(db: Db, orgId: string): Promise<{ campaigns:
         id: latest.id,
         createdAt: latest.createdAt.toISOString(),
         legacyMethod,
+        scanStatus: latest.status,
       },
       promptSetHash: set?.sha256 ?? null,
       headlines,
       openRecommendations: Number(open),
       partial,
-      emptyReason: headlines.length ? null : "Scan exists but no judged unbranded answers yet.",
+      unjudgedCount,
+      emptyReason: headlines.length ? null : "Scan exists but no judged location-neutral answers yet.",
     });
   }
   return { campaigns: out };

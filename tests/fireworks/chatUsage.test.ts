@@ -30,7 +30,7 @@ describe("fireworksChat usage and max_tokens", () => {
     expect(body.max_tokens).toBe(FIREWORKS_MAX_TOKENS);
   });
 
-  it("treats finish_reason length as a ceiling error without retry", async () => {
+  it("C2: finish_reason length yields ok=false with a clear ceiling error and no retry", async () => {
     process.env.FIREWORKS_API_KEY = "test-key";
     vi.stubGlobal(
       "fetch",

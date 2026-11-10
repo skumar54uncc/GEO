@@ -73,6 +73,25 @@ From `CAPTURE_PROVIDER_DEFAULTS` in `lib/capture/accounts.ts` (operator can tigh
 
 Bright Data is **not** in this table (removed from the product; campus IT ban). Capture upper estimates never included it (blocked / non-primary → $0 in `providerShareForPrompts`); pilot **$12.89** and steady-state **$150.22/mo** are unchanged.
 
+Provider caps above are the app starting defaults (`CAPTURE_PROVIDER_DEFAULTS`). They are raised to steady-state levels only after funding approval.
+
+### Judge (Fireworks) — pilot, 540 draws
+
+Not included in the **$12.89** capture upper. Estimator: `lib/judge/v2.ts` (`judgeDraw`).
+
+| Input | Value |
+|-------|--------|
+| Model | `JUDGE_MODEL` default `accounts/fireworks/models/deepseek-v4-pro` (`lib/fireworks.ts` `judgeModel()`) |
+| Units formula | `units = Math.ceil((system.length + user.length) / 4) + 800` |
+| Budget check | reserves `units * 2` (one repair call) |
+| Ledger charge | `units` per successful model call (first; plus again if repair runs) |
+| Example lengths (1 entity key `brand`, short Q/A) | system **1069** chars; user **165** chars → **1109** units/draw (budget reserve **2218**) |
+| 540 draws × first call only (same example lengths) | **598,860** units |
+| 540 draws × first + repair (worst case, same lengths) | **1,197,720** units |
+| USD / unit for this model | **PRICE NEEDED** — not in `lib/capture/pricing.ts` `TOKEN_RATES`; Phase 2 `fireworks` account seeds `credit_unit_usd: null` (`lib/site/providerCall.ts`) |
+
+Until a verified Fireworks price for `deepseek-v4-pro` is recorded in-repo, do not add a judge dollar line to the pilot ask.
+
 ---
 
 ## Vendor comparison (external anchors)

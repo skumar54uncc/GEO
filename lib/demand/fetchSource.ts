@@ -116,6 +116,7 @@ async function fetchExaLive(
   try {
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json", "x-api-key": key },
       body: JSON.stringify({
         query: term,

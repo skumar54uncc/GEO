@@ -7,7 +7,9 @@ export type AdapterDeps = { fetch?: FetchLike; env?: Env };
 export function depsOf(deps: AdapterDeps) {
   return {
     env: (): Env => deps.env ?? process.env,
-    fetch: deps.fetch ?? ((u: string, i?: RequestInit) => fetch(u, i)),
+    fetch:
+      deps.fetch ??
+      ((u: string, i?: RequestInit) => fetch(u, { ...i, cache: i?.cache ?? "no-store" })),
   };
 }
 

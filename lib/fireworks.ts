@@ -53,6 +53,7 @@ export async function fireworksChat(opts: {
   try {
     const res = await fetch(FIREWORKS_URL, {
       method: "POST",
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",

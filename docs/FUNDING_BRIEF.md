@@ -66,11 +66,12 @@ From `CAPTURE_PROVIDER_DEFAULTS` in `lib/capture/accounts.ts` (operator can tigh
 | Provider | Monthly cap | Per-scan cap | Role |
 |----------|-------------|--------------|------|
 | DataForSEO | $20 | $10 | Active (all primary capture) |
-| Bright Data | $5 | $2 | Fallback (not primary for Perplexity today) |
-| OpenAI / Gemini / Anthropic / Perplexity | $20–$60 | $5–$30 | Calibration / fallback only |
+| OpenAI / Gemini | $20 | $10 | Calibration / fallback only |
+| Anthropic | $60 | $30 | Calibration / fallback only |
+| Perplexity | $10 | $5 | Fallback only |
 | SerpAPI / Local SERP | plan/credits | — | Parity only |
 
-Judge (Fireworks) is **not** in the pilot capture estimate; budget separately if enabling live judge at scale.
+Bright Data is **not** in this table (removed from the product; campus IT ban). Capture upper estimates never included it (blocked / non-primary → $0 in `providerShareForPrompts`); pilot **$12.89** and steady-state **$150.22/mo** are unchanged.
 
 ---
 
@@ -92,7 +93,7 @@ From `VENDOR_COMPARISON` in `lib/budget/funding.ts` (sources captured **2026-10-
 
 ## Risks
 
-1. **Procurement / UI capture** — Bright Data and true UI scrapers may need legal/procurement review; Perplexity UI is blocked on campus; we use DataForSEO API search instead (medium fidelity).
+1. **Procurement / UI capture** — Bright Data is banned by campus IT and is not used. True UI scrapers for Perplexity remain unavailable on campus; we use DataForSEO API search instead (medium fidelity).
 2. **UP-315 code ownership** — Long-term maintainer and bus factor for the Mac-hosted deployment.
 3. **Laptop hosting & backups** — Postgres and app on one machine (`127.0.0.1`); nightly backup discipline required; restore must stay tested.
 4. **Medium-fidelity Claude / Perplexity** — API-with-search series are comparable run-to-run but not labeled as consumer UI.

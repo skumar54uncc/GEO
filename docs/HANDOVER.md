@@ -20,7 +20,7 @@ Check drift: `git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics`
 
 1. Postgres up (`npm run db:up` / compose as in README). `DATABASE_URL` in `.env`.
 2. `APP_BIND_HOST=127.0.0.1` (set by `npm run dev` / `start` scripts).
-3. Open **`http://127.0.0.1:3000`** (not `localhost` — passwordless login requires the `127.0.0.1` host).
+3. Open **`http://127.0.0.1:3000`** (preferred). If Chrome rewrites the URL to `localhost`, sign-in still works — the app only binds loopback (`APP_BIND_HOST=127.0.0.1`).
 4. Separate terminal: `npm run worker`.
 5. Sign in with an email that has membership on **UNC Charlotte** (operator = editor/admin). Never pilot on Demo University for paid spend.
 

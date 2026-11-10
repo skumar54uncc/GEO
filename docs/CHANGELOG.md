@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-09: Bugfix — localhost login on loopback bind
+
+- Passwordless login accepts `localhost` / `::1` as well as `127.0.0.1` when `APP_BIND_HOST=127.0.0.1` (Chrome often rewrites the IP). Still refuses non-loopback hosts and non-127.0.0.1 binds.
+- Middleware redirects `localhost` → `127.0.0.1` when possible so the address bar stays consistent.
+
 ## 2026-11-09: Gate 3 closed + `v1.0-rc1` freeze
 
 - **Row 19:** Overview Search Console panel + Demand card copy “Not connected (property access pending from the web team)”; UNC never shows fixture GSC rows (`tests/gate3/row19-gsc.test.ts`). COVERAGE **19** partial (UNC web team property grant).

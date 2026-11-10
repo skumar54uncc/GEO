@@ -46,6 +46,12 @@ export function allowedEmail(email: string): boolean {
   return domains.includes(domain);
 }
 
+/** Loopback names Chrome / Next may present while the process is bound to 127.0.0.1. */
+export function isLoopbackHostname(host: string | null | undefined): boolean {
+  const h = (host ?? "").trim().toLowerCase();
+  return h === "127.0.0.1" || h === "localhost" || h === "::1" || h === "[::1]";
+}
+
 export function assertDevEmailLoginAllowed(req: Request): void {
   if (process.env.NODE_ENV === "production") {
     throw new AuthError(
@@ -62,12 +68,12 @@ export function assertDevEmailLoginAllowed(req: Request): void {
   const requestHost = new URL(req.url).hostname;
   const hostHeader = req.headers.get("host")?.split(":")[0]?.trim() ?? "";
   const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim().split(":")[0];
-  // Next may rewrite req.url to localhost while the client still dialed 127.0.0.1 (Host header).
-  const loopback =
-    requestHost === "127.0.0.1" || hostHeader === "127.0.0.1" || requestHost === "localhost" && hostHeader === "127.0.0.1";
-  if (!loopback || (forwardedHost && forwardedHost !== "127.0.0.1")) {
+  // Chrome and Next often surface `localhost` even when the server listens on 127.0.0.1 only.
+  // Safety comes from APP_BIND_HOST=127.0.0.1 (no LAN bind), not from forbidding the localhost name.
+  const loopback = isLoopbackHostname(requestHost) || isLoopbackHostname(hostHeader);
+  if (!loopback || (forwardedHost && !isLoopbackHostname(forwardedHost))) {
     throw new AuthError(
-      "Passwordless email login is available only through 127.0.0.1. Use real authentication before hosting.",
+      "Passwordless email login is available only on loopback (127.0.0.1 or localhost) while the app binds to 127.0.0.1. Use real authentication before hosting.",
       403,
     );
   }

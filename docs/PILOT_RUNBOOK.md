@@ -19,7 +19,7 @@ Live pilot for **Energy** content-team **core** prompts only: **30** neutral pro
 5. **Backup** — Run `npm run db:backup` and confirm a fresh dump under your backup location (see `docs/ARCHITECTURE.md` § hosting).
 6. **Worker + app** — In separate terminals from the project root (ensure `node`, `npm`, and Postgres client tools are on `PATH`):
    - `npm run worker`
-   - `npm run dev` (bind **127.0.0.1** only; open `http://127.0.0.1:3000`, not `localhost`)
+   - `npm run dev` (bind **127.0.0.1** only; prefer `http://127.0.0.1:3000` — `localhost` also signs in)
 7. **Keep the Mac awake** — `caffeinate -dimsu` for the expected run duration.
 8. **Canary** — Leave **canary enabled** on the scan (default). A failed canary **drops that engine route** for the scan; do not ignore canary failure alerts.
 9. **Rehearse on fixtures (optional)** — `npm run pilot:rehearse` on **Demo University** (no paid calls). Fix anything that fails before live spend.

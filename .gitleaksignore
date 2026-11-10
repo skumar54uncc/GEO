@@ -1,0 +1,11 @@
+# Wave 7 F01: recorded fixture tokens are not provider secrets (pagination / tokenizer maps).
+# Fingerprints from: gitleaks detect --source . --log-opts="--all" --redact
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/dataforseo_chatgpt_llm_scraper_live_advanced.json:generic-api-key:281
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/dataforseo_chatgpt_llm_scraper_live_advanced.json:generic-api-key:315
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/dataforseo_chatgpt_llm_scraper_live_advanced.json:generic-api-key:349
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:48
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:64
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:65
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:72
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:49
+47bd056a71d6ed8247f4da9e6c0ae9ecc4258740:tests/fixtures/capture/serpapi_google_recorded.json:generic-api-key:73

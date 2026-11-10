@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-10: R2 — organization tombstones for orphan audit_log FKs
+
+- Migration `0017_org_tombstones`: `organizations.archived_at` + insert archived placeholders for orphaned `audit_log.org_id` (no audit_log UPDATE/DELETE).
+- Archived orgs filtered from session org list. Repair helper: `lib/db/pg/orgTombstones.ts`.
+
 ## 2026-11-10: R1 — restore FK orphan root cause
 
 - `db:restore` fails when `audit_log.org_id` points at deleted orgs (demo teardown used `session_replication_role=replica` and never removed audit rows).

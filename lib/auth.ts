@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb, type Db } from "./db/pg/client";
 import { legacyContext } from "./db/pg/bootstrap";
@@ -173,7 +173,7 @@ export async function organizationsForToken(token: string | null, db: Db = getDb
     .select({ organization: organizations, role: memberships.role })
     .from(memberships)
     .innerJoin(organizations, eq(organizations.id, memberships.orgId))
-    .where(eq(memberships.userId, identity.userId));
+    .where(and(eq(memberships.userId, identity.userId), isNull(organizations.archivedAt)));
   return {
     identity,
     organizations: rows.map(({ organization, role }) => ({

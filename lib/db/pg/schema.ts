@@ -194,6 +194,8 @@ export const organizations = pgTable("organizations", {
   isDemo: boolean("is_demo").notNull().default(false),
   themeConfig: jsonb("theme_config").notNull().default(sql`'{}'::jsonb`),
   createdAt: createdAt(),
+  /** Set for tombstone rows that keep immutable audit_log FKs; never shown in the app. */
+  archivedAt: ts("archived_at"),
 });
 
 export const users = pgTable("users", {

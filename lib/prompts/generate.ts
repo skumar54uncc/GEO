@@ -410,7 +410,7 @@ export async function runPromptGenerate(
       throw new PromptGenerateValidationError("One or more personas were not found.");
     }
     fixture = await generateLiveFixture({
-      db: input.db,
+      db,
       orgId: input.orgId,
       topic: campaign.topic,
       personas: rows.map((r) => ({ id: r.id, key: r.key, opening: r.draftPrefix })),

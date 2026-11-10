@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { checkLoopbackHostOrigin } from "@/lib/net/loopbackHost";
+import { checkLoopbackHostOrigin, hostnameOnly } from "@/lib/net/loopbackHost";
 
 export { isLoopbackHostname } from "@/lib/net/loopbackHost";
 
 /**
  * 1) Every matched path: loopback Host; unsafe methods also require loopback Origin when present.
  *    Accepts 127.0.0.1 and localhost (app port). Runs before redirects so checks are never skipped.
- * 2) Normalize Chrome's localhost / ::1 to 127.0.0.1 for HTML navigations (app binds loopback only).
+ * 2) If the client Host header is localhost / ::1, redirect to 127.0.0.1 (Chrome often uses localhost
+ *    while the process binds 127.0.0.1). Decision uses the Host header — not nextUrl.hostname —
+ *    because Next can normalize 127.0.0.1 → localhost and create a redirect loop.
  * 3) Pages without a session cookie redirect to /login. API routes check auth themselves.
  * Matcher includes /_next/image (image optimizer advisories on Next 14.2.35).
  */
@@ -24,8 +26,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const host = req.nextUrl.hostname;
-  if (host === "localhost" || host === "::1") {
+  const headerHost = hostnameOnly(req.headers.get("host"));
+  if (headerHost === "localhost" || headerHost === "::1") {
     const dest = req.nextUrl.clone();
     dest.hostname = "127.0.0.1";
     return NextResponse.redirect(dest);

@@ -6,6 +6,7 @@ import path from "path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
+import { assertBackupHasNoOrphans, compareTableCounts, publicTableRowCounts } from "@/lib/db/pg/backupGuard";
 import { loadEnv, pgBinary } from "./env";
 
 loadEnv();
@@ -83,9 +84,18 @@ function sha256(file: string): string {
 }
 
 /** Creates one self-contained local bundle: Postgres dump, data/raw, and a manifest. */
-export function backup(): string {
+export async function backup(): Promise<string> {
   const url = urlFor();
   assertLocal(url);
+
+  const gate = new Client({ connectionString: url });
+  await gate.connect();
+  try {
+    await assertBackupHasNoOrphans(gate);
+  } finally {
+    await gate.end();
+  }
+
   const dir = path.join(process.cwd(), "backups");
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -123,6 +133,81 @@ export function backup(): string {
   }
   console.log(`backup bundle written: ${path.relative(process.cwd(), bundle)}`);
   return bundle;
+}
+
+/**
+ * Restore a bundle into a temporary database, compare public table row counts to live, drop temp.
+ * Prints PASS or FAIL. Returns true on PASS.
+ */
+export async function verifyBackup(bundlePath: string | undefined): Promise<boolean> {
+  if (!bundlePath) throw new Error("usage: npm run db:verify-backup -- <backup bundle>");
+  const bundle = path.resolve(bundlePath);
+  const dump = path.join(bundle, "database.dump");
+  if (!fs.existsSync(dump)) throw new Error(`database dump not found: ${dump}`);
+
+  const liveUrl = urlFor();
+  assertLocal(liveUrl);
+  const tempName = `geo_verify_${Date.now()}`;
+  const tempUrl = urlFor(tempName);
+
+  const live = new Client({ connectionString: liveUrl });
+  await live.connect();
+  let liveCounts: Record<string, number>;
+  try {
+    liveCounts = await publicTableRowCounts(live);
+  } finally {
+    await live.end();
+  }
+
+  await setup(tempUrl);
+  const restoreRes = spawnSync(
+    pgBinary("pg_restore"),
+    ["--clean", "--if-exists", "--no-owner", `--dbname=${tempUrl}`, dump],
+    { stdio: "inherit" },
+  );
+  if (restoreRes.status !== 0) {
+    await dropDatabase(tempName);
+    console.log("FAIL");
+    throw new Error("pg_restore failed during verify-backup");
+  }
+
+  const restoredClient = new Client({ connectionString: tempUrl });
+  await restoredClient.connect();
+  let restoredCounts: Record<string, number>;
+  try {
+    restoredCounts = await publicTableRowCounts(restoredClient);
+  } finally {
+    await restoredClient.end();
+  }
+
+  await dropDatabase(tempName);
+
+  const compare = compareTableCounts(liveCounts, restoredCounts);
+  if (!compare.ok) {
+    if (compare.liveOnly.length) console.error("tables only on live:", compare.liveOnly.join(", "));
+    if (compare.restoreOnly.length) console.error("tables only on restore:", compare.restoreOnly.join(", "));
+    for (const m of compare.mismatches) {
+      console.error(`count mismatch ${m.table}: live=${m.live} restored=${m.restored}`);
+    }
+    console.log("FAIL");
+    return false;
+  }
+  console.log("PASS");
+  return true;
+}
+
+async function dropDatabase(name: string): Promise<void> {
+  const admin = new Client({ connectionString: urlFor("postgres") });
+  await admin.connect();
+  try {
+    await admin.query(
+      `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()`,
+      [name],
+    );
+    await admin.query(`DROP DATABASE IF EXISTS "${name.replace(/"/g, '""')}"`);
+  } finally {
+    await admin.end();
+  }
 }
 
 export function restoreRawStore(
@@ -228,7 +313,7 @@ async function main() {
       await runMigrations();
       break;
     case "backup":
-      backup();
+      await backup();
       break;
     case "nightly-install":
       nightlyInstall();
@@ -236,8 +321,13 @@ async function main() {
     case "restore":
       await restore(args[0], args[1]);
       break;
+    case "verify-backup": {
+      const ok = await verifyBackup(args[0]);
+      if (!ok) process.exit(1);
+      break;
+    }
     default:
-      console.log("usage: tsx scripts/db.ts <up|setup|migrate|backup|restore|nightly-install>");
+      console.log("usage: tsx scripts/db.ts <up|setup|migrate|backup|restore|verify-backup|nightly-install>");
       process.exit(1);
   }
 }

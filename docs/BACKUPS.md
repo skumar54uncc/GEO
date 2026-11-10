@@ -8,6 +8,16 @@
 - `data/raw/`: a separate copy of the file-backed raw payload store, when it exists.
 - `manifest.json`: database name plus raw-file count and bytes.
 
+Before writing the bundle, backup runs the foreign-key orphan scan (`lib/db/pg/orphanFks.ts`) and **fails loudly** if any constraint has orphans (a dump that cannot `pg_restore` cleanly).
+
+After every backup, prove the bundle:
+
+```sh
+npm run db:verify-backup -- backups/<bundle-directory>
+```
+
+That restores into a temporary database, compares public table row counts to live, drops the temp database, and prints **PASS** or **FAIL**.
+
 The bundle is local and gitignored. It is not an off-device backup. `data/tracker.db`, `.env.local`, and files outside `data/raw/` are not included.
 
 ## Nightly macOS job

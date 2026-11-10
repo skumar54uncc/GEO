@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-10: R4 — backup orphan gate + verify-backup
+
+- `db:backup` runs FK orphan scan before writing the bundle.
+- `npm run db:verify-backup -- <bundle>` restores to a temp DB, compares row counts, drops temp, prints PASS/FAIL.
+- `docs/BACKUPS.md` + `docs/PILOT_RUNBOOK.md` require verify after every backup.
+
 ## 2026-11-10: R3 — org delete soft-archives; no FK bypass
 
 - `deleteAllDataForOrg` archives + renames slug (keeps `audit_log` FKs). Removed `session_replication_role` from demo teardown and admin fixture cleanup (cleanup refuses draw DELETEs).

@@ -36,10 +36,10 @@ describe("contentModel writer vs judge separation", () => {
     expect(() => contentModel()).toThrow(/must differ from JUDGE_MODEL/);
   });
 
-  it("refuses when CONTENT_MODEL equals the default judge fallback", () => {
+  it("refuses when JUDGE_MODEL is unset (no silent default)", () => {
     delete process.env.JUDGE_MODEL;
-    process.env.CONTENT_MODEL = "accounts/fireworks/models/deepseek-v4-pro";
-    expect(judgeModel()).toBe("accounts/fireworks/models/deepseek-v4-pro");
-    expect(() => contentModel()).toThrow(WriterModelConfigError);
+    process.env.CONTENT_MODEL = "accounts/fireworks/models/writer-only";
+    expect(() => judgeModel()).toThrow(/JUDGE_MODEL is not set/);
+    expect(() => contentModel()).toThrow(/JUDGE_MODEL is not set/);
   });
 });

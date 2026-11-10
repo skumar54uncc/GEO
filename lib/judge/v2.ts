@@ -143,7 +143,6 @@ export async function judgeDraw(
   const entities = summarizeMatches(text, matchAliases(text, opts.aliases));
   const keyFor = (e: { entityType: string; entityName: string }) => (e.entityType === "brand" ? "brand" : e.entityName);
   const keys = entities.map(keyFor);
-  const model = opts.model ?? judgeModel();
 
   let value: JudgeV2Output | null = null;
   let rawOutput = "";
@@ -152,6 +151,13 @@ export async function judgeDraw(
   let judgeModelUsed = "deterministic";
 
   if (keys.length) {
+    let model: string;
+    try {
+      model = opts.model ?? judgeModel();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { judgeRunId: null, ok: false, repairUsed: false, error: message.includes("JUDGE_MODEL") ? "JUDGE_MODEL is not set" : message };
+    }
     judgeModelUsed = model;
     const chat = opts.chat ?? defaultChat;
     const [prompt] = await db.select({ text: prompts.text }).from(prompts).where(eq(prompts.id, draw.promptId));

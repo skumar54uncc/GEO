@@ -10,8 +10,13 @@ export class WriterModelConfigError extends Error {
   }
 }
 
+/** Required. Never falls back to a hardcoded model id. */
 export function judgeModel(): string {
-  return process.env.JUDGE_MODEL || "accounts/fireworks/models/deepseek-v4-pro";
+  const model = process.env.JUDGE_MODEL?.trim();
+  if (!model) {
+    throw new Error("JUDGE_MODEL is not set");
+  }
+  return model;
 }
 
 /**

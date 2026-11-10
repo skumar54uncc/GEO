@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { createAnthropicAdapter, parseAnthropic } from "@/lib/capture/adapters/anthropic";
-import { createBrightDataAdapter, parseBrightDataRecords } from "@/lib/capture/adapters/brightdata";
 import { createDataForSeoAdapter, parseDataForSeo } from "@/lib/capture/adapters/dataforseo";
 import { createGeminiAdapter, parseGemini } from "@/lib/capture/adapters/gemini";
 import { parityStatus } from "@/lib/capture/adapters/localSerp";
@@ -39,7 +38,6 @@ const ENV = {
   DATAFORSEO_PARAMETRIC_MODEL_CHATGPT: "gpt-4.1-mini",
   DATAFORSEO_PERPLEXITY_MODEL: "sonar",
   DATAFORSEO_CLAUDE_MODEL: "claude-sonnet-5-5",
-  BRIGHTDATA_API_KEY: "k",
   OPENAI_API_KEY: "k",
   OPENAI_SEARCH_MODEL: "gpt-6-sol",
   ANTHROPIC_API_KEY: "k",
@@ -149,16 +147,7 @@ describe("DataForSEO parsing (documented samples)", () => {
   });
 });
 
-describe("Bright Data, OpenAI, Anthropic, Perplexity, Gemini parsing (documented samples)", () => {
-  it("Bright Data Perplexity record", () => {
-    const records = fixture("brightdata_perplexity_records.json").response;
-    const r = parseBrightDataRecords(req("perplexity", "ui_provider"), records.slice(0, 1), 10, records.slice(0, 1));
-    expect(r.status).toBe("ok");
-    expect(r.citations.length).toBeGreaterThan(0);
-    expect(r.costUsd).toBe(0.0015);
-    expect(r.modelBuild).toBe("unknown");
-  });
-
+describe("OpenAI, Anthropic, Perplexity, Gemini parsing (documented samples)", () => {
   it("OpenAI web search: text, url_citation spans, search queries", () => {
     const body = { model: "gpt-6-sol", output: fixture("openai_web_search_output.json").output, usage: { input_tokens: 1000, output_tokens: 100 } };
     const r = parseOpenAi(req("chatgpt", "api_search"), body, 10, "gpt-6-sol");
@@ -281,7 +270,7 @@ describe("capture never throws", () => {
   for (const [label, fetchImpl] of cases) {
     it(`${label}: every route returns a draw result`, async () => {
       for (const route of routes) {
-        const adapter = createAdapter(route.provider, { env: ENV, fetch: fetchImpl, ...(route.provider === "brightdata" ? { sleep: async () => {} } : {}) } as never);
+        const adapter = createAdapter(route.provider, { env: ENV, fetch: fetchImpl } as never);
         const r = await adapter.capture(req(route.engine, route.runner));
         expect(["error", "blocked", "empty"], `${route.provider} ${route.engine} ${label}`).toContain(r.status);
         if (label === "401" || label === "429") expect(r.status, `${route.provider} ${route.engine}`).toBe("blocked");
@@ -291,8 +280,7 @@ describe("capture never throws", () => {
 
   it("missing keys give a blocked draw without a network call", async () => {
     for (const id of PROVIDER_IDS) {
-      // Bright Data stays as an optional UI adapter but is no longer an approved primary route.
-      const route = allRoutes().find((r) => r.provider === id) ?? (id === "brightdata" ? { engine: "perplexity" as const, runner: "ui_provider" as const, provider: "brightdata" as const } : null);
+      const route = allRoutes().find((r) => r.provider === id);
       if (!route) continue;
       let called = false;
       const a = createAdapter(id, { env: {}, fetch: async () => ((called = true), new Response("{}")) });
@@ -311,48 +299,6 @@ describe("capture never throws", () => {
     expect(called).toBe(false);
   });
 
-  it("Bright Data 202 polls a snapshot and gives up as an error draw", async () => {
-    let n = 0;
-    let clock = 0;
-    const realNow = Date.now;
-    Date.now = () => clock;
-    try {
-      const a = createBrightDataAdapter({
-        env: ENV,
-        sleep: async (ms) => {
-          clock += ms;
-        },
-        fetch: async (u) => {
-          n++;
-          if (u.includes("/scrape")) return new Response(JSON.stringify({ snapshot_id: "sd_1" }), { status: 202 });
-          return new Response(JSON.stringify({ status: "running" }), { status: 200 });
-        },
-      });
-      const r = await a.capture(req("perplexity", "ui_provider"));
-      expect(r.status).toBe("error");
-      expect(r.error).toContain("not ready");
-      expect(r.costUsd).toBeNull();
-      expect(n).toBeGreaterThan(2);
-    } finally {
-      Date.now = realNow;
-    }
-  });
-
-  it("Bright Data 202 then ready downloads the snapshot", async () => {
-    const records = fixture("brightdata_perplexity_records.json").response.slice(0, 1);
-    const a = createBrightDataAdapter({
-      env: ENV,
-      sleep: async () => {},
-      fetch: async (u) => {
-        if (u.includes("/scrape")) return new Response(JSON.stringify({ snapshot_id: "sd_1" }), { status: 202 });
-        if (u.includes("/progress/")) return new Response(JSON.stringify({ status: "ready" }), { status: 200 });
-        return new Response(JSON.stringify(records), { status: 200 });
-      },
-    });
-    const r = await a.capture(req("perplexity", "ui_provider"));
-    expect(r.status).toBe("ok");
-    expect((r.raw as { snapshot_id: string }).snapshot_id).toBe("sd_1");
-  });
 });
 
 describe("request shapes sent to providers", () => {

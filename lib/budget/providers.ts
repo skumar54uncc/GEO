@@ -30,7 +30,6 @@ export const BUDGET_PROVIDER_META: BudgetProviderMeta[] = [
   { id: "openai", displayName: "OpenAI", role: "calibration", roleLabel: "calibration only" },
   { id: "anthropic", displayName: "Anthropic", role: "calibration", roleLabel: "calibration only" },
   { id: "gemini", displayName: "Gemini", role: "calibration", roleLabel: "calibration only" },
-  { id: "brightdata", displayName: "Bright Data", role: "blocked", roleLabel: "not used (blocked by IT)" },
 ];
 
 const DRAWS = 3;

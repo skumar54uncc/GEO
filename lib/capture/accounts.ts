@@ -8,7 +8,6 @@ import type { ProviderId } from "./registry";
  */
 export const CAPTURE_PROVIDER_DEFAULTS: Record<ProviderId, { monthlyBudgetUsd: string | null; perScanCapUsd: string | null; perRunCapUnits: number | null; creditUnitUsd: string | null }> = {
   dataforseo: { monthlyBudgetUsd: "20", perScanCapUsd: "10", perRunCapUnits: null, creditUnitUsd: null },
-  brightdata: { monthlyBudgetUsd: "5", perScanCapUsd: "2", perRunCapUnits: null, creditUnitUsd: null },
   openai: { monthlyBudgetUsd: "20", perScanCapUsd: "10", perRunCapUnits: null, creditUnitUsd: null },
   anthropic: { monthlyBudgetUsd: "60", perScanCapUsd: "30", perRunCapUnits: null, creditUnitUsd: null },
   perplexity: { monthlyBudgetUsd: "10", perScanCapUsd: "5", perRunCapUnits: null, creditUnitUsd: null },

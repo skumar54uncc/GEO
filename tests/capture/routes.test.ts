@@ -9,7 +9,7 @@ import { prompts } from "@/lib/db/pg/schema";
 import { cookieFor, req, resetDatabase } from "../helpers";
 
 const json = (r: Response) => r.json() as Promise<Record<string, any>>;
-const KEYS = ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "OPENAI_API_KEY", "BRIGHTDATA_API_KEY", "PERPLEXITY_API_KEY", "GEMINI_API_KEY", "SERPAPI_API_KEY"];
+const KEYS = ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "OPENAI_API_KEY", "PERPLEXITY_API_KEY", "GEMINI_API_KEY", "SERPAPI_API_KEY"];
 
 describe("capture routes (no network: keys are absent)", () => {
   const saved: Record<string, string | undefined> = {};

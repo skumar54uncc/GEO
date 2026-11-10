@@ -1,5 +1,7 @@
 # Local backups and restore
 
+**Postgres client tools:** this repo assumes **Postgres.app** locally (not Docker) unless you set `PG_BIN`. `scripts/env.ts` resolves `pg_dump` / `pg_restore` / `psql` from `PG_BIN`, `PATH`, then Postgres.app under `~/Applications` and `/Applications`.
+
 `npm run db:backup` creates a timestamped directory under `backups/` containing:
 
 - `database.dump`: a custom-format `pg_dump` of the local database.

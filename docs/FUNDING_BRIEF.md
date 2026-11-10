@@ -77,19 +77,15 @@ Provider caps above are the app starting defaults (`CAPTURE_PROVIDER_DEFAULTS`).
 
 ### Judge (Fireworks) — pilot, 540 draws
 
-Not included in the **$12.89** capture upper. Estimator: `lib/judge/v2.ts` (`judgeDraw`).
+Not included in the **$12.89** capture upper. Estimator: `lib/judge/v2.ts` (`judgeDraw`). `JUDGE_MODEL` is required (no hardcoded default).
 
 | Input | Value |
 |-------|--------|
-| Model | `JUDGE_MODEL` default `accounts/fireworks/models/deepseek-v4-pro` (`lib/fireworks.ts` `judgeModel()`) |
+| Model | `JUDGE_MODEL` (required; chosen by bake-off — `npm run judge:bakeoff`) |
 | Budget check (pre-call only) | `estimatedUnits = Math.ceil((system.length + user.length) / 4) + 800`; reserves `estimatedUnits * 2` (one repair) |
-| Ledger charge | **Real** `usage.prompt_tokens + usage.completion_tokens` from Fireworks (`fireworksChat` → `cost_ledger`). Chars/4 is not written to the ledger. |
-| Example estimate lengths (budget only) | system **1069** chars; user **165** chars → **1109** estimated units/draw (reserve **2218**) |
-| USD / unit for this model | **PRICE NEEDED** — not in `lib/capture/pricing.ts` `TOKEN_RATES`; Phase 2 `fireworks` account seeds `credit_unit_usd: null` (`lib/site/providerCall.ts`) |
+| Ledger charge | **Real** `usage.prompt_tokens + usage.completion_tokens` from Fireworks (`fireworksChat` → `cost_ledger`). Missing usage → estimate with `usage_estimated=true`. |
 
-Fireworks is funded as a **$25 prepaid cap**. Real cost is measured on the **6 canary draws** before the full run. That is a cap, not a price claim.
-
-Until a verified Fireworks price for `deepseek-v4-pro` is recorded in-repo, do not add a judge dollar line to the pilot ask.
+Fireworks funded as a **$25 prepaid cap**. Real cost is measured on the bake-off and canary draws before the full run.
 
 ---
 

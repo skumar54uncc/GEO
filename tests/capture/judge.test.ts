@@ -232,6 +232,70 @@ describe("judgeDraw", () => {
     expect(Number(rows[0].units)).toBeGreaterThan(800);
   });
 
+  it("D1: a failed row followed by a re-run gives a new successful row", async () => {
+    const { db, orgId, drawId } = await seedDraw(answer);
+    const failChat: ChatFn = async () => ({ ok: true, text: "[]", error: null });
+    const failed = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat: failChat, model: "test-judge" });
+    expect(failed.ok).toBe(false);
+    const afterFail = await db.select().from(judgeRuns).where(eq(judgeRuns.drawId, drawId));
+    expect(afterFail).toHaveLength(1);
+    expect(afterFail[0].error).toBeTruthy();
+    expect(afterFail[0].parsed).toBeNull();
+
+    const okChat: ChatFn = async () => ({
+      ok: true,
+      text: JSON.stringify({
+        entities: [
+          { key: "brand", sentiment: "positive", sentiment_quote: "has a strong power program" },
+          { key: "NC State", sentiment: "neutral", sentiment_quote: null },
+        ],
+        claims: [],
+        named_sources: [],
+        possible_mentions: [],
+      }),
+      error: null,
+    });
+    const again = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat: okChat, model: "test-judge" });
+    expect(again.ok).toBe(true);
+    expect(again.skipped).toBeUndefined();
+    const rows = await db.select().from(judgeRuns).where(eq(judgeRuns.drawId, drawId));
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((r) => r.error)).toHaveLength(1);
+    expect(rows.filter((r) => !r.error && r.parsed != null)).toHaveLength(1);
+  });
+
+  it("D1: a successful row followed by a re-run is skipped", async () => {
+    const { db, orgId, drawId } = await seedDraw(answer);
+    const okChat: ChatFn = async () => ({
+      ok: true,
+      text: JSON.stringify({
+        entities: [
+          { key: "brand", sentiment: "positive", sentiment_quote: "has a strong power program" },
+          { key: "NC State", sentiment: "neutral", sentiment_quote: null },
+        ],
+        claims: [],
+        named_sources: [],
+        possible_mentions: [],
+      }),
+      error: null,
+    });
+    const first = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat: okChat, model: "test-judge" });
+    expect(first.ok).toBe(true);
+    let calls = 0;
+    const second = await judgeDraw(db, drawId, {
+      orgId,
+      aliases: UNCC,
+      chat: async () => {
+        calls++;
+        return { ok: true, text: "{}", error: null };
+      },
+      model: "test-judge",
+    });
+    expect(calls).toBe(0);
+    expect(second.skipped).toMatch(/already judged/);
+    expect(await db.select().from(judgeRuns).where(eq(judgeRuns.drawId, drawId))).toHaveLength(1);
+  });
+
   it("token ceiling is an error and does not repair", async () => {
     const { db, orgId, drawId } = await seedDraw(answer);
     let n = 0;

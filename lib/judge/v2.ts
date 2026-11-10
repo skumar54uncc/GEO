@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { checkBudget, recordCall } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
 import { claims, draws, judgeRuns, mentions, prompts } from "@/lib/db/pg/schema";
@@ -133,10 +133,18 @@ export async function judgeDraw(
   const [draw] = await db.select().from(draws).where(eq(draws.id, drawId));
   if (!draw) return { judgeRunId: null, ok: false, repairUsed: false, error: "Draw not found" };
   if (draw.status !== "ok") return { judgeRunId: null, ok: true, repairUsed: false, error: null, skipped: `draw status ${draw.status}` };
+  // Only a successful run blocks re-judge. Failed rows stay for audit and do not skip.
   const [already] = await db
     .select({ id: judgeRuns.id })
     .from(judgeRuns)
-    .where(and(eq(judgeRuns.drawId, drawId), eq(judgeRuns.judgePromptVersion, JUDGE_V2_PROMPT_VERSION)));
+    .where(
+      and(
+        eq(judgeRuns.drawId, drawId),
+        eq(judgeRuns.judgePromptVersion, JUDGE_V2_PROMPT_VERSION),
+        isNull(judgeRuns.error),
+        isNotNull(judgeRuns.parsed),
+      ),
+    );
   if (already) return { judgeRunId: already.id, ok: true, repairUsed: false, error: null, skipped: "already judged with this version" };
 
   const text = draw.answerText;

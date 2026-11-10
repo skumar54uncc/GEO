@@ -14,4 +14,10 @@ describe("safeHref", () => {
     expect(safeHref("//evil.example/phish")).toBeNull();
     expect(safeHref("vbscript:msg")).toBeNull();
   });
+
+  it("rejects backslash paths and paths starting with /\\", () => {
+    expect(safeHref("/\\evil.example/phish")).toBeNull();
+    expect(safeHref("/campaigns\\x")).toBeNull();
+    expect(safeHref("/ok/path")).toBe("/ok/path");
+  });
 });

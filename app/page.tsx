@@ -29,7 +29,9 @@ import {
   TileIcon,
 } from "@/components/scout/primitives";
 import { VisibilityChart } from "@/components/scout/VisibilityChart";
+import { SafeLink } from "@/components/site/client";
 import { Button } from "@/components/ui/button";
+import { safeHref } from "@/lib/url/safeHref";
 import type { InstitutionRank } from "@/lib/metrics/institutions";
 import type { SeriesComparison } from "@/lib/metrics/compare";
 import type { PromptsWon, RateWithCi } from "@/lib/metrics/types";
@@ -353,9 +355,9 @@ export default function OverviewPage() {
         <div className="flex flex-wrap items-center gap-2">
           {campaignId ? (
             <Button asChild variant="outline" size="sm" data-testid="leadership-pdf-link">
-              <a href={`/api/campaigns/${campaignId}/leadership-pdf`} target="_blank" rel="noreferrer">
+              <SafeLink href={`/api/campaigns/${campaignId}/leadership-pdf`} className="inline-flex items-center">
                 Leadership PDF
-              </a>
+              </SafeLink>
             </Button>
           ) : null}
           <Segmented
@@ -514,7 +516,7 @@ export default function OverviewPage() {
                   <StatusBadge tone={accBadge.tone === "decline" ? "decline" : "noise"}>{accBadge.label}</StatusBadge>
                   {(accuracy?.contradicted ?? 0) > 0 ? (
                     <Link
-                      href={campaignId ? `/campaigns/${campaignId}/answers` : "/campaigns"}
+                      href={safeHref(campaignId ? `/campaigns/${campaignId}/answers` : "/campaigns") ?? "/campaigns"}
                       className="text-[11.5px] font-semibold text-[var(--status-decline-fg)]"
                     >
                       Review in Answers
@@ -768,7 +770,7 @@ export default function OverviewPage() {
                 </div>
               ) : null}
               {campaignId ? (
-                <Link className="inline-block text-sm font-medium text-scout-brand underline" href={`/campaigns/${campaignId}/answers`}>
+                <Link className="inline-block text-sm font-medium text-scout-brand underline" href={safeHref(`/campaigns/${campaignId}/answers`) ?? "/campaigns"}>
                   Open Answer Explorer
                 </Link>
               ) : null}
@@ -797,21 +799,21 @@ export default function OverviewPage() {
               <h2 className="text-scout-card text-scout-text">Activity</h2>
               <p className="text-[13px] text-scout-muted">From the latest scan</p>
               <div className="mt-3 grid grid-cols-3 gap-2">
-                <Link href={campaignId ? `/campaigns/${campaignId}/answers` : "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
+                <Link href={safeHref(campaignId ? `/campaigns/${campaignId}/answers` : "/campaigns") ?? "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
                   <div className="mx-auto mb-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-[var(--tile-blue-bg)] text-[var(--tile-blue-fg)]">
                     <MessageSquare size={15} strokeWidth={2} />
                   </div>
                   <b className="block text-[17px] text-scout-text">{answersCheckedN}</b>
                   <span className="text-xs text-scout-muted">AI answers checked</span>
                 </Link>
-                <Link href={campaignId ? `/campaigns/${campaignId}/dashboard` : "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
+                <Link href={safeHref(campaignId ? `/campaigns/${campaignId}/dashboard` : "/campaigns") ?? "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
                   <div className="mx-auto mb-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-[var(--tile-green-bg)] text-[var(--tile-green-fg)]">
                     <LayersIcon />
                   </div>
                   <b className="block text-[17px] text-scout-text">{cells.length}</b>
                   <span className="text-xs text-scout-muted">Engines tracked</span>
                 </Link>
-                <Link href={campaignId ? `/campaigns/${campaignId}/citations` : "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
+                <Link href={safeHref(campaignId ? `/campaigns/${campaignId}/citations` : "/campaigns") ?? "/campaigns"} className="rounded-xl bg-scout-page px-1.5 py-3 text-center no-underline">
                   <div className="mx-auto mb-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-[var(--tile-amber-bg)] text-[var(--tile-amber-fg)]">
                     <FileText size={15} strokeWidth={2} />
                   </div>

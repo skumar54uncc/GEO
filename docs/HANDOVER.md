@@ -1,10 +1,10 @@
-# Handover — Scout / GEO (`v1.0-rc1`)
+# Handover — Scout / GEO (`v1.0-rc2`)
 
-Product: in-house AI search visibility for **UNC Charlotte**. Tag **`v1.0-rc1`** is the pilot code freeze. **V1 exit:** see `docs/V1_EXIT.md` — gates **1–4 done**; **5–6** blocked on funding and leadership review.
+Product: in-house AI search visibility for **UNC Charlotte**. Tag **`v1.0-rc2`** is the pilot code freeze. **V1 exit:** see `docs/V1_EXIT.md` — gates **1–4 done**; **5–6** blocked on funding and leadership review.
 
 ## Code freeze
 
-From **`v1.0-rc1`**: only **bug fixes** on `main`. Everything else → `docs/BACKLOG.md`.
+From **`v1.0-rc2`**: only **bug fixes** on `main`. Everything else → `docs/BACKLOG.md`.
 
 Until the Energy pilot ends, treat these as frozen (bug fixes only):
 
@@ -14,13 +14,13 @@ Until the Energy pilot ends, treat these as frozen (bug fixes only):
 | Judging | `lib/judge/` |
 | Metrics | `lib/metrics/` |
 
-Check drift: `git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics`
+Check drift: `git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`
 
 ## How to start (local)
 
 1. Postgres up (`npm run db:up` / compose as in README). `DATABASE_URL` in `.env`.
 2. `APP_BIND_HOST=127.0.0.1` (set by `npm run dev` / `start` scripts).
-3. Open **`http://127.0.0.1:3000`** (not `localhost` — passwordless login requires the `127.0.0.1` host).
+3. Open **`http://127.0.0.1:3000`** (preferred). If Chrome rewrites the URL to `localhost`, sign-in still works — the app only binds loopback (`APP_BIND_HOST=127.0.0.1`).
 4. Separate terminal: `npm run worker`.
 5. Sign in with an email that has membership on **UNC Charlotte** (operator = editor/admin). Never pilot on Demo University for paid spend.
 

@@ -60,15 +60,27 @@ describe("auth", () => {
       expect((await json(res)).error).toMatch(/bind explicitly to 127\.0\.0\.1/);
 
       env.APP_BIND_HOST = "127.0.0.1";
+      // Chrome / Next often present Host: localhost while the process binds 127.0.0.1 — allow it.
       res = await loginRoute(
         new Request("http://localhost:3000/api/auth/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: "localhost@charlotte.edu" }),
+          headers: { "Content-Type": "application/json", Host: "localhost:3000" },
+          body: JSON.stringify({ email: "localhost-ok@charlotte.edu" }),
+        }),
+      );
+      const localhostBody = await json(res);
+      expect(res.status).not.toBe(403);
+      expect(String(localhostBody.error ?? "")).not.toMatch(/loopback/i);
+
+      res = await loginRoute(
+        new Request("http://evil.example/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Host: "evil.example" },
+          body: JSON.stringify({ email: "remote@charlotte.edu" }),
         }),
       );
       expect(res.status).toBe(403);
-      expect((await json(res)).error).toMatch(/only through 127\.0\.0\.1/);
+      expect((await json(res)).error).toMatch(/loopback/);
     } finally {
       if (originalNodeEnv === undefined) delete env.NODE_ENV;
       else env.NODE_ENV = originalNodeEnv;

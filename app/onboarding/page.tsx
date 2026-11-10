@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeHref } from "@/lib/url/safeHref";
 
 type Host = {
   id: string;
@@ -217,7 +218,7 @@ function HostsStep({ view, reload, setMsg }: { view: SiteView; reload: () => Pro
                 <>
                   {" "}
                   ·{" "}
-                  <Link className="text-uncc-green underline" href={`/audit?site=${view.site.id}`}>
+                  <Link className="text-uncc-green underline" href={safeHref(`/audit?site=${view.site.id}`) ?? "/audit"}>
                     {latest.audits[0].finding_count} findings
                   </Link>
                 </>
@@ -580,7 +581,7 @@ export default function OnboardingPage() {
                 {i + 1}. {s}
               </button>
             ))}
-            <Link href={`/audit${siteId ? `?site=${siteId}` : ""}`} className="px-3 py-1.5 text-sm text-uncc-ink/70 hover:text-uncc-ink">
+            <Link href={safeHref(`/audit${siteId ? `?site=${siteId}` : ""}`) ?? "/audit"} className="px-3 py-1.5 text-sm text-uncc-ink/70 hover:text-uncc-ink">
               4. Audit →
             </Link>
           </nav>

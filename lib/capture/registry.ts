@@ -1,5 +1,4 @@
 import { createAnthropicAdapter } from "./adapters/anthropic";
-import { createBrightDataAdapter } from "./adapters/brightdata";
 import type { AdapterDeps } from "./adapters/common";
 import { createDataForSeoAdapter } from "./adapters/dataforseo";
 import { createGeminiAdapter } from "./adapters/gemini";
@@ -9,7 +8,7 @@ import { createPerplexityAdapter } from "./adapters/perplexity";
 import { createSerpApiAdapter } from "./adapters/serpapi";
 import type { Engine, ProviderAdapter, Runner } from "./types";
 
-export const PROVIDER_IDS = ["dataforseo", "brightdata", "openai", "anthropic", "perplexity", "gemini", "serpapi", "local_serp"] as const;
+export const PROVIDER_IDS = ["dataforseo", "openai", "anthropic", "perplexity", "gemini", "serpapi", "local_serp"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export type Route = { engine: Engine; runner: Runner; provider: ProviderId };
@@ -32,8 +31,8 @@ export const ROUTES: Record<Engine, { primary: Route; fallback: Route | null; pa
     parity: [],
   },
   perplexity: {
-    // Bright Data (true UI) is blocked on campus. DataForSEO has no Perplexity UI scraper; sonar via
-    // LLM Responses is the approved medium-fidelity primary. Never label these draws as UI.
+    // Campus IT bans third-party Perplexity UI scrapers. DataForSEO has no Perplexity UI scraper;
+    // sonar via LLM Responses is the approved medium-fidelity primary. Never label these draws as UI.
     primary: { engine: "perplexity", runner: "api_search", provider: "dataforseo" },
     fallback: { engine: "perplexity", runner: "api_search", provider: "perplexity" },
     parametric: { engine: "perplexity", runner: "api_parametric", provider: "dataforseo" },
@@ -67,8 +66,6 @@ export function createAdapter(id: ProviderId, deps: AdapterDeps = {}): ProviderA
   switch (id) {
     case "dataforseo":
       return createDataForSeoAdapter(deps);
-    case "brightdata":
-      return createBrightDataAdapter(deps);
     case "openai":
       return createOpenAiAdapter(deps);
     case "anthropic":
@@ -81,6 +78,10 @@ export function createAdapter(id: ProviderId, deps: AdapterDeps = {}): ProviderA
       return createSerpApiAdapter(deps);
     case "local_serp":
       return createLocalSerpAdapter(deps);
+    default: {
+      const _exhaustive: never = id;
+      throw new Error(`Unknown provider: ${String(_exhaustive)}`);
+    }
   }
 }
 

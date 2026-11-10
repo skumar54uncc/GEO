@@ -113,6 +113,13 @@
       "when": 1795000000000,
       "tag": "0015_gate3_annotations_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795100000000,
+      "tag": "0016_cost_ledger_usage_estimated",
+      "breakpoints": true
     }
   ]
 }

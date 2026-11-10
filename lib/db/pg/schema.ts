@@ -1199,6 +1199,8 @@ export const costLedger = pgTable(
     cached: boolean("cached").notNull().default(false),
     error: text("error"),
     promptId: uuid("prompt_id").references(() => prompts.id),
+    /** True when `units` came from the chars/4 pre-call estimate, not provider usage. */
+    usageEstimated: boolean("usage_estimated").notNull().default(false),
     /** Exact `DEMO_SEED_MARKER` when this ledger row was inserted by a demo/fixture seed. */
     seedMarker: text("seed_marker"),
     createdAt: createdAt(),

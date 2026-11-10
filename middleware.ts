@@ -1,8 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { checkLoopbackHostOrigin } from "@/lib/net/loopbackHost";
 
-// Pages redirect to /login without a session cookie. API routes check the session and role
-// themselves (the edge runtime here cannot reach Postgres).
+export { isLoopbackHostname } from "@/lib/net/loopbackHost";
+
+/**
+ * 1) Every matched path: loopback Host; unsafe methods also require loopback Origin when present.
+ *    Accepts 127.0.0.1 and localhost (app port). No localhost→127.0.0.1 redirect — Chrome rewrites
+ *    that pair and would loop (ERR_TOO_MANY_REDIRECTS). Login already accepts both (835c85f).
+ * 2) Pages without a session cookie redirect to /login. API routes check auth themselves.
+ * Matcher includes /_next/image (image optimizer advisories on Next 14.2.35).
+ */
 export function middleware(req: NextRequest) {
+  const guard = checkLoopbackHostOrigin(req);
+  if (!guard.ok) {
+    if (req.nextUrl.pathname.startsWith("/api") || req.nextUrl.pathname.startsWith("/_next")) {
+      return NextResponse.json({ error: guard.error }, { status: guard.status });
+    }
+    return new NextResponse(guard.error, { status: guard.status });
+  }
+
+  const path = req.nextUrl.pathname;
+  if (path.startsWith("/api") || path.startsWith("/_next")) {
+    return NextResponse.next();
+  }
+
+  if (path === "/login") {
+    return NextResponse.next();
+  }
+
   if (req.cookies.get("geo_session")) return NextResponse.next();
   const url = req.nextUrl.clone();
   url.pathname = "/login";
@@ -12,5 +37,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|login|_next/static|_next/image|favicon.ico).*)"],
+  // Include /_next/image so forged Host cannot hit the image optimizer. Keep static assets out.
+  matcher: ["/((?!_next/static|favicon.ico).*)"],
 };

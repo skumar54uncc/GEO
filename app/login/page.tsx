@@ -70,7 +70,7 @@ function LoginForm() {
         <CardTitle>Sign in · Scout</CardTitle>
         <CardDescription>
           Scouting what AI says about us. Local development login. There is no password, so this app only listens on
-          127.0.0.1.
+          loopback (127.0.0.1). If Chrome shows localhost, sign-in still works.
         </CardDescription>
       </CardHeader>
       <CardContent>

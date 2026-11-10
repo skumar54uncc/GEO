@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { PageTitle } from "@/components/scout/primitives";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { leverTypeToLabel } from "@/lib/gaps/display";
+import { safeHref } from "@/lib/url/safeHref";
 
 type ReportListItem = { id: string; topic: string; createdAt: string };
 type StrategyItem = {
@@ -105,7 +106,7 @@ export default function StrategyPage() {
         {report ? (
           <a
             className="inline-flex h-9 items-center rounded border border-scout-border bg-scout-card px-3 text-sm text-scout-text shadow-scout"
-            href={`/api/campaigns/${campaignId}/strategy/export?reportId=${report.id}`}
+            href={safeHref(`/api/campaigns/${campaignId}/strategy/export?reportId=${report.id}`) ?? "#"}
             data-testid="strategy-export-csv"
           >
             Export CSV

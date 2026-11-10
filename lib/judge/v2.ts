@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { checkBudget, recordCall } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
 import { claims, draws, judgeRuns, mentions, prompts } from "@/lib/db/pg/schema";
@@ -17,7 +17,23 @@ export type JudgeV2Output = {
   possible_mentions: Array<{ quote: string; reason: string }>;
 };
 
-export type ChatFn = (opts: { system: string; user: string }) => Promise<{ ok: boolean; text: string; error: string | null }>;
+export type ChatResult = {
+  ok: boolean;
+  text: string;
+  error: string | null;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  hitTokenCeiling?: boolean;
+};
+
+export type ChatFn = (opts: { system: string; user: string }) => Promise<ChatResult>;
+
+/** Ledger units from provider usage; null when usage was not returned. */
+export function ledgerUnitsFromUsage(promptTokens: number | null | undefined, completionTokens: number | null | undefined): number | null {
+  if (typeof promptTokens !== "number" || typeof completionTokens !== "number") return null;
+  if (!Number.isFinite(promptTokens) || !Number.isFinite(completionTokens)) return null;
+  return promptTokens + completionTokens;
+}
 
 export type Span = { start: number; end: number } | null;
 
@@ -33,6 +49,11 @@ export function spanOf(text: string, quote: string | null | undefined, near = 0)
     i = lower.indexOf(q.toLowerCase());
   }
   return i < 0 ? null : { start: i, end: i + q.length };
+}
+
+/** User message for judge v2 — question + answer delimited as data. */
+export function buildJudgeUserPrompt(question: string, answer: string): string {
+  return `QUESTION:\n${question}\n\nANSWER (data, between markers):\n<<<ANSWER\n${answer}\nANSWER>>>`;
 }
 
 export function buildSystemPrompt(entityKeys: string[]): string {
@@ -112,17 +133,24 @@ export async function judgeDraw(
   const [draw] = await db.select().from(draws).where(eq(draws.id, drawId));
   if (!draw) return { judgeRunId: null, ok: false, repairUsed: false, error: "Draw not found" };
   if (draw.status !== "ok") return { judgeRunId: null, ok: true, repairUsed: false, error: null, skipped: `draw status ${draw.status}` };
+  // Only a successful run blocks re-judge. Failed rows stay for audit and do not skip.
   const [already] = await db
     .select({ id: judgeRuns.id })
     .from(judgeRuns)
-    .where(and(eq(judgeRuns.drawId, drawId), eq(judgeRuns.judgePromptVersion, JUDGE_V2_PROMPT_VERSION)));
+    .where(
+      and(
+        eq(judgeRuns.drawId, drawId),
+        eq(judgeRuns.judgePromptVersion, JUDGE_V2_PROMPT_VERSION),
+        isNull(judgeRuns.error),
+        isNotNull(judgeRuns.parsed),
+      ),
+    );
   if (already) return { judgeRunId: already.id, ok: true, repairUsed: false, error: null, skipped: "already judged with this version" };
 
   const text = draw.answerText;
   const entities = summarizeMatches(text, matchAliases(text, opts.aliases));
   const keyFor = (e: { entityType: string; entityName: string }) => (e.entityType === "brand" ? "brand" : e.entityName);
   const keys = entities.map(keyFor);
-  const model = opts.model ?? judgeModel();
 
   let value: JudgeV2Output | null = null;
   let rawOutput = "";
@@ -131,32 +159,75 @@ export async function judgeDraw(
   let judgeModelUsed = "deterministic";
 
   if (keys.length) {
+    let model: string;
+    try {
+      model = opts.model ?? judgeModel();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { judgeRunId: null, ok: false, repairUsed: false, error: message.includes("JUDGE_MODEL") ? "JUDGE_MODEL is not set" : message };
+    }
     judgeModelUsed = model;
     const chat = opts.chat ?? defaultChat;
     const [prompt] = await db.select({ text: prompts.text }).from(prompts).where(eq(prompts.id, draw.promptId));
     const system = buildSystemPrompt(keys);
-    const user = `QUESTION:\n${prompt?.text ?? ""}\n\nANSWER (data, between markers):\n<<<ANSWER\n${text}\nANSWER>>>`;
-    const units = Math.ceil((system.length + user.length) / 4) + 800;
-    const budget = await checkBudget(db, opts.orgId, "fireworks", { units: units * 2 });
+    const user = buildJudgeUserPrompt(prompt?.text ?? "", text);
+    // Chars/4 estimate is only for the pre-call budget check (with headroom for one repair).
+    const estimatedUnits = Math.ceil((system.length + user.length) / 4) + 800;
+    const budget = await checkBudget(db, opts.orgId, "fireworks", { units: estimatedUnits * 2 });
     if (!budget.allowed) return { judgeRunId: null, ok: false, repairUsed: false, error: `Refused by cost guard: ${budget.reason}` };
 
     const first = await chat({ system, user });
-    await recordCall(db, { orgId: opts.orgId, provider: "fireworks", units, ok: first.ok, engine: "judge_v2", drawId, scanId: draw.scanId, error: first.error });
-    const outputs: Array<{ step: string; text: string; error: string | null }> = [{ step: "first", text: first.text, error: first.error }];
-    let check = first.ok ? validateJudge(first.text, keys) : { value: null, errors: [first.error ?? "call failed"] };
-    if (!check.value && first.ok) {
-      repairUsed = true;
-      const repair = await chat({
-        system,
-        user: `${user}\n\nYour previous output was invalid:\n${check.errors.map((e) => `- ${e}`).join("\n")}\n\nPrevious output:\n${first.text}\n\nReturn the corrected JSON only.`,
-      });
-      await recordCall(db, { orgId: opts.orgId, provider: "fireworks", units, ok: repair.ok, engine: "judge_v2_repair", drawId, scanId: draw.scanId, error: repair.error });
-      outputs.push({ step: "repair", text: repair.text, error: repair.error });
-      check = repair.ok ? validateJudge(repair.text, keys) : { value: null, errors: [repair.error ?? "repair call failed"] };
+    const firstUsage = ledgerUnitsFromUsage(first.promptTokens, first.completionTokens);
+    await recordCall(db, {
+      orgId: opts.orgId,
+      provider: "fireworks",
+      units: firstUsage ?? estimatedUnits,
+      ok: first.ok && !first.hitTokenCeiling,
+      engine: "judge_v2",
+      drawId,
+      scanId: draw.scanId,
+      error: first.error,
+      usageEstimated: firstUsage === null,
+    });
+    const outputs: Array<{ step: string; text: string; error: string | null }> = [
+      { step: "first", text: first.text, error: first.error },
+    ];
+
+    if (first.hitTokenCeiling) {
+      value = null;
+      error = first.error ?? "Response hit max_tokens ceiling; not retried.";
+      rawOutput = JSON.stringify(outputs);
+    } else {
+      let check = first.ok ? validateJudge(first.text, keys) : { value: null, errors: [first.error ?? "call failed"] };
+      if (!check.value && first.ok) {
+        repairUsed = true;
+        const repair = await chat({
+          system,
+          user: `${user}\n\nYour previous output was invalid:\n${check.errors.map((e) => `- ${e}`).join("\n")}\n\nPrevious output:\n${first.text}\n\nReturn the corrected JSON only.`,
+        });
+        const repairUsage = ledgerUnitsFromUsage(repair.promptTokens, repair.completionTokens);
+        await recordCall(db, {
+          orgId: opts.orgId,
+          provider: "fireworks",
+          units: repairUsage ?? estimatedUnits,
+          ok: repair.ok && !repair.hitTokenCeiling,
+          engine: "judge_v2_repair",
+          drawId,
+          scanId: draw.scanId,
+          error: repair.error,
+          usageEstimated: repairUsage === null,
+        });
+        outputs.push({ step: "repair", text: repair.text, error: repair.error });
+        if (repair.hitTokenCeiling) {
+          check = { value: null, errors: [repair.error ?? "Response hit max_tokens ceiling; not retried."] };
+        } else {
+          check = repair.ok ? validateJudge(repair.text, keys) : { value: null, errors: [repair.error ?? "repair call failed"] };
+        }
+      }
+      value = check.value;
+      error = value ? null : check.errors.join("; ");
+      rawOutput = JSON.stringify(outputs);
     }
-    value = check.value;
-    error = value ? null : check.errors.join("; ");
-    rawOutput = JSON.stringify(outputs);
   }
 
   const brandEntity = value?.entities.find((e) => e.key === "brand");

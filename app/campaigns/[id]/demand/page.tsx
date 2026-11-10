@@ -5,10 +5,12 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useSessionRole } from "@/components/SessionRoleContext";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { SafeLink } from "@/components/site/client";
 import { PageTitle, ScoutCard } from "@/components/scout/primitives";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/card";
 import { demandStatusLabel, type CampaignDemandView, type DemandSignalRow, type DemandSourceCard } from "@/lib/demand/campaignView";
+import { safeHref } from "@/lib/url/safeHref";
 
 function statusTone(status: DemandSourceCard["status"]): "green" | "gold" | "muted" {
   if (status === "connected") return "green";
@@ -152,7 +154,7 @@ export default function CampaignDemandPage() {
         subtitle={`Search and discussion demand for ${data.campaign.name}. Missing sources show not connected — never zero.`}
       />
       <p className="text-sm text-scout-muted">
-        <Link href={`/campaigns/${campaignId}/prompts`} className="underline">
+        <Link href={safeHref(`/campaigns/${campaignId}/prompts`) ?? "/campaigns"} className="underline">
           Prompts
         </Link>{" "}
         · evidence links return here by signal id.
@@ -310,9 +312,9 @@ function SignalDetails({ signal }: { signal: DemandSignalRow }) {
         {(v.results as Array<{ title?: string; url?: string; venue?: string }>).map((r) => (
           <li key={r.url ?? r.title}>
             {r.url ? (
-              <a href={r.url} className="underline" target="_blank" rel="noopener noreferrer nofollow">
+              <SafeLink href={r.url ?? ""} className="underline">
                 {r.title ?? r.url}
-              </a>
+              </SafeLink>
             ) : (
               (r.title ?? "result")
             )}

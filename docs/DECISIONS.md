@@ -4,7 +4,9 @@
 
 - Passwordless email login is a local-development convenience only. It refuses
   `NODE_ENV=production`, any configured bind other than
-  `APP_BIND_HOST=127.0.0.1`, and requests not addressed to `127.0.0.1`.
+  `APP_BIND_HOST=127.0.0.1`, and requests not addressed to loopback
+  (`127.0.0.1`, `localhost`, or `::1`). Safety is the bind, not the hostname spelling
+  (Chrome often rewrites `127.0.0.1` → `localhost`).
 - This is a known limitation, not production authentication. Magic-link
   authentication or university SSO is required before any hosting, LAN
   exposure, reverse proxy, or public deployment.

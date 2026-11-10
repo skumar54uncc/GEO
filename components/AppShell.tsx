@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { DemoBanner } from "@/components/DemoBanner";
 import { MetricShowRawProvider } from "@/components/metrics/ShowRawContext";
+import { safeHref } from "@/lib/url/safeHref";
 import { SessionRoleProvider } from "@/components/SessionRoleContext";
 import type { Role } from "@/lib/auth/roles";
 import type { OrganizationTheme } from "@/lib/contracts/shell";
@@ -413,7 +414,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               return (
                 <Link
                   key={`${group.label}-${item.label}`}
-                  href={item.href}
+                  href={safeHref(item.href) ?? "/"}
                   title={iconRail ? item.label : undefined}
                   aria-current={active ? "page" : undefined}
                   className={cn(

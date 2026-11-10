@@ -12,8 +12,6 @@ export const DATAFORSEO = {
   llmResponsesTask: { standard: 0.0002, live: 0.0006 },
 } as const;
 
-export const BRIGHTDATA_PER_RECORD = 0.0015;
-
 /** Per tool call. Anthropic and OpenAI: $10 per 1,000. Perplexity standard web_search: $2.50 per 1,000. */
 export const SEARCH_CALL_USD = { anthropic: 0.01, openai: 0.01, perplexity: 0.0025, gemini: 0.014 } as const;
 

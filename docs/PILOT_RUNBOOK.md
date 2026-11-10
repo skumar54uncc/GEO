@@ -2,11 +2,27 @@
 
 Live pilot for **Energy** content-team **core** prompts only: **30** neutral prompts, **6** primary engines, **3** draws each, **Charlotte** region → about **540** AI answers (plus **6** canary draws, one per engine route). This is also **V1 gate 5** after funding approval. Companion: **`docs/HANDOVER.md`**.
 
-**Code freeze:** tag **`v1.0-rc1`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics`).
+**Code freeze:** tag **`v1.0-rc2`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`).
+
+**Local database:** this runbook assumes **Postgres.app** on the Mac (not Docker). `scripts/env.ts` `pgBinary()` looks for Postgres.app under `~/Applications` and `/Applications`, then `PG_BIN`, then `PATH`. Use `npm run db:migrate` / `npm run db:backup` so client tools resolve the same way.
 
 **Upper estimate (verified in repo):** `estimateContentTeamSeries` / `buildFundingPage` use `primaryRouteUsdPerDrawByProvider()` and `providerShareForPrompts(30, …)` → **$12.888** upper for 30 prompts (display **$12.89**). Source: `lib/contentTeam/estimate.ts`, `lib/budget/funding.ts`, `lib/budget/providers.ts`. Prices verified on **2026-11-03** per `docs/PROVIDERS.md`.
 
 **Stop-loss (automatic):** `STOP_LOSS_CONFIG` in `lib/contracts/stopLoss.ts` — pause if **>20%** of the **first 60** draws are `error` or `blocked`, or if actual cost exceeds estimate by **>25%**.
+
+---
+
+## Judge selection (before the scored pilot)
+
+Capture and judging are separate (`runScan` in `lib/capture/batch.ts` does not call the judge; `judgeScan` in `lib/capture/service.ts` does). The worker normally chains `scan.run` → `judge.run` (`worker/jobs.ts`) when `JUDGE_AUTORUN` is true (default). Failed judge rows no longer block a later re-judge of the same draw (D1).
+
+1. **Run a model preflight.** Set placeholder `JUDGE_MODEL` / `CONTENT_MODEL` in `.env.local` (see `.env.example`). Approval calls `preflightFireworksModels` (`lib/fireworks/preflight.ts`) against Fireworks’ OpenAI-compatible `GET /inference/v1/models`.
+2. **Capture.** Set `JUDGE_AUTORUN=false` in `.env.local`, restart `npm run worker`, then estimate → approve → capture. `scan.run` / `capture.retry` log `judge deferred` and do not enqueue `judge.run`. After judging (step 6), set `JUDGE_AUTORUN=true` again and restart the worker.
+3. **Hand label 20 answers.** `npm run judge:sample -- <scanId>` writes a CSV of brand-matched ok draws (spread across engines). Fill: `sentiment` (`positive|neutral|negative`), `missed_mention` (`y`/`n`: answer refers to UNC Charlotte with no alias match?), `named_sources` (semicolon list or blank). Headline won/mentioned metrics are **deterministic** (alias matching); the judge only affects sentiment, claims, named sources, and possible mentions.
+4. **Run the bake-off.** `npm run judge:bakeoff -- --labels <csv> --model <id> --model <id>` (estimate only), then the same with `--approve`. Agreement: exact sentiment, exact missed_mention vs non-empty `possible_mentions`, Jaccard on `named_sources`. Does not write `judge_runs` or metrics.
+5. **Set models.** Put the bake-off winner in `JUDGE_MODEL` and a **different-family** model in `CONTENT_MODEL`.
+6. **Judge.** `npm run judge:scan -- <scanId>` (estimate + preflight), then `npm run judge:scan -- <scanId> --approve` with `npm run worker` running.
+7. **Do the hand check.** Sample 20 Answer Explorer rows (gate 5 below).
 
 ---
 
@@ -17,9 +33,9 @@ Live pilot for **Energy** content-team **core** prompts only: **30** neutral pro
 3. **Freeze `energy-core-v1`** — After approval, freeze **core only** with label `energy-core-v1`. Record the prompt-set **SHA-256** shown in the UI: `(fill after freeze)`.
 4. **No other scan** — Do not start another paid scan or schedule tick until this pilot finishes or is explicitly paused.
 5. **Backup** — Run `npm run db:backup` and confirm a fresh dump under your backup location (see `docs/ARCHITECTURE.md` § hosting).
-6. **Worker + app** — In separate terminals from the project root (ensure `node`, `npm`, and Postgres client tools are on `PATH`):
+6. **Worker + app** — In separate terminals from the project root (ensure `node`, `npm`, and Postgres.app client tools are on `PATH` or discoverable via `scripts/env.ts`):
    - `npm run worker`
-   - `npm run dev` (bind **127.0.0.1** only; open `http://127.0.0.1:3000`, not `localhost`)
+   - `npm run dev` (bind **127.0.0.1** only; prefer `http://127.0.0.1:3000` — `localhost` also signs in)
 7. **Keep the Mac awake** — `caffeinate -dimsu` for the expected run duration.
 8. **Canary** — Leave **canary enabled** on the scan (default). A failed canary **drops that engine route** for the scan; do not ignore canary failure alerts.
 9. **Rehearse on fixtures (optional)** — `npm run pilot:rehearse` on **Demo University** (no paid calls). Fix anything that fails before live spend.
@@ -77,11 +93,11 @@ If paused, record `scanId`, `pausedReason`, and alert payloads before resume or 
 3. **`search_used`** — SQL or Answers filter: Claude / Perplexity draws used for metrics should have `search_used = true`.
 4. **Rollup stability** — Run metrics twice; results must match except `rolledAt`:
    - Worker does this on `metrics.rollup` automatically.
-   - Operator check: `npx tsx scripts/audit-metrics.ts` on **test** DB shape, or rehearsal script’s rollup compare for fixtures.
-5. **Audit metrics on pilot scan** — For the real pilot `scanId`, compare dashboard numbers to a recomputation policy your stats reviewer signs off (Wave 4 `scripts/audit-metrics.ts` pattern).
+   - Operator check: `npm run metrics:audit` on **test** DB shape, or rehearsal script’s rollup compare for fixtures.
+5. **Audit metrics on pilot scan** — For the real pilot `scanId`, compare dashboard numbers to a recomputation policy your stats reviewer signs off (`npm run metrics:audit` pattern).
 6. **Cost vs estimate** — Budget page: `cost_ledger` / scan actual vs `estimate.totalUsd` (target within stop-loss band).
 7. **Gold labels** — Pull **50** random draws: **Settings → Gold-label sample**, or  
-   `npx tsx scripts/export-gold-label-sample.ts --scanId <pilot-scan-uuid>`  
+   `npm run gold:export -- --scanId <pilot-scan-uuid>`  
    Hand-label in your worksheet; store in `gold_labels` when labeling UI exists.
 8. **Cited pages** — Per `docs/EVALS.md`, hand-check **20** cited pages from this scan (source class, listicle, schema, freshness).
 9. **Leadership exports** — Overview + Visibility leadership PDF (`/api/campaigns/[id]/leadership-pdf`), **Budget & Funding** PDF (`/api/budget/pdf`), gap/strategy exports as needed. Label real UNC Charlotte data with scan date and **n**; never export Demo University without the demo banner.

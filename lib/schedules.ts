@@ -528,6 +528,33 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
             action = "error";
             detail = `scan approved but scan.run was not queued: ${err instanceof Error ? err.message : String(err)}`;
           }
+        } else if (approved.reason?.startsWith("Model retired or unavailable on Fireworks:")) {
+          await db
+            .update(scans)
+            .set({
+              status: "paused",
+              pausedAt: now,
+              pausedReason: approved.reason,
+            })
+            .where(eq(scans.id, scanId));
+          await db.insert(alerts).values({
+            orgId,
+            campaignId: s.campaignId,
+            kind: "budget_threshold",
+            payload: {
+              source: "schedule",
+              state: "paused_model",
+              message: `Scheduled scan ${period} paused: ${approved.reason}`,
+              schedule_id: s.id,
+              scan_id: scanId,
+              period_key: period,
+              late,
+              original_due_at: originalDueAt.toISOString(),
+            },
+          });
+          await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, originalDueAt, now) }).where(eq(schedules.id, s.id));
+          done({ scanId, action: "paused_reestimate", detail: approved.reason });
+          continue;
         } else detail = approved.reason;
       }
       if (action === "awaiting_approval") {

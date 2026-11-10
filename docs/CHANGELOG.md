@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-11-10: Wave 7C — Fireworks spend, model retirement, judge bake-off
+
+- **C1–C2:** Ledger records real Fireworks usage tokens (`usage_estimated` when missing); `max_tokens: 8192`; `finish_reason: length` is an error.
+- **C3–C4:** `JUDGE_MODEL` required (no deepseek default); model preflight via OpenAI-compatible `/inference/v1/models` before approve; schedules pause if retired.
+- **C5–C9:** `judge_runs.judge_model` already stored; bake-off script `npm run judge:bakeoff`; runbook deferred capture→judge path; Fireworks $25 prepaid cap; BACKLOG dep notes.
+
+## 2026-11-10: Freeze retarget — `v1.0-rc2`
+
+Pilot freeze docs now point at **`v1.0-rc2`** (was `v1.0-rc1`). Drift check: `git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`. What changed since rc1 on this branch:
+
+- Localhost login fix (`835c85f`); Host/Origin allowlist (middleware + `withRole`), including `/_next/image`; no localhost→127.0.0.1 redirect loop.
+- Shared `safeHref` / SafeLink; `images.unoptimized: true`; provider `cache: "no-store"`; worker-ping `retryLimit: 0`; gitleaks fixture fingerprint allowlist.
+- **Bright Data removed** (campus IT ban): adapter, registry, budget/env/fixtures; ban test.
+- Funding brief: Bright Data out of caps; Judge (Fireworks) units formula + **PRICE NEEDED** for `deepseek-v4-pro`.
+
+## 2026-11-10: Wave 7 Phase B rework (`hardening/v1.0-rc2`)
+
+- Split into one commit per finding (F01 / F05 / F11 / F16 / F17). Login fix `835c85f` remains on the branch.
+- **Bright Data removed** (IT + locked rules): adapter, registry, budget row, env, fixtures; ban test in `tests/capture/brightdataBanned.test.ts`.
+- **F05 extended:** Host/Origin allowlist on every middleware path including `/_next/image`; same check in `withRole` / `withLegacyRole`; accepts `127.0.0.1` and `localhost`.
+- **Images:** `images.unoptimized: true` (local `/brand/*.svg` only; no remotePatterns).
+- Branch only — **not tagged, not merged**.
+
+## 2026-11-09: Bugfix — localhost login on loopback bind
+
+- Passwordless login accepts `localhost` / `::1` as well as `127.0.0.1` when `APP_BIND_HOST=127.0.0.1` (Chrome often rewrites the IP). Still refuses non-loopback hosts and non-127.0.0.1 binds.
+- Middleware redirects `localhost` → `127.0.0.1` when possible so the address bar stays consistent.
+
 ## 2026-11-09: Gate 3 closed + `v1.0-rc1` freeze
 
 - **Row 19:** Overview Search Console panel + Demand card copy “Not connected (property access pending from the web team)”; UNC never shows fixture GSC rows (`tests/gate3/row19-gsc.test.ts`). COVERAGE **19** partial (UNC web team property grant).

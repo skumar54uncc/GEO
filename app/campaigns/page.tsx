@@ -10,6 +10,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Role } from "@/lib/auth";
 import { enginePlain, runnerPlain } from "@/lib/ui/labels";
+import { safeHref } from "@/lib/url/safeHref";
 
 type EngineSel = { engine: string; runner: string };
 type Campaign = {
@@ -464,11 +465,11 @@ export default function CampaignsPage() {
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
                 <Button size="sm" variant="outline" asChild>
-                  <Link href={`/campaigns/${c.id}/dashboard`}>Dashboard</Link>
+                  <Link href={safeHref(`/campaigns/${c.id}/dashboard`) ?? "/campaigns"}>Dashboard</Link>
                 </Button>
                 {!c.legacy ? (
                   <Button size="sm" variant="outline" asChild>
-                    <Link href={`/campaigns/${c.id}/prompts`}>Review prompts</Link>
+                    <Link href={safeHref(`/campaigns/${c.id}/prompts`) ?? "/campaigns"}>Review prompts</Link>
                   </Button>
                 ) : null}
                 <OperatorOnly role={role}>

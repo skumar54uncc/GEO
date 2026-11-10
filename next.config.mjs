@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Local brand SVGs only (no remotePatterns). Disables Image Optimization API
+  // (GHSA-2464-fhr4-w9xw / GHSA-2xp9-vwfh-vxw4 critical RCE paths on Next 14.2.35).
+  images: { unoptimized: true },
   eslint: { dirs: ["app", "components", "lib", "scripts", "worker", "tests", "seed"] },
   experimental: {
     serverComponentsExternalPackages: ["pg", "pg-boss"],

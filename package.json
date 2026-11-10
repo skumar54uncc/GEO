@@ -25,7 +25,12 @@
     "capture:dry-run": "tsx scripts/dry-run.ts",
     "capture:retry": "tsx scripts/retry-failed.ts",
     "prompts:import": "tsx scripts/import-prompts-csv.ts",
-    "pilot:rehearse": "tsx scripts/pilot-rehearsal.ts"
+    "pilot:rehearse": "tsx scripts/pilot-rehearsal.ts",
+    "judge:bakeoff": "tsx scripts/judge-bakeoff.ts",
+    "judge:sample": "tsx scripts/judge-sample.ts",
+    "judge:scan": "tsx scripts/judge-scan.ts",
+    "metrics:audit": "tsx scripts/audit-metrics.ts",
+    "gold:export": "tsx scripts/export-gold-label-sample.ts"
   },
   "dependencies": {
     "@crawlee/memory-storage": "^3.18.2",

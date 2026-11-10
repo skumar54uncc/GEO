@@ -36,7 +36,7 @@ Findings use **severity** (high / medium / low), **location**, **reproduce**, **
 
 **Location:** `lib/auth.ts` — `assertDevEmailLoginAllowed`
 
-**Assessment:** Requires `NODE_ENV !== "production"`, `APP_BIND_HOST === "127.0.0.1"`, and `req.url` / `Host` / `X-Forwarded-Host` consistent with loopback to `127.0.0.1` (with a narrow localhost + `Host: 127.0.0.1` exception).
+**Assessment:** Requires `NODE_ENV !== "production"`, `APP_BIND_HOST === "127.0.0.1"`, and `req.url` / `Host` / `X-Forwarded-Host` on loopback (`127.0.0.1`, `localhost`, or `::1`). Middleware also redirects `localhost` → `127.0.0.1` when possible.
 
 **Low — `npm run start` uses production `NODE_ENV`**
 

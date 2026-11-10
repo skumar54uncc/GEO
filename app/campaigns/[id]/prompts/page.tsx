@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Role } from "@/lib/auth";
 import { personaTaxonomyLabel } from "@/lib/ui/labels";
+import { safeHref } from "@/lib/url/safeHref";
 
 type PromptRow = {
   id: string;
@@ -237,7 +238,7 @@ export default function PromptReviewPage() {
                   </span>
                   <Button asChild variant="outline" size="sm">
                     <a
-                      href={`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.csv`}
+                      href={safeHref(`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.csv`) ?? "#"}
                       data-testid={`library-csv-${s.id}`}
                     >
                       CSV
@@ -245,7 +246,7 @@ export default function PromptReviewPage() {
                   </Button>
                   <Button asChild variant="outline" size="sm">
                     <a
-                      href={`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.pdf`}
+                      href={safeHref(`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.pdf`) ?? "#"}
                       data-testid={`library-pdf-${s.id}`}
                     >
                       PDF
@@ -384,7 +385,7 @@ export default function PromptReviewPage() {
                         {p.demand_evidence_ids.map((eid) => (
                           <Link
                             key={eid}
-                            href={`/campaigns/${params.id}/demand#demand-signal-${eid}`}
+                            href={safeHref(`/campaigns/${params.id}/demand#demand-signal-${eid}`) ?? "/campaigns"}
                             className="underline"
                             data-testid={`demand-evidence-link-${eid}`}
                           >

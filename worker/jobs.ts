@@ -9,6 +9,7 @@ import { enqueueCitationFetches, processCitationFetch, type CitationFetchData } 
 import { getDb } from "@/lib/db/pg/client";
 import { campaigns, crawlRuns, draws, scans } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
+import { maybeEnqueueJudgeAfterCapture } from "@/lib/judge/autorun";
 import { rollupScan } from "@/lib/metrics/rollup";
 import { tickSchedules } from "@/lib/schedules";
 import { runAudit } from "@/lib/site/audit/run";
@@ -148,7 +149,13 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
       const res = await computeCalibration(db, { orgId, scanId, month, aliases: await loadAliases(db, orgId, c.brandId) });
       log(`[worker] calibration ${month}: ${res.map((r) => `${r.engine} agreement ${r.agreement.agree}/${r.agreement.n}`).join(", ")}`);
     }
-    await boss.send(QUEUES.judgeRun, { scan_id: scanId, org_id: orgId } satisfies JudgeRunData, JOB_OPTIONS);
+    await maybeEnqueueJudgeAfterCapture(boss, {
+      scanId,
+      orgId,
+      source: "scan.run",
+      log,
+      jobOptions: JOB_OPTIONS,
+    });
     return { status: summary.status, actualUsd: summary.actualUsd, estimateUsd: summary.estimateUsd, byCell: summary.byCell };
   });
 
@@ -158,7 +165,13 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
     const plan = await planRetry(db, job.data.scan_id, orgId);
     const out = await runRetry(db, plan, { orgId, approvedUsd: job.data.approved_usd });
     log(`[worker] capture.retry ${job.data.scan_id}: ${out.length} draws retried`);
-    await boss.send(QUEUES.judgeRun, { scan_id: job.data.scan_id, org_id: orgId } satisfies JudgeRunData, JOB_OPTIONS);
+    await maybeEnqueueJudgeAfterCapture(boss, {
+      scanId: job.data.scan_id,
+      orgId,
+      source: "capture.retry",
+      log,
+      jobOptions: JOB_OPTIONS,
+    });
     return { retried: out.length, statuses: out.map((o) => o.status) };
   });
 

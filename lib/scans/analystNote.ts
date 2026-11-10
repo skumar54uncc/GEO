@@ -1,9 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { checkBudget } from "@/lib/cost/guard";
+import { checkBudget, recordCall } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
 import { campaigns, scans } from "@/lib/db/pg/schema";
 import { contentModel, fireworksChat, judgeModel, WriterModelConfigError } from "@/lib/fireworks";
+import { ledgerUnitsFromUsage } from "@/lib/judge/v2";
 
 export const ANALYST_NOTE_PROVIDER = "analyst_note_writer";
 
@@ -93,14 +94,28 @@ export async function draftAnalystNoteAi(
     throw new AnalystNoteError(budget.reason ?? "Cost guard refused analyst note draft.");
   }
 
+  const system =
+    "Write a 3 to 5 sentence analyst note for university leadership about AI search visibility. No invented metrics. Return JSON {\"text\":\"...\"}.";
+  const user = `Context headline (do not invent numbers beyond this): ${opts.headline}`;
+  const estimatedUnits = Math.ceil((system.length + user.length) / 4) + 800;
   const chat = opts.chat ?? fireworksChat;
   const res = await chat({
     model: writer,
-    system:
-      "Write a 3 to 5 sentence analyst note for university leadership about AI search visibility. No invented metrics. Return JSON {\"text\":\"...\"}.",
-    user: `Context headline (do not invent numbers beyond this): ${opts.headline}`,
+    system,
+    user,
     temperature: 0.3,
     json: true,
+  });
+  const usage = ledgerUnitsFromUsage(res.promptTokens, res.completionTokens);
+  await recordCall(db, {
+    orgId: opts.orgId,
+    provider: "fireworks",
+    units: usage ?? estimatedUnits,
+    ok: res.ok,
+    engine: "analyst_note",
+    scanId: opts.scanId,
+    error: res.error,
+    usageEstimated: usage === null,
   });
   if (!res.ok) throw new AnalystNoteError(res.error ?? "Analyst note draft failed.");
   let text = "";

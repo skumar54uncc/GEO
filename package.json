@@ -25,7 +25,8 @@
     "capture:dry-run": "tsx scripts/dry-run.ts",
     "capture:retry": "tsx scripts/retry-failed.ts",
     "prompts:import": "tsx scripts/import-prompts-csv.ts",
-    "pilot:rehearse": "tsx scripts/pilot-rehearsal.ts"
+    "pilot:rehearse": "tsx scripts/pilot-rehearsal.ts",
+    "judge:bakeoff": "tsx scripts/judge-bakeoff.ts"
   },
   "dependencies": {
     "@crawlee/memory-storage": "^3.18.2",

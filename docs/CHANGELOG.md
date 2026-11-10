@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-10: Wave 7C — Fireworks spend, model retirement, judge bake-off
+
+- **C1–C2:** Ledger records real Fireworks usage tokens (`usage_estimated` when missing); `max_tokens: 8192`; `finish_reason: length` is an error.
+- **C3–C4:** `JUDGE_MODEL` required (no deepseek default); model preflight via OpenAI-compatible `/inference/v1/models` before approve; schedules pause if retired.
+- **C5–C9:** `judge_runs.judge_model` already stored; bake-off script `npm run judge:bakeoff`; runbook deferred capture→judge path; Fireworks $25 prepaid cap; BACKLOG dep notes.
+
 ## 2026-11-10: Freeze retarget — `v1.0-rc2`
 
 Pilot freeze docs now point at **`v1.0-rc2`** (was `v1.0-rc1`). Drift check: `git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`. What changed since rc1 on this branch:

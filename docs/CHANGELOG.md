@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-10: Freeze retarget — `v1.0-rc2`
+
+Pilot freeze docs now point at **`v1.0-rc2`** (was `v1.0-rc1`). Drift check: `git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`. What changed since rc1 on this branch:
+
+- Localhost login fix (`835c85f`); Host/Origin allowlist (middleware + `withRole`), including `/_next/image`; no localhost→127.0.0.1 redirect loop.
+- Shared `safeHref` / SafeLink; `images.unoptimized: true`; provider `cache: "no-store"`; worker-ping `retryLimit: 0`; gitleaks fixture fingerprint allowlist.
+- **Bright Data removed** (campus IT ban): adapter, registry, budget/env/fixtures; ban test.
+- Funding brief: Bright Data out of caps; Judge (Fireworks) units formula + **PRICE NEEDED** for `deepseek-v4-pro`.
+
 ## 2026-11-10: Wave 7 Phase B rework (`hardening/v1.0-rc2`)
 
 - Split into one commit per finding (F01 / F05 / F11 / F16 / F17). Login fix `835c85f` remains on the branch.

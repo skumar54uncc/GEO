@@ -2,7 +2,7 @@
 
 Live pilot for **Energy** content-team **core** prompts only: **30** neutral prompts, **6** primary engines, **3** draws each, **Charlotte** region → about **540** AI answers (plus **6** canary draws, one per engine route). This is also **V1 gate 5** after funding approval. Companion: **`docs/HANDOVER.md`**.
 
-**Code freeze:** tag **`v1.0-rc1`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics`).
+**Code freeze:** tag **`v1.0-rc2`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`).
 
 **Upper estimate (verified in repo):** `estimateContentTeamSeries` / `buildFundingPage` use `primaryRouteUsdPerDrawByProvider()` and `providerShareForPrompts(30, …)` → **$12.888** upper for 30 prompts (display **$12.89**). Source: `lib/contentTeam/estimate.ts`, `lib/budget/funding.ts`, `lib/budget/providers.ts`. Prices verified on **2026-11-03** per `docs/PROVIDERS.md`.
 

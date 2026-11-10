@@ -7,6 +7,7 @@ import { ImmutableViolation, isImmutableDbError } from "./db/pg/immutable";
 import { safeOrganizationTheme, type OrganizationTheme } from "./contracts/shell";
 import { auditLog, memberships, organizations, sessions, users } from "./db/pg/schema";
 import { roleAtLeast, type Role } from "./auth/roles";
+import { checkLoopbackHostOrigin } from "./net/loopbackHost";
 
 export type { Role };
 export { roleAtLeast };
@@ -233,6 +234,8 @@ export async function getSessionState(req: Request, db: Db = getDb()): Promise<{
 }
 
 export async function requireRole(req: Request, required: Role, db: Db = getDb()): Promise<SessionUser> {
+  const guard = checkLoopbackHostOrigin(req);
+  if (!guard.ok) throw new AuthError(guard.error, 403);
   const user = await getSessionUser(req, db);
   if (!user) throw new AuthError("Sign in required.", 401);
   if (!roleAtLeast(user.role, required)) throw new AuthError(`Requires ${required} role; you are ${user.role}.`, 403);

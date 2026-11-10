@@ -2,7 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { evaluateStopLoss, type StopLossTrigger } from "@/lib/contracts/stopLoss";
 import { checkBudget } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
-import { alerts, auditLog, draws, prompts, promptSetItems, scans } from "@/lib/db/pg/schema";
+import { alerts, auditLog, campaigns, draws, prompts, promptSetItems, scans } from "@/lib/db/pg/schema";
+import { modelsForScanPreflight, preflightFireworksModels } from "@/lib/fireworks/preflight";
 import { ensureCaptureProviders } from "./accounts";
 import { runCanaries, type CanaryResult } from "./canary";
 import { parityStatus } from "./adapters/localSerp";
@@ -196,6 +197,18 @@ export async function approveScan(db: Db, scanId: string, approver: { userId: st
   const est = scan.estimate as ScanEstimate | null;
   if (!est) return { ok: false, reason: "Scan has no estimate" };
   if (est.refusals.length) return { ok: false, reason: `Estimate has refusals: ${est.refusals.join("; ")}` };
+
+  const [campaign] = await db.select({ orgId: campaigns.orgId }).from(campaigns).where(eq(campaigns.id, scan.campaignId));
+  if (!campaign) return { ok: false, reason: "Scan campaign not found" };
+  let modelIds: string[];
+  try {
+    modelIds = modelsForScanPreflight();
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+  }
+  const preflight = await preflightFireworksModels(db, { orgId: campaign.orgId, modelIds });
+  if (!preflight.ok) return { ok: false, reason: preflight.reason };
+
   const updated = await db
     .update(scans)
     .set({ status: "running", approvedAt: new Date(), approvedBy: approver.userId, estimate: { ...est, approvedVia: approver.via } })

@@ -10,21 +10,7 @@ import { loadEnv } from "./env";
 import { FORBIDDEN_SEED_MARKERS } from "@/lib/contracts/demoSeed";
 import { DEFAULT_ORG_SLUG } from "@/lib/db/pg/bootstrap";
 import { closeDb, getDb } from "@/lib/db/pg/client";
-import {
-  auditLog,
-  campaigns,
-  citations,
-  claims,
-  costLedger,
-  draws,
-  fanoutQueries,
-  goldLabels,
-  judgeRuns,
-  mentions,
-  organizations,
-  prompts,
-  scans,
-} from "@/lib/db/pg/schema";
+import { auditLog, campaigns, draws, organizations, prompts, scans } from "@/lib/db/pg/schema";
 
 loadEnv();
 
@@ -115,35 +101,14 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (drawIds.length) {
+    throw new Error(
+      `Refusing: ${drawIds.length} draw(s) match fixture patterns. Draws are immutable — cannot DELETE them (session_replication_role bypass removed). Soft-archive the org or leave the rows.`,
+    );
+  }
+
   await db.transaction(async (tx) => {
     const t = tx as typeof db;
-    // Audited admin cleanup only: bypass immutable-draw triggers for DELETE.
-    await t.execute(sql`SELECT set_config('session_replication_role', 'replica', true)`);
-
-    if (drawIds.length) {
-      await t.insert(auditLog).values({
-        orgId: org.id,
-        action: "admin_cleanup_fixture_draws",
-        entityType: "draw",
-        entityId: "batch",
-        before: { count: drawIds.length, ids: drawIds },
-        after: null,
-      });
-
-      await t.delete(costLedger).where(inArray(costLedger.drawId, drawIds));
-      await t.delete(fanoutQueries).where(inArray(fanoutQueries.drawId, drawIds));
-
-      const jr = await t.select({ id: judgeRuns.id }).from(judgeRuns).where(inArray(judgeRuns.drawId, drawIds));
-      const jrIds = jr.map((r) => r.id);
-      if (jrIds.length) {
-        await t.delete(mentions).where(inArray(mentions.judgeRunId, jrIds));
-        await t.delete(claims).where(inArray(claims.judgeRunId, jrIds));
-        await t.delete(judgeRuns).where(inArray(judgeRuns.id, jrIds));
-      }
-      await t.delete(citations).where(inArray(citations.drawId, drawIds));
-      await t.delete(goldLabels).where(inArray(goldLabels.drawId, drawIds));
-      await t.delete(draws).where(inArray(draws.id, drawIds));
-    }
 
     const emptyScans =
       badScanIds.size === 0

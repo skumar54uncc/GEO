@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10: R3 — org delete soft-archives; no FK bypass
+
+- `deleteAllDataForOrg` archives + renames slug (keeps `audit_log` FKs). Removed `session_replication_role` from demo teardown and admin fixture cleanup (cleanup refuses draw DELETEs).
+
 ## 2026-11-10: R2 — organization tombstones for orphan audit_log FKs
 
 - Migration `0017_org_tombstones`: `organizations.archived_at` + insert archived placeholders for orphaned `audit_log.org_id` (no audit_log UPDATE/DELETE).

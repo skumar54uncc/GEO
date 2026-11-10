@@ -243,7 +243,7 @@ environment:
 
 ### Immutability
 
-DB triggers in `drizzle/0001_immutability.sql` block UPDATE/DELETE on `draws`, `raw_payloads`, `prompt_set_items`, `audit_log`; freeze rules on `prompt_sets`. App layer: `lib/db/pg/immutable.ts` `guardedUpdate`/`guardedDelete`. Admin bypass only via `session_replication_role` in demo deletion scripts.
+DB triggers in `drizzle/0001_immutability.sql` block UPDATE/DELETE on `draws`, `raw_payloads`, `prompt_set_items`, `audit_log`; freeze rules on `prompt_sets`. App layer: `lib/db/pg/immutable.ts` `guardedUpdate`/`guardedDelete`. Org teardown soft-archives (`archived_at`); no `session_replication_role` bypass.
 
 ### Cost / stop-loss
 

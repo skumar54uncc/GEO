@@ -1,7 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Client } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteAllDataForOrg } from "@/lib/demo/deleteDemoOrgData";
 import { getDb } from "@/lib/db/pg/client";
 import { assertNoForeignKeyOrphans } from "@/lib/db/pg/orphanFks";
 import { repairOrphanOrganizationTombstones } from "@/lib/db/pg/orgTombstones";
@@ -25,7 +24,11 @@ describe("R2: organization tombstones", () => {
       before: { keep: true },
       after: null,
     });
-    await deleteAllDataForOrg(db, org.id);
+    // Legacy orphan shape (pre-R3 hard delete with replica). Repair must not mutate audit_log.
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('session_replication_role', 'replica', true)`);
+      await tx.delete(organizations).where(eq(organizations.id, org.id));
+    });
 
     const before = await db.select().from(auditLog).where(eq(auditLog.orgId, org.id));
     expect(before).toHaveLength(1);

@@ -8,11 +8,13 @@
 Demo re-seed tears down the previous Demo University org via `deleteAllDataForOrg`:
 
 1. `lib/demo/seedMarked.ts:407` / `:414` — `seedFullDemoOrg` calls `deleteAllDataForOrg(db, …)` for the slug / duplicate demo name.
-2. `lib/demo/deleteDemoOrgData.ts:93` — `set_config('session_replication_role', 'replica', true)` disables **FK checks and immutability triggers** for the transaction.
-3. `lib/demo/deleteDemoOrgData.ts:211` — `DELETE FROM organizations WHERE id = orgId`.
-4. **`audit_log` is never deleted** (immutable; not in the delete list). With replica role, Postgres does not reject the org delete for dangling `audit_log.org_id`.
+2. `lib/demo/deleteDemoOrgData.ts` (pre-R3 `:93`) — `set_config('session_replication_role', 'replica', true)` disabled **FK checks and immutability triggers** for the transaction.
+3. Pre-R3 `:211` — `DELETE FROM organizations WHERE id = orgId`.
+4. **`audit_log` is never deleted** (immutable; not in the delete list). With replica role, Postgres did not reject the org delete for dangling `audit_log.org_id`.
 
-`scripts/admin-cleanup-fixture-contamination.ts:121` also sets replica role, but it does **not** delete organizations — it is not the source of this orphan. The org delete path above is.
+`scripts/admin-cleanup-fixture-contamination.ts` also set replica role pre-R3, but it did **not** delete organizations — not the source of this orphan.
+
+**R3 fix:** `deleteAllDataForOrg` soft-archives (`archived_at` + slug rename); no `session_replication_role` anywhere in scripts.
 
 Live sample for the reported id: 1 `audit_log` row (`scan.stop_loss_paused`); org row absent.
 

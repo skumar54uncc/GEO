@@ -1,7 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Client } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteAllDataForOrg } from "@/lib/demo/deleteDemoOrgData";
 import { getDb } from "@/lib/db/pg/client";
 import { assertNoForeignKeyOrphans, scanForeignKeyOrphans } from "@/lib/db/pg/orphanFks";
 import { auditLog, organizations } from "@/lib/db/pg/schema";
@@ -23,7 +22,7 @@ describe("R1: foreign-key orphan scan", () => {
     }
   });
 
-  it("deleteAllDataForOrg leaves audit_log orphans when session_replication_role bypasses FKs", async () => {
+  it("detects legacy orphans created outside soft-delete (replica bypass simulation)", async () => {
     const db = getDb();
     const [org] = await db
       .insert(organizations)
@@ -38,12 +37,11 @@ describe("R1: foreign-key orphan scan", () => {
       after: null,
     });
 
-    await deleteAllDataForOrg(db, org.id);
-
-    const orgGone = await db.select().from(organizations).where(eq(organizations.id, org.id));
-    expect(orgGone).toHaveLength(0);
-    const audits = await db.select().from(auditLog).where(eq(auditLog.orgId, org.id));
-    expect(audits).toHaveLength(1);
+    // Simulate the pre-R3 bug for scanner coverage only — production code never does this.
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('session_replication_role', 'replica', true)`);
+      await tx.delete(organizations).where(eq(organizations.id, org.id));
+    });
 
     const client = new Client({ connectionString: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL });
     await client.connect();

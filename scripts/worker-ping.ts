@@ -10,7 +10,11 @@ async function main() {
   const boss = new PgBoss(url);
   await boss.start();
   await boss.createQueue(QUEUES.healthPing);
-  const id = await boss.send(QUEUES.healthPing, { sent_at: new Date().toISOString() });
+  const id = await boss.send(
+    QUEUES.healthPing,
+    { sent_at: new Date().toISOString() },
+    { retryLimit: 0, expireInSeconds: 60 },
+  );
   if (!id) throw new Error("send returned no job id");
   const deadline = Date.now() + 30_000;
   for (;;) {

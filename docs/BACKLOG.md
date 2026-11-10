@@ -20,6 +20,18 @@ Confirm with `git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics` before any
 | 17 | Variants as prompts | Out of v1 scope; ship after pilot | 2026-11-09 | Shailesh |
 | 21 | nearestPage / preregister (B8) | Out of v1 scope; ship after pilot | 2026-11-09 | Shailesh |
 
+## Wave 7 audit → V1_1 (hardening deferrals)
+
+| ID | Item | Reason | Decided | By |
+|----|------|--------|--------|-----|
+| F02 | Boot-time zod env schema | Nice to have, not a bug | 2026-11-10 | Shailesh |
+| F04 | Non-default Postgres password in compose | DB loopback-only; existing volume password unchanged by compose edit | 2026-11-10 | Shailesh |
+| F07 | Server-side viewer metric redaction | Localhost single-user guardrail, not a security hole mid-freeze | 2026-11-10 | Shailesh |
+| F08 | Org-scope `model-events` | Catalog is global today; defer isolation | 2026-11-10 | Shailesh |
+| F10 | Gate `demand/connections` admin-only | Optional hardening | 2026-11-10 | Shailesh |
+| F19 | Structured worker logs | Observability hygiene | 2026-11-10 | Shailesh |
+| — | `provider_cache` for site sources (`lib/site/providerCall.ts`) has no TTL and no `scanId` | Site audit provider rows never refresh on their own; UI should show the fetch date | 2026-11-10 | Shailesh |
+
 ## Ideas
 
 | Idea | Notes | Added |

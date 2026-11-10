@@ -35,6 +35,11 @@ export function spanOf(text: string, quote: string | null | undefined, near = 0)
   return i < 0 ? null : { start: i, end: i + q.length };
 }
 
+/** User message for judge v2 — question + answer delimited as data. */
+export function buildJudgeUserPrompt(question: string, answer: string): string {
+  return `QUESTION:\n${question}\n\nANSWER (data, between markers):\n<<<ANSWER\n${answer}\nANSWER>>>`;
+}
+
 export function buildSystemPrompt(entityKeys: string[]): string {
   return `You are a measurement judge. You read one AI answer and report sentiment, claims, and named sources. Return JSON only.
 
@@ -135,7 +140,7 @@ export async function judgeDraw(
     const chat = opts.chat ?? defaultChat;
     const [prompt] = await db.select({ text: prompts.text }).from(prompts).where(eq(prompts.id, draw.promptId));
     const system = buildSystemPrompt(keys);
-    const user = `QUESTION:\n${prompt?.text ?? ""}\n\nANSWER (data, between markers):\n<<<ANSWER\n${text}\nANSWER>>>`;
+    const user = buildJudgeUserPrompt(prompt?.text ?? "", text);
     const units = Math.ceil((system.length + user.length) / 4) + 800;
     const budget = await checkBudget(db, opts.orgId, "fireworks", { units: units * 2 });
     if (!budget.allowed) return { judgeRunId: null, ok: false, repairUsed: false, error: `Refused by cost guard: ${budget.reason}` };

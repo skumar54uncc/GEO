@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-10: Wave 7 Phase B rework (`hardening/v1.0-rc2`)
+
+- Split into one commit per finding (F01 / F05 / F11 / F16 / F17). Login fix `835c85f` remains on the branch.
+- **Bright Data removed** (IT + locked rules): adapter, registry, budget row, env, fixtures; ban test in `tests/capture/brightdataBanned.test.ts`.
+- **F05 extended:** Host/Origin allowlist on every middleware path including `/_next/image`; same check in `withRole` / `withLegacyRole`; accepts `127.0.0.1` and `localhost`.
+- **Images:** `images.unoptimized: true` (local `/brand/*.svg` only; no remotePatterns).
+- Branch only — **not tagged, not merged**.
+
 ## 2026-11-09: Bugfix — localhost login on loopback bind
 
 - Passwordless login accepts `localhost` / `::1` as well as `127.0.0.1` when `APP_BIND_HOST=127.0.0.1` (Chrome often rewrites the IP). Still refuses non-loopback hosts and non-127.0.0.1 binds.

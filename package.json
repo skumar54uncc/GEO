@@ -27,6 +27,7 @@
     "prompts:import": "tsx scripts/import-prompts-csv.ts",
     "pilot:rehearse": "tsx scripts/pilot-rehearsal.ts",
     "judge:bakeoff": "tsx scripts/judge-bakeoff.ts",
+    "judge:sample": "tsx scripts/judge-sample.ts",
     "judge:scan": "tsx scripts/judge-scan.ts",
     "metrics:audit": "tsx scripts/audit-metrics.ts",
     "gold:export": "tsx scripts/export-gold-label-sample.ts"

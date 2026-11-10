@@ -9,6 +9,7 @@ import {
   buildSystemPrompt,
   ledgerUnitsFromUsage,
   validateJudge,
+  type JudgeV2Output,
 } from "@/lib/judge/v2";
 
 export const BAKEOFF_ENGINE = "judge_bakeoff";
@@ -25,9 +26,9 @@ export const BAKEOFF_PRICES: Array<{ match: string; label: string; inputPerM: nu
 
 export type HandLabel = {
   drawId: string;
-  brandMentioned: boolean;
   sentiment: "positive" | "neutral" | "negative";
-  position: number | null;
+  missedMention: boolean;
+  namedSources: string[];
 };
 
 export type BakeoffChat = (opts: {
@@ -46,9 +47,9 @@ export type ModelBakeoffRow = {
   model: string;
   n: number;
   validJsonRate: number;
-  brandMentionedAgree: number;
   sentimentAgree: number;
-  positionAgree: number;
+  missedMentionAgree: number;
+  namedSourcesJaccard: number;
   promptTokens: number;
   completionTokens: number;
   usd: number | null;
@@ -82,7 +83,31 @@ export function usdFromUsage(
   };
 }
 
-/** Parse hand-label CSV: draw_id, brand_mentioned (y/n), sentiment, position (int or blank). */
+/** Lowercase + trim; empty tokens dropped. */
+export function normalizeSourceNames(names: string[]): string[] {
+  return [...new Set(names.map((n) => n.trim().toLowerCase()).filter(Boolean))];
+}
+
+/** Jaccard overlap of two string sets (0 when both empty). */
+export function jaccard(a: string[], b: string[]): number {
+  const A = new Set(normalizeSourceNames(a));
+  const B = new Set(normalizeSourceNames(b));
+  if (!A.size && !B.size) return 1;
+  let inter = 0;
+  for (const x of A) if (B.has(x)) inter++;
+  const union = A.size + B.size - inter;
+  return union === 0 ? 1 : inter / union;
+}
+
+export function missedMentionFromJudge(value: JudgeV2Output): boolean {
+  return value.possible_mentions.length > 0;
+}
+
+export function namedSourcesFromJudge(value: JudgeV2Output): string[] {
+  return value.named_sources.map((s) => s.name);
+}
+
+/** Parse CSV: draw_id, sentiment, missed_mention (y/n), named_sources (semicolon list or blank). */
 export function parseHandLabelsCsv(text: string): HandLabel[] {
   const lines = text
     .split(/\r?\n/)
@@ -90,34 +115,39 @@ export function parseHandLabelsCsv(text: string): HandLabel[] {
     .filter(Boolean);
   if (!lines.length) return [];
   const header = lines[0].toLowerCase().split(",").map((c) => c.trim());
-  const idx = {
-    draw: header.indexOf("draw_id"),
-    brand: header.indexOf("brand_mentioned"),
-    sentiment: header.indexOf("sentiment"),
-    position: header.indexOf("position"),
-  };
-  if (idx.draw < 0 || idx.brand < 0 || idx.sentiment < 0 || idx.position < 0) {
-    throw new Error("CSV header must include draw_id, brand_mentioned, sentiment, position");
+  if (
+    header[0] !== "draw_id" ||
+    header[1] !== "sentiment" ||
+    header[2] !== "missed_mention" ||
+    header[3] !== "named_sources"
+  ) {
+    throw new Error("CSV header must be draw_id,sentiment,missed_mention,named_sources");
   }
   const out: HandLabel[] = [];
   for (const line of lines.slice(1)) {
-    const cols = line.split(",").map((c) => c.trim());
-    const brandRaw = cols[idx.brand]?.toLowerCase();
-    if (brandRaw !== "y" && brandRaw !== "n") throw new Error(`brand_mentioned must be y/n (got ${cols[idx.brand]})`);
-    const sentiment = cols[idx.sentiment]?.toLowerCase();
-    if (sentiment !== "positive" && sentiment !== "neutral" && sentiment !== "negative") {
-      throw new Error(`sentiment must be positive|neutral|negative (got ${cols[idx.sentiment]})`);
+    const firstComma = line.indexOf(",");
+    const secondComma = line.indexOf(",", firstComma + 1);
+    const thirdComma = line.indexOf(",", secondComma + 1);
+    if (firstComma < 0 || secondComma < 0 || thirdComma < 0) {
+      throw new Error(`CSV row needs 4 columns: ${line}`);
     }
-    const posRaw = cols[idx.position] ?? "";
-    const position = posRaw === "" ? null : Number(posRaw);
-    if (posRaw !== "" && (!Number.isInteger(position) || position! < 1)) {
-      throw new Error(`position must be a positive integer or blank (got ${posRaw})`);
+    const drawId = line.slice(0, firstComma).trim();
+    const sentiment = line.slice(firstComma + 1, secondComma).trim().toLowerCase();
+    const missedRaw = line.slice(secondComma + 1, thirdComma).trim().toLowerCase();
+    const sourcesJoined = line.slice(thirdComma + 1).trim();
+    if (sentiment !== "positive" && sentiment !== "neutral" && sentiment !== "negative") {
+      throw new Error(`sentiment must be positive|neutral|negative (got ${sentiment})`);
+    }
+    if (missedRaw !== "y" && missedRaw !== "n") {
+      throw new Error(`missed_mention must be y/n (got ${missedRaw})`);
     }
     out.push({
-      drawId: cols[idx.draw],
-      brandMentioned: brandRaw === "y",
+      drawId,
       sentiment,
-      position,
+      missedMention: missedRaw === "y",
+      namedSources: sourcesJoined
+        ? sourcesJoined.split(";").map((s) => s.trim()).filter(Boolean)
+        : [],
     });
   }
   return out;
@@ -143,9 +173,9 @@ export async function runModelBakeoff(
       model: opts.model,
       n: opts.labels.length,
       validJsonRate: 0,
-      brandMentionedAgree: 0,
       sentimentAgree: 0,
-      positionAgree: 0,
+      missedMentionAgree: 0,
+      namedSourcesJaccard: 0,
       promptTokens: 0,
       completionTokens: 0,
       usd: priced.usd,
@@ -179,9 +209,10 @@ export async function runModelBakeoff(
   const promptText = new Map(promptRows.map((p) => [p.id, p.text]));
 
   let validJson = 0;
-  let brandAgree = 0;
   let sentimentAgree = 0;
-  let positionAgree = 0;
+  let missedAgree = 0;
+  let jaccardSum = 0;
+  let scored = 0;
   let promptTokensTotal = 0;
   let completionTokensTotal = 0;
 
@@ -203,14 +234,9 @@ export async function runModelBakeoff(
     const entities = summarizeMatches(draw.answerText, matchAliases(draw.answerText, aliases));
     const keyFor = (e: { entityType: string; entityName: string }) => (e.entityType === "brand" ? "brand" : e.entityName);
     const keys = entities.map(keyFor);
-    const brandEntity = entities.find((e) => e.entityType === "brand");
-    const modelBrandMentioned = Boolean(brandEntity);
-    const modelPosition = brandEntity?.listPosition ?? null;
-
-    if (modelBrandMentioned === label.brandMentioned) brandAgree++;
-    if (modelPosition === label.position) positionAgree++;
-
-    if (!keys.length) continue;
+    if (!keys.length) {
+      throw new Error(`Draw ${label.drawId} has no alias matches; bake-off labels require brand-matched draws`);
+    }
 
     const system = buildSystemPrompt(keys);
     const user = buildJudgeUserPrompt(promptText.get(draw.promptId) ?? "", draw.answerText);
@@ -235,12 +261,14 @@ export async function runModelBakeoff(
     if (typeof res.promptTokens === "number") promptTokensTotal += res.promptTokens;
     if (typeof res.completionTokens === "number") completionTokensTotal += res.completionTokens;
 
+    scored++;
     const check = res.ok ? validateJudge(res.text, keys) : { value: null, errors: [res.error ?? "call failed"] };
-    if (check.value) {
-      validJson++;
-      const brand = check.value.entities.find((e) => e.key === "brand");
-      if (brand && brand.sentiment === label.sentiment) sentimentAgree++;
-    }
+    if (!check.value) continue;
+    validJson++;
+    const brand = check.value.entities.find((e) => e.key === "brand");
+    if (brand && brand.sentiment === label.sentiment) sentimentAgree++;
+    if (missedMentionFromJudge(check.value) === label.missedMention) missedAgree++;
+    jaccardSum += jaccard(namedSourcesFromJudge(check.value), label.namedSources);
   }
 
   const n = opts.labels.length;
@@ -249,9 +277,9 @@ export async function runModelBakeoff(
     model: opts.model,
     n,
     validJsonRate: n ? validJson / n : 0,
-    brandMentionedAgree: n ? brandAgree / n : 0,
     sentimentAgree: n ? sentimentAgree / n : 0,
-    positionAgree: n ? positionAgree / n : 0,
+    missedMentionAgree: n ? missedAgree / n : 0,
+    namedSourcesJaccard: n ? jaccardSum / n : 0,
     promptTokens: promptTokensTotal,
     completionTokens: completionTokensTotal,
     usd: priced.usd,

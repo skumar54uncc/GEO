@@ -17,7 +17,7 @@ const USAGE = `usage:
   npm run judge:bakeoff -- --labels <csv> --model <id> [--model <id> ...]
   npm run judge:bakeoff -- --labels <csv> --model <id> --model <id> --approve
 
-CSV columns: draw_id, brand_mentioned (y/n), sentiment (positive|neutral|negative), position (int or blank).
+CSV columns: draw_id, sentiment (positive|neutral|negative), missed_mention (y/n), named_sources (semicolon list or blank).
 Writes only to cost_ledger (engine judge_bakeoff). Never writes judge_runs or metrics.`;
 
 function argAll(name: string): string[] {
@@ -77,9 +77,9 @@ async function main() {
       model: r.model,
       n: r.n,
       valid_json: r.validJsonRate.toFixed(3),
-      brand_mentioned: r.brandMentionedAgree.toFixed(3),
       sentiment: r.sentimentAgree.toFixed(3),
-      position: r.positionAgree.toFixed(3),
+      missed_mention: r.missedMentionAgree.toFixed(3),
+      named_sources_jaccard: r.namedSourcesJaccard.toFixed(3),
       prompt_tok: r.promptTokens,
       completion_tok: r.completionTokens,
       usd: r.priceNeeded ? "PRICE NEEDED" : r.usd === null ? "n/a" : `$${r.usd.toFixed(6)}`,

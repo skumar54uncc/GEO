@@ -18,8 +18,8 @@ Capture and judging are separate (`runScan` in `lib/capture/batch.ts` does not c
 
 1. **Run a model preflight.** Set placeholder `JUDGE_MODEL` / `CONTENT_MODEL` in `.env.local` (see `.env.example`). Approval calls `preflightFireworksModels` (`lib/fireworks/preflight.ts`) against Fireworks’ OpenAI-compatible `GET /inference/v1/models`.
 2. **Capture.** Set `JUDGE_AUTORUN=false` in `.env.local`, restart `npm run worker`, then estimate → approve → capture. `scan.run` / `capture.retry` log `judge deferred` and do not enqueue `judge.run`. After judging (step 6), set `JUDGE_AUTORUN=true` again and restart the worker.
-3. **Hand label 20 answers.** CSV columns: `draw_id,brand_mentioned,sentiment,position` (`y`/`n`; `positive|neutral|negative`; integer or blank).
-4. **Run the bake-off.** `npm run judge:bakeoff -- --labels <csv> --model <id> --model <id>` (estimate only), then the same with `--approve`. Does not write `judge_runs` or metrics.
+3. **Hand label 20 answers.** `npm run judge:sample -- <scanId>` writes a CSV of brand-matched ok draws (spread across engines). Fill: `sentiment` (`positive|neutral|negative`), `missed_mention` (`y`/`n`: answer refers to UNC Charlotte with no alias match?), `named_sources` (semicolon list or blank). Headline won/mentioned metrics are **deterministic** (alias matching); the judge only affects sentiment, claims, named sources, and possible mentions.
+4. **Run the bake-off.** `npm run judge:bakeoff -- --labels <csv> --model <id> --model <id>` (estimate only), then the same with `--approve`. Agreement: exact sentiment, exact missed_mention vs non-empty `possible_mentions`, Jaccard on `named_sources`. Does not write `judge_runs` or metrics.
 5. **Set models.** Put the bake-off winner in `JUDGE_MODEL` and a **different-family** model in `CONTENT_MODEL`.
 6. **Judge.** `npm run judge:scan -- <scanId>` (estimate + preflight), then `npm run judge:scan -- <scanId> --approve` with `npm run worker` running.
 7. **Do the hand check.** Sample 20 Answer Explorer rows (gate 5 below).

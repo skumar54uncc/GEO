@@ -19,6 +19,7 @@ import {
   campaigns,
   crawlPages,
   crawlRuns,
+  memberships,
   organizations,
   prompts,
   scans,
@@ -28,6 +29,7 @@ import {
   strategyReports,
   promptSets,
   promptSetItems,
+  users,
 } from "@/lib/db/pg/schema";
 import { strategyReportSchema } from "@/lib/contracts/strategy";
 import { cookieFor, resetDatabase } from "../helpers";
@@ -41,6 +43,7 @@ type VictimIds = {
   brandId: string;
   campaignId: string;
   promptId: string;
+  promptSetId: string;
   scanId: string;
   siteId: string;
   siteHostId: string;
@@ -84,6 +87,8 @@ function jsonRequest(method: string, pathname: string, cookie: string, body?: un
 
 function idForDynamicSegment(segments: string[], i: number, v: VictimIds): string {
   const prev = segments[i - 1] ?? "";
+  const seg = segments[i] ?? "";
+  if (seg === "[setId]" || prev === "prompt-sets") return v.promptSetId;
   if (prev === "campaigns") return v.campaignId;
   if (prev === "sites") return v.siteId;
   if (prev === "answers") return randomUUID(); // no such draw → 404
@@ -95,11 +100,15 @@ function idForDynamicSegment(segments: string[], i: number, v: VictimIds): strin
   return v.campaignId;
 }
 
-/** Path under /api plus `params` passed to the App Router handler (dynamic segment names are all `id` here). */
+/** Path under /api plus `params` for App Router handlers (`id`, optional `setId`). */
 function buildPathAndParams(relFromApi: string, v: VictimIds): { pathname: string; params: Record<string, string> } {
   const segments = relFromApi.split("/");
   const params: Record<string, string> = {};
   const resolved = segments.map((s, i) => {
+    if (s === "[setId]") {
+      params.setId = v.promptSetId;
+      return v.promptSetId;
+    }
     if (s !== "[id]") return s;
     const value = idForDynamicSegment(segments, i, v);
     params.id = value;
@@ -279,6 +288,7 @@ async function seedVictimOrg(): Promise<VictimIds> {
     brandId: brand.id,
     campaignId: campaign.id,
     promptId: prompt.id,
+    promptSetId: ps.id,
     scanId: scan.id,
     siteId: site.id,
     siteHostId: host.id,
@@ -356,7 +366,7 @@ describe("cross-org API route isolation", () => {
         let res: Response;
         try {
           const ctx =
-            relFromApi.includes("/[id]") || relFromApi.startsWith("[id]")
+            relFromApi.includes("[id]") || relFromApi.includes("[setId]")
               ? { params }
               : undefined;
           res = await handler(req, ctx);
@@ -509,3 +519,90 @@ function augment(
 
   return { path: pathOut, body };
 }
+
+describe("leadership-pdf cross-org access", () => {
+  it("other org gets 404, right-org viewer gets application/pdf, unauthenticated gets 401", async () => {
+    await resetDatabase();
+    await legacyContext(getDb());
+    const { GET } = await import("@/app/api/campaigns/[id]/leadership-pdf/route");
+    const victim = await seedVictimOrg();
+    const db = getDb();
+    const { orgId: otherOrg } = await legacyContext(db);
+
+    const otherSession = await cookieFor("leadership-other@charlotte.edu", "viewer");
+    const otherRes = await GET(
+      jsonRequest("GET", `/api/campaigns/${victim.campaignId}/leadership-pdf`, `${otherSession}; ${ACTIVE_ORG_COOKIE}=${otherOrg}`),
+      { params: { id: victim.campaignId } },
+    );
+    expect(otherRes.status).toBe(404);
+
+    // Viewer membership in the victim org.
+    const email = "leadership-viewer@victim.edu";
+    const [u] = await db.insert(users).values({ email }).returning();
+    await db.insert(memberships).values({ orgId: victim.orgId, userId: u.id, role: "viewer" });
+    const { createSession } = await import("@/lib/auth");
+    const { token } = await createSession(email);
+    const viewerRes = await GET(
+      jsonRequest(
+        "GET",
+        `/api/campaigns/${victim.campaignId}/leadership-pdf`,
+        cookieHeader(token, victim.orgId),
+      ),
+      { params: { id: victim.campaignId } },
+    );
+    expect(viewerRes.status).toBe(200);
+    expect(viewerRes.headers.get("content-type")).toMatch(/application\/pdf/);
+    const buf = Buffer.from(await viewerRes.arrayBuffer());
+    expect(buf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
+
+    const unauth = await GET(
+      jsonRequest("GET", `/api/campaigns/${victim.campaignId}/leadership-pdf`, ""),
+      { params: { id: victim.campaignId } },
+    );
+    expect(unauth.status).toBe(401);
+  }, 90_000);
+});
+
+describe("prompt library export cross-org access", () => {
+  it("CSV and PDF: other org 404, right-org viewer 200, unauthenticated 401", async () => {
+    await resetDatabase();
+    await legacyContext(getDb());
+    const victim = await seedVictimOrg();
+    const db = getDb();
+    const { orgId: otherOrg } = await legacyContext(db);
+    const { GET: getCsv } = await import("@/app/api/campaigns/[id]/prompt-sets/[setId]/library.csv/route");
+    const { GET: getPdf } = await import("@/app/api/campaigns/[id]/prompt-sets/[setId]/library.pdf/route");
+    const params = { id: victim.campaignId, setId: victim.promptSetId };
+    const pathCsv = `/api/campaigns/${victim.campaignId}/prompt-sets/${victim.promptSetId}/library.csv`;
+    const pathPdf = `/api/campaigns/${victim.campaignId}/prompt-sets/${victim.promptSetId}/library.pdf`;
+
+    const otherSession = await cookieFor("library-other@charlotte.edu", "viewer");
+    const otherCookie = `${otherSession}; ${ACTIVE_ORG_COOKIE}=${otherOrg}`;
+    expect((await getCsv(jsonRequest("GET", pathCsv, otherCookie), { params })).status).toBe(404);
+    expect((await getPdf(jsonRequest("GET", pathPdf, otherCookie), { params })).status).toBe(404);
+
+    const email = "library-viewer@victim.edu";
+    const [u] = await db.insert(users).values({ email }).returning();
+    await db.insert(memberships).values({ orgId: victim.orgId, userId: u.id, role: "viewer" });
+    const { createSession } = await import("@/lib/auth");
+    const { token } = await createSession(email);
+    const viewerCookie = cookieHeader(token, victim.orgId);
+
+    const csvRes = await getCsv(jsonRequest("GET", pathCsv, viewerCookie), { params });
+    expect(csvRes.status).toBe(200);
+    expect(csvRes.headers.get("content-type")).toMatch(/text\/csv/);
+    const csvText = await csvRes.text();
+    expect(csvText).toContain("set_hash");
+    expect(csvText).toContain("victim prompt");
+
+    const pdfRes = await getPdf(jsonRequest("GET", pathPdf, viewerCookie), { params });
+    expect(pdfRes.status).toBe(200);
+    expect(pdfRes.headers.get("content-type")).toMatch(/application\/pdf/);
+    const pdfBuf = Buffer.from(await pdfRes.arrayBuffer());
+    expect(pdfBuf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
+
+    expect((await getCsv(jsonRequest("GET", pathCsv, ""), { params })).status).toBe(401);
+    expect((await getPdf(jsonRequest("GET", pathPdf, ""), { params })).status).toBe(401);
+  }, 90_000);
+});
+

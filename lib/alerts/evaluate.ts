@@ -1,7 +1,8 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { spentThisMonth } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
-import { alerts, campaigns, draws, providerAccounts, scans } from "@/lib/db/pg/schema";
+import { alerts, brandDomains, campaigns, citations, draws, providerAccounts, scans } from "@/lib/db/pg/schema";
+import { domainIsOwned } from "@/lib/metrics/rollup";
 import { BUDGET_ALERT_THRESHOLDS, PROVIDER_ERROR_RATE_THRESHOLD } from "@/lib/metrics/stats";
 import { compareScans, previousComparableScan } from "./decline";
 
@@ -98,7 +99,8 @@ async function evaluateScan(db: Db, orgId: string, scanId: string, created: Crea
   }
   for (const [provider, p] of byProvider) {
     const rate = p.error / p.n;
-    if (rate < PROVIDER_ERROR_RATE_THRESHOLD) continue;
+    // METRICS: strictly greater than PROVIDER_ERROR_RATE_THRESHOLD (exactly 20% does not alert).
+    if (!(rate > PROVIDER_ERROR_RATE_THRESHOLD)) continue;
     await add("provider_error_rate", provider, { provider }, {
       error_draws: p.error,
       n: p.n,
@@ -145,6 +147,55 @@ async function evaluateScan(db: Db, orgId: string, scanId: string, created: Crea
             p_value: c.pValue,
             test: "McNemar exact, paired by prompt",
             message: `${seriesLabel}: prompts won fell from ${c.wonBefore} to ${c.wonAfter} of ${c.pairs} paired prompts (McNemar p=${c.pValue.toFixed(4)}).`,
+          },
+        );
+      }
+
+      // Owned page cited in previous scan but not in this scan — per engine, deduped.
+      const owned = await db
+        .select({ domain: brandDomains.domain })
+        .from(brandDomains)
+        .innerJoin(campaigns, eq(campaigns.brandId, brandDomains.brandId))
+        .where(eq(campaigns.id, scan.campaignId));
+      const ownedDomains = owned.map((o) => o.domain);
+      const ownedPagesByEngine = async (sid: string) => {
+        const rows = await db
+          .select({
+            engine: draws.engine,
+            url: citations.url,
+            canonicalUrl: citations.canonicalUrl,
+            domain: citations.domain,
+            sourceClass: citations.sourceClass,
+          })
+          .from(citations)
+          .innerJoin(draws, eq(draws.id, citations.drawId))
+          .where(eq(draws.scanId, sid));
+        const map = new Map<string, Set<string>>();
+        for (const r of rows) {
+          const page = (r.canonicalUrl || r.url || "").trim() || r.domain;
+          if (!page) continue;
+          if (r.sourceClass !== "owned" && !domainIsOwned(r.domain, ownedDomains)) continue;
+          const set = map.get(r.engine) ?? new Set<string>();
+          set.add(page);
+          map.set(r.engine, set);
+        }
+        return map;
+      };
+      const prevOwned = await ownedPagesByEngine(prev.id);
+      const curOwned = await ownedPagesByEngine(scanId);
+      for (const [engine, pages] of prevOwned) {
+        const still = curOwned.get(engine) ?? new Set<string>();
+        const lost = [...pages].filter((p) => !still.has(p));
+        if (!lost.length) continue;
+        await add(
+          "owned_citation_stopped",
+          engine,
+          { engine, previous_scan_id: prev.id },
+          {
+            previous_scan_id: prev.id,
+            lost_pages: lost.slice(0, 20),
+            lost_count: lost.length,
+            message: `${engine}: stopped citing ${lost.length} owned page(s) that appeared in the previous scan.`,
           },
         );
       }

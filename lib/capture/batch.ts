@@ -41,6 +41,10 @@ export type ScanEstimate = {
   canaryDraws: number;
   totalDraws: number;
   totalUsd: number | null;
+  /** Region count used in the multiplier (default 1). */
+  regionCount: number;
+  /** totalUsd / regionCount when both known; null when price unknown. */
+  usdPerRegion: number | null;
   refusals: string[];
   estimatedAt: string;
   approvedVia?: string;
@@ -72,22 +76,16 @@ function experimentalFor(route: Route): boolean {
   return !(p.passed && p.fresh);
 }
 
-/** Creates the scan with its estimate. Nothing is called until the estimate is approved. */
-export async function planScan(
+/** Price a scan without writing a row. Used by schedule create (estimate-then-approve) and planScan. */
+export async function computeScanEstimate(
   db: Db,
   opts: {
     orgId: string;
-    campaignId: string;
     promptSetId?: string | null;
-    kind: ScanKind;
-    name: string;
     spec: ScanSpec;
     adapters?: Adapters;
-    /** Set by schedule.tick: the schedule and the period (YYYY-MM or YYYY-Www) this scan covers. */
-    scheduleId?: string | null;
-    periodKey?: string | null;
   },
-): Promise<{ scanId: string; estimate: ScanEstimate }> {
+): Promise<ScanEstimate> {
   await ensureCaptureProviders(db, opts.orgId);
   const { spec } = opts;
   const texts = await promptTexts(db, spec.promptIds, opts.promptSetId ?? null);
@@ -135,15 +133,42 @@ export async function planScan(
     if (!check.allowed) refusals.push(`${provider}: ${check.reason}`);
   }
   const totalUsd = cells.some((c) => c.usd === null) ? null : roundUsd(cells.reduce((s, c) => s + (c.usd ?? 0), 0));
-  const estimate: ScanEstimate = {
+  const regionCount = Math.max(1, spec.regionIds.length);
+  return {
     spec,
     cells,
     canaryDraws: spec.canary ? cells.length : 0,
     totalDraws: cells.reduce((s, c) => s + c.draws, 0),
     totalUsd,
+    regionCount,
+    usdPerRegion: totalUsd === null ? null : roundUsd(totalUsd / regionCount),
     refusals: [...new Set(refusals)],
     estimatedAt: new Date().toISOString(),
   };
+}
+
+/** Creates the scan with its estimate. Nothing is called until the estimate is approved. */
+export async function planScan(
+  db: Db,
+  opts: {
+    orgId: string;
+    campaignId: string;
+    promptSetId?: string | null;
+    kind: ScanKind;
+    name: string;
+    spec: ScanSpec;
+    adapters?: Adapters;
+    /** Set by schedule.tick: the schedule and the period (YYYY-MM or YYYY-Www) this scan covers. */
+    scheduleId?: string | null;
+    periodKey?: string | null;
+  },
+): Promise<{ scanId: string; estimate: ScanEstimate }> {
+  const estimate = await computeScanEstimate(db, {
+    orgId: opts.orgId,
+    promptSetId: opts.promptSetId,
+    spec: opts.spec,
+    adapters: opts.adapters,
+  });
   const [scan] = await db
     .insert(scans)
     .values({

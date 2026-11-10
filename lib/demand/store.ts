@@ -14,14 +14,29 @@ export async function storeDemandSignals(
   if (!input.result.connected || input.result.status !== "ok") return { inserted: 0 };
   if (!input.result.signals.length) return { inserted: 0 };
 
-  const rows = input.result.signals.map((signal) => ({
-    campaignId: input.campaignId,
-    source: signal.source,
-    term: signal.term,
-    regionId: input.regionId ?? null,
-    value: signal.value,
-    fetchedAt: new Date(),
-  }));
+  const rows = input.result.signals.map((signal) => {
+    const value =
+      signal.value && typeof signal.value === "object"
+        ? {
+            ...signal.value,
+            // Stamp provenance when the caller did not; fixture runs stay labeled fixture.
+            provenance:
+              typeof (signal.value as { provenance?: unknown }).provenance === "string"
+                ? (signal.value as { provenance: string }).provenance
+                : input.result.mode === "fixture_only"
+                  ? "fixture"
+                  : "stored",
+          }
+        : signal.value;
+    return {
+      campaignId: input.campaignId,
+      source: signal.source,
+      term: signal.term,
+      regionId: input.regionId ?? null,
+      value,
+      fetchedAt: new Date(),
+    };
+  });
   await db.insert(demandSignals).values(rows);
   return { inserted: rows.length };
 }

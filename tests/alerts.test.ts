@@ -107,21 +107,34 @@ describe("alerts.evaluate: budget", () => {
 describe("alerts.evaluate: scan checks", () => {
   beforeEach(resetDatabase);
 
-  it("provider error rate at 20% or more, per provider, deduped", async () => {
+  it("provider error rate strictly above 20%, per provider, deduped", async () => {
     const c = await seed();
-    const scanId = await newScan(c);
-    // dataforseo: 1 error of 5 = 20% (alert). openai: 1 error of 10 = 10% (no alert).
-    for (let i = 0; i < 4; i++) await addDraw(c, scanId, c.promptIds[i], { provider: "dataforseo" });
-    await addDraw(c, scanId, c.promptIds[4], { provider: "dataforseo", status: "error" });
-    for (let i = 0; i < 9; i++) await addDraw(c, scanId, c.promptIds[i], { provider: "openai", engine: "claude", runner: "api_search" });
-    await addDraw(c, scanId, c.promptIds[9], { provider: "openai", engine: "claude", runner: "api_search", status: "error" });
+    const exact = await newScan(c);
+    // Exactly 20% (1 of 5) must not alert.
+    for (let i = 0; i < 4; i++) await addDraw(c, exact, c.promptIds[i], { provider: "dataforseo" });
+    await addDraw(c, exact, c.promptIds[4], { provider: "dataforseo", status: "error" });
+    expect(await evaluateAlerts(c.db, { orgId: c.orgId, scanId: exact })).toEqual([]);
 
-    const first = await evaluateAlerts(c.db, { orgId: c.orgId, scanId });
+    const over = await newScan(c);
+    // 25% (1 of 4) alerts. openai at 10% (1 of 10) does not.
+    for (let i = 0; i < 3; i++) await addDraw(c, over, c.promptIds[i], { provider: "dataforseo" });
+    await addDraw(c, over, c.promptIds[3], { provider: "dataforseo", status: "error" });
+    for (let i = 0; i < 9; i++) await addDraw(c, over, c.promptIds[i], { provider: "openai", engine: "claude", runner: "api_search" });
+    await addDraw(c, over, c.promptIds[9], { provider: "openai", engine: "claude", runner: "api_search", status: "error" });
+
+    const first = await evaluateAlerts(c.db, { orgId: c.orgId, scanId: over });
     expect(first.map((a) => `${a.kind}:${a.key}`)).toEqual(["provider_error_rate:dataforseo"]);
     const [row] = await c.db.select().from(alerts).where(eq(alerts.kind, "provider_error_rate"));
-    expect(row.payload).toMatchObject({ scan_id: scanId, provider: "dataforseo", error_draws: 1, n: 5, error_rate: 0.2 });
+    expect(row.payload).toMatchObject({
+      scan_id: over,
+      provider: "dataforseo",
+      error_draws: 1,
+      n: 4,
+      error_rate: 0.25,
+      threshold: 0.2,
+    });
     expect(row.campaignId).toBe(c.campaignId);
-    expect(await evaluateAlerts(c.db, { orgId: c.orgId, scanId })).toEqual([]);
+    expect(await evaluateAlerts(c.db, { orgId: c.orgId, scanId: over })).toEqual([]);
   });
 
   it("a retried draw counts by its latest attempt", async () => {

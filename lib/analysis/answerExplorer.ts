@@ -1,16 +1,24 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { canonicalizeCitationUrl } from "@/lib/citations/canonical";
+import { citedPageFreshnessLabel } from "@/lib/citations/pageDisplay";
 import type { Db } from "@/lib/db/pg/client";
 import {
+  brandAliases,
+  brands,
   campaigns,
   citations,
+  citedPages,
   claims,
   draws,
   fanoutQueries,
   judgeRuns,
   mentions,
   prompts,
+  recommendations,
   scans,
 } from "@/lib/db/pg/schema";
+import { filterGapTermsForHighlight } from "@/lib/gaps/selectTerms";
+import { highlightGapTermsHtml } from "./highlightTerms";
 
 export class AnswerNotFoundError extends Error {}
 
@@ -35,6 +43,87 @@ export function escapeHtml(text: string): string {
     };
     return entities[character];
   });
+}
+
+export type AnswerHighlightSpan = {
+  /** Raw UTF-16 offsets into the answer text. Null/invalid offsets are skipped (never throw). */
+  start: number | null;
+  end: number | null;
+  kind: "brand" | "competitor" | "citation";
+  label: string;
+};
+
+const HIGHLIGHT_KIND_PRIORITY: Record<AnswerHighlightSpan["kind"], number> = {
+  brand: 3,
+  citation: 2,
+  competitor: 1,
+};
+
+const HIGHLIGHT_TAG_PREFIX: Record<AnswerHighlightSpan["kind"], string> = {
+  brand: "us",
+  citation: "cite",
+  competitor: "peer",
+};
+
+export type HighlightAnswerResult = {
+  /** Safe HTML for Answer Explorer. Only this string may be passed to dangerouslySetInnerHTML. */
+  html: string;
+  /** Spans skipped for null/out-of-range/invalid offsets or empty labels (never throws). */
+  skipped: number;
+};
+
+/**
+ * Apply highlight spans on **raw** UTF-16 offsets, then escape each segment.
+ * Offsets are never computed against escaped text. Overlaps pick one winner
+ * (brand > citation > competitor); adjacent marks are siblings, never nested.
+ */
+export function highlightAnswerHtml(text: string, spans: AnswerHighlightSpan[]): HighlightAnswerResult {
+  let skipped = 0;
+  const valid: Array<AnswerHighlightSpan & { start: number; end: number }> = [];
+  for (const span of spans) {
+    const resolved = safeSpan(text, span.start, span.end);
+    if (!span.label.trim() || resolved === null) {
+      skipped += 1;
+      continue;
+    }
+    valid.push({ ...span, start: resolved.startUtf16, end: resolved.endUtf16 });
+  }
+  valid.sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const boundaries = new Set<number>([0, text.length]);
+  for (const span of valid) {
+    boundaries.add(span.start);
+    boundaries.add(span.end);
+  }
+  const points = [...boundaries].sort((a, b) => a - b);
+
+  const parts: string[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const start = points[i]!;
+    const end = points[i + 1]!;
+    if (end <= start) continue;
+
+    const slice = text.slice(start, end);
+    const covering = valid.filter((span) => span.start <= start && span.end >= end);
+    let winner: (typeof valid)[number] | null = null;
+    for (const span of covering) {
+      if (!winner || HIGHLIGHT_KIND_PRIORITY[span.kind] > HIGHLIGHT_KIND_PRIORITY[winner.kind]) {
+        winner = span;
+      }
+    }
+
+    const escaped = escapeHtml(slice);
+    if (!winner) {
+      parts.push(escaped);
+      continue;
+    }
+    const tag = escapeHtml(HIGHLIGHT_TAG_PREFIX[winner.kind]);
+    const label = escapeHtml(winner.label);
+    parts.push(
+      `<mark class="mention-${winner.kind}" data-label="${label}"><span class="answer-hl-tag">${tag}</span>${escaped}</mark>`,
+    );
+  }
+  return { html: parts.join(""), skipped };
 }
 
 function isUtf16Boundary(text: string, index: number): boolean {
@@ -95,6 +184,78 @@ export async function getAnswerExplorerDraw(db: Db, input: { orgId: string; draw
   ]);
   const text = row.draw.answerText;
 
+  // Pass raw offsets into highlightAnswerHtml (escape happens per segment after slicing).
+  const highlightSpans: AnswerHighlightSpan[] = [];
+  for (const mention of mentionRows) {
+    if (mention.entityType === "brand" || mention.entityType === "competitor") {
+      highlightSpans.push({
+        start: mention.spanStart,
+        end: mention.spanEnd,
+        kind: mention.entityType,
+        label: mention.aliasMatched ?? (mention.entityType === "brand" ? "us" : "peer"),
+      });
+    }
+  }
+  for (const citation of citationRows) {
+    highlightSpans.push({
+      start: citation.spanStart,
+      end: citation.spanEnd,
+      kind: "citation",
+      label: citation.domain || citation.url,
+    });
+  }
+  const highlighted = highlightAnswerHtml(text, highlightSpans);
+
+  const gapTermRows = await db
+    .select({ payload: recommendations.payload })
+    .from(recommendations)
+    .where(eq(recommendations.campaignId, row.campaignId));
+  const rawGapTerms: string[] = [];
+  for (const r of gapTermRows) {
+    const p = r.payload as { headlineTerms?: unknown; citedPagesShare?: { headlineTerms?: Array<{ term?: string }> } } | null;
+    if (Array.isArray(p?.headlineTerms)) {
+      for (const t of p.headlineTerms) {
+        if (typeof t === "string" && t.trim()) rawGapTerms.push(t.trim());
+      }
+    }
+    const shareTerms = p?.citedPagesShare?.headlineTerms;
+    if (Array.isArray(shareTerms)) {
+      for (const rowTerm of shareTerms) {
+        if (typeof rowTerm?.term === "string" && rowTerm.term.trim()) rawGapTerms.push(rowTerm.term.trim());
+      }
+    }
+  }
+  const [campaignBrand] = await db
+    .select({ brandId: campaigns.brandId, brandName: brands.name })
+    .from(campaigns)
+    .leftJoin(brands, eq(brands.id, campaigns.brandId))
+    .where(eq(campaigns.id, row.campaignId))
+    .limit(1);
+  const aliasRows =
+    campaignBrand?.brandId != null
+      ? await db.select({ alias: brandAliases.alias }).from(brandAliases).where(eq(brandAliases.brandId, campaignBrand.brandId))
+      : [];
+  // Brand + stopwords out. The ≥2-pages gate applies when selecting terms from pages
+  // (`selectGapTermsFromPages`), not when highlighting curated recommendation terms.
+  const gapTerms = filterGapTermsForHighlight(
+    rawGapTerms,
+    campaignBrand?.brandName ?? "",
+    aliasRows.map((a) => a.alias),
+  );
+
+  const canonKeys = [
+    ...new Set(
+      citationRows
+        .map((c) => c.canonicalUrl || canonicalizeCitationUrl(c.url))
+        .filter((u): u is string => Boolean(u)),
+    ),
+  ];
+  const pageRows =
+    canonKeys.length > 0
+      ? await db.select().from(citedPages).where(inArray(citedPages.canonicalUrl, canonKeys))
+      : [];
+  const pageByCanon = new Map(pageRows.map((p) => [p.canonicalUrl, p]));
+
   return {
     draw: {
       id: row.draw.id,
@@ -114,7 +275,9 @@ export async function getAnswerExplorerDraw(db: Db, input: { orgId: string; draw
       format: "plain_text" as const,
       renderAs: "text_only" as const,
       text,
-      escapedText: escapeHtml(text),
+      /** HTML from highlightAnswerHtml only — safe for dangerouslySetInnerHTML. */
+      escapedText: highlighted.html,
+      highlightSkipped: highlighted.skipped,
       offsetEncoding: "utf16" as const,
       offsetsApplyTo: "text" as const,
     },
@@ -142,17 +305,56 @@ export async function getAnswerExplorerDraw(db: Db, input: { orgId: string; draw
       verdict: claim.verdict,
       span: safeSpan(text, claim.spanStart, claim.spanEnd),
     })),
-    citations: citationRows.map((citation) => ({
-      id: citation.id,
-      url: citation.url,
-      canonicalUrl: citation.canonicalUrl,
-      domain: citation.domain,
-      position: citation.position,
-      linked: citation.linked,
-      sourceClass: citation.sourceClass,
-      title: citation.title,
-      span: safeSpan(text, citation.spanStart, citation.spanEnd),
-    })),
+    citations: citationRows.map((citation) => {
+      const canon = citation.canonicalUrl || canonicalizeCitationUrl(citation.url);
+      const page = canon ? pageByCanon.get(canon) : undefined;
+      const features = (page?.structuredFeatures ?? null) as Record<string, unknown> | null;
+      const title = page?.title ?? citation.title;
+      const h1 = page?.h1 ?? null;
+      const h2s = page?.h2s ?? [];
+      return {
+        id: citation.id,
+        url: citation.url,
+        canonicalUrl: citation.canonicalUrl,
+        domain: citation.domain,
+        position: citation.position,
+        linked: citation.linked,
+        sourceClass: citation.sourceClass,
+        title: citation.title,
+        span: safeSpan(text, citation.spanStart, citation.spanEnd),
+        page: page
+          ? {
+              canonicalUrl: page.canonicalUrl,
+              fetchStatus: page.fetchStatus,
+              contentType: page.contentType,
+              publishedAt: page.publishedAt ? page.publishedAt.toISOString() : null,
+              updatedAt: page.updatedAt ? page.updatedAt.toISOString() : null,
+              freshness: citedPageFreshnessLabel({
+                publishedAt: page.publishedAt,
+                updatedAt: page.updatedAt,
+                fetchedAt: page.fetchedAt,
+              }),
+              title,
+              h1,
+              h2s,
+              /** Safe HTML for title/H1/H2 — only from highlightGapTermsHtml. */
+              titleHtml: title ? highlightGapTermsHtml(title, gapTerms).html : null,
+              h1Html: h1 ? highlightGapTermsHtml(h1, gapTerms).html : null,
+              h2Htmls: h2s.map((h) => highlightGapTermsHtml(h, gapTerms).html),
+              features: features
+                ? {
+                    listicle: Boolean((features.listicle as { present?: boolean } | undefined)?.present),
+                    answerCapsule: Boolean((features.answerCapsule as { present?: boolean } | undefined)?.present),
+                    statisticsCount:
+                      typeof features.statisticsCount === "number" ? features.statisticsCount : 0,
+                    namedQuotes: Array.isArray(features.namedQuotes) ? features.namedQuotes.length : 0,
+                  }
+                : null,
+            }
+          : null,
+      };
+    }),
+    gapTerms: [...new Set(gapTerms)],
     fanoutQueries: fanoutRows.map(({ query, source }) => ({ query, source })),
   };
 }

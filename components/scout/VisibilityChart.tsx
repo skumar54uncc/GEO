@@ -1,6 +1,10 @@
 "use client";
 
-import { visibilityColumnsFromTrend, type TrendScanPoint } from "@/lib/metrics/visibilityChart";
+import {
+  visibilityColumnsFromTrend,
+  type TrendMetric,
+  type TrendScanPoint,
+} from "@/lib/metrics/visibilityChart";
 import { enginePlain, formatScanDate } from "@/lib/ui/labels";
 
 export function VisibilityChart({
@@ -8,17 +12,25 @@ export function VisibilityChart({
   engine,
   runner,
   events,
+  annotations = [],
+  metric = "prompts_won",
   showRaw = false,
   canShowRaw = false,
+  targetValue = null,
 }: {
   trend: TrendScanPoint[];
   engine: string;
   runner: string;
   events: Array<{ engine: string; occurredOn: string; note: string | null }>;
+  /** Campaign annotations shown on every engine chart. */
+  annotations?: Array<{ occurredOn: string; note: string; kind: string }>;
+  metric?: TrendMetric;
   showRaw?: boolean;
   canShowRaw?: boolean;
+  /** Optional 0–1 KPI target drawn as a dashed "Target" line. */
+  targetValue?: number | null;
 }) {
-  const points = visibilityColumnsFromTrend(trend, engine, runner);
+  const points = visibilityColumnsFromTrend(trend, engine, runner, metric);
   const W = 760;
   const H = 300;
   const padL = 52;
@@ -40,8 +52,9 @@ export function VisibilityChart({
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
       role="img"
-      aria-label={`${enginePlain(engine)} prompts won per scan with 95 percent ranges`}
+      aria-label={`${enginePlain(engine)} ${metric === "citation_rate" ? "citation rate" : "prompts won"} per scan with 95 percent ranges`}
       data-testid="visibility-chart"
+      data-metric={metric}
       data-columns={points.length}
     >
       <defs>
@@ -74,6 +87,22 @@ export function VisibilityChart({
           </g>
         );
       })}
+      {typeof targetValue === "number" && Number.isFinite(targetValue) ? (
+        <g data-testid="target-line">
+          <line
+            x1={padL}
+            x2={W - padR}
+            y1={y(targetValue)}
+            y2={y(targetValue)}
+            stroke="var(--chart)"
+            strokeWidth="1.6"
+            strokeDasharray="6 4"
+          />
+          <text x={W - padR} y={y(targetValue) - 6} textAnchor="end" fontSize="11" fill="var(--text-muted)">
+            Target
+          </text>
+        </g>
+      ) : null}
       {points.map((p, i) => {
         const rate = p.height;
         const x = padL + gap + i * (barW + gap);
@@ -84,6 +113,7 @@ export function VisibilityChart({
         const ciBot = p.ciLow != null ? y(p.ciLow) : top;
         const showRateOnNode = !p.suppressed || (canShowRaw && showRaw);
         const rateAttr = showRateOnNode && p.rate != null ? String(p.rate) : "";
+        const isBaseline = Boolean(trend[i]?.isBaseline);
         return (
           <g
             key={p.scanId}
@@ -91,6 +121,7 @@ export function VisibilityChart({
             data-rate={rateAttr}
             data-height={p.height}
             data-suppressed={p.suppressed ? "1" : undefined}
+            data-baseline={isBaseline ? "1" : undefined}
           >
             {p.suppressed ? (
               <>
@@ -140,6 +171,19 @@ export function VisibilityChart({
             <text x={cx} y={H - 14} textAnchor="middle" fontSize="12" fill="var(--text-muted)">
               {formatScanDate(p.createdAt)}
             </text>
+            {isBaseline ? (
+              <text
+                x={cx}
+                y={H - 2}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="600"
+                fill="var(--text-muted)"
+                data-testid="baseline-label"
+              >
+                Baseline
+              </text>
+            ) : null}
           </g>
         );
       })}
@@ -158,6 +202,18 @@ export function VisibilityChart({
             </g>
           );
         })}
+      {annotations.slice(0, 3).map((a, i) => {
+        const x = padL + gap + Math.min(Math.max(points.length - 1, 0), i) * (barW + gap) + barW / 2;
+        return (
+          <g key={`ann-${a.occurredOn}-${i}`} data-testid="campaign-annotation-flag">
+            <line x1={x} x2={x} y1={padT - 1} y2={y(0)} stroke="var(--chart)" strokeDasharray="2 4" />
+            <rect x={x - 72} y={6} width={144} height={22} rx={4} fill="var(--card)" stroke="var(--border)" />
+            <text x={x} y={21} textAnchor="middle" fontSize="11" fill="var(--text)">
+              {(a.note || a.kind).slice(0, 28)}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

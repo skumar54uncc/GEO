@@ -149,8 +149,10 @@ export function mcnemarExact({ b, c }: McNemarInput): McNemarResult {
     : { pValue, label: "significant decline", direction: "decline", discordant: n };
 }
 
+/** Strict majority: floor(n/2)+1. n=3→2, n=2→2, n=1→1. Losing a draw must not make winning easier. */
 export function promptWonThreshold(validDraws: number): number {
-  return Math.ceil(validDraws / 2);
+  if (validDraws < 1) return 1;
+  return Math.floor(validDraws / 2) + 1;
 }
 
 export function isPromptWon(mentions: number, validDraws: number): boolean {
@@ -180,7 +182,7 @@ export function promptsWon(perPrompt: ReadonlyArray<{ mentions: number; validDra
     ciHigh: ci_high,
     draws,
     method: "wilson",
-    rule: sizes.length === 1 ? wonRuleLabel(sizes[0]) : "at least half of valid draws",
+    rule: sizes.length === 1 ? wonRuleLabel(sizes[0]) : "strict majority of valid draws",
     tooFewDraws,
     tooFewPrompts,
     approximate: (tooFewDraws || tooFewPrompts) && scored.length > 0,

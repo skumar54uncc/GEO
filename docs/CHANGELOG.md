@@ -1,5 +1,81 @@
 # Changelog
 
+## 2026-11-09: Gate 3 closed + `v1.0-rc1` freeze
+
+- **Row 19:** Overview Search Console panel + Demand card copy “Not connected (property access pending from the web team)”; UNC never shows fixture GSC rows (`tests/gate3/row19-gsc.test.ts`). COVERAGE **19** partial (UNC web team property grant).
+- **Gate 3:** All rows done / partial+external / deferred (17+21 in BACKLOG, 2026-11-09 Shailesh). Evidence table in COVERAGE.md.
+- **Freeze:** Tag **`v1.0-rc1`** — bug fixes only on `main`; capture/judge/metrics frozen for the pilot. `docs/HANDOVER.md` + updated `docs/PILOT_RUNBOOK.md`. **V1: 4 of 6**.
+
+## 2026-11-09: Gate 4 closed (Answers overlap + Visibility a11y)
+
+- **Answers@390:** Engine/draw tabs use `flex-wrap` + `min-w-0` (no overflowing scroll strip); list/detail grid is `grid-cols-1 lg:grid-cols-2`.
+- **Visibility a11y:** Coverage labels use contrast-safe `--status-gain-fg` / `--intent-evaluation-fg`; chart table twin wrapped in `.sr-only` div. Overlap checker clips to overflow ancestors and skips `.sr-only`.
+- **Gate 4 evidence:** Vitest **573/573**, Playwright **7/7 ×3**, `tsc` clean, lint (pre-existing analyze warning only), contact sheet 78 PNGs **0** overflow/**0** overlap, Lighthouse a11y **100** on overview/visibility/answers/gaps/budget. **V1: 3 of 6**.
+
+## 2026-11-09: Gate 3 builds + Gate 4 layout/a11y
+
+- **Gate 3 builds:** Row 9 no-audit banner on campaign create → `/audit`. Row 12 citation-rate trend on Visibility (displayable rule). Row 15 Answers sentiment + span, list position, cited page. Row 18 Overview GA4 panel (not connected; no numbers). Row 22 role landing (viewer Overview, editor Visibility, admin Settings switch). Row 25 campaign annotations on every trend chart + `owned_citation_stopped` alert. Rows **17** and **21** deferred to v1.1 (2026-11-09, Shailesh) in BACKLOG.md.
+- **Gate 4:** Answers filters stack / horizontal scroll with 44px targets at 390. Visibility chart gets accessible table twin + labeled controls for Lighthouse a11y.
+- Migration `0015_gate3_annotations_alerts`.
+
+## 2026-11-09: Wave 6 P2 B1 fixes + B9 + V1 gates 3–4
+
+- **B1 fixes:** Non-demo Demand never shows fixture rows; connected sources without a real fetch show “Connected, not fetched yet” (no rows/chart). `DemandCardStatus` adds `approval_pending` — Trends with key but no live approval → “Not connected (approval pending)”; `estimated` is modeled estimates only. DataForSEO `GET /v3/serp/google/locations` (cost 0) confirms US `2840`, NC `21160`, Charlotte `1021048` (pinning tests unchanged).
+- **B9:** Prompt library CSV/PDF per frozen set (`…/prompt-sets/[setId]/library.{csv,pdf}`): text, category, persona, intent, branded, provenance, demand evidence, author, approved by, set hash, frozen date. Viewers + editors; cross-org tests. How we measure lists Wave 6 metrics linked to METRICS.md. COVERAGE **11** done. Migration `0014_b9_prompt_library`.
+- **V1 gates 3–4:** COVERAGE Gate 3 re-audit — **Neither** rows 9, 12, 15, 17, 18, 21, 22, 25 (gate 3 open). Gate 4: Vitest **568/568**, Playwright journeys **7/7 ×3**, `tsc` clean, lint (pre-existing analyze warning only), contact sheet `docs/phase9-screenshots/v1g4-*` (78 PNGs both orgs × 13 screens × 390/1024/1440), no horizontal overflow; Answers@390 button overlaps recorded; Lighthouse a11y overview/answers/gaps/budget **100**, visibility **96**. Gate 4 remains **open** on those overlaps. **V1: 2 of 6**.
+
+## 2026-11-09: Wave 6 P2 B3 (Regions)
+
+- Campaign settings: multi-region picker (US national, NC statewide, Charlotte metro, SC/VA/Raleigh/Atlanta) mapped to DataForSEO `location_code` in `lib/capture/regions.ts` (cited `GET /v3/serp/google/locations`). Default remains 1 region.
+- Scan estimate multiplies by region count and exposes `usdPerRegion`. Visibility region comparison: yes/unknown only, honored/unknown/no mix, displayable rule, never pooled; parametric/manual → “region not supported”.
+- Screenshots `p2b3-regions-*` / `p2b3-campaign-regions-*`. COVERAGE **8** updated. **V1: 1 of 6**.
+
+## 2026-11-09: Wave 6 P2 B1 (Demand) + Journey 6 flake + matrix note
+
+- Journey 6: org-switch waits for navigation + explicit `demo-data-banner` / `role=status` visibility (AppShell shows shell before campaigns/budget). Playwright **15/15** three times in a row.
+- Coverage matrix: viewer note when most cells suppressed — “Cells fill in as more prompts are measured (needs 10+ prompts per cell).” Threshold unchanged.
+- **B1 Demand** under Content intelligence (`/campaigns/[id]/demand`); legacy `/demand` redirects. Per-source cards: connected / not connected / estimated, last fetch, provenance; never zeros when not connected. Demo uses `demo_seed:v1` fixtures. Exa free-tier live when key exists; Trends live only if `GOOGLE_TRENDS_LIVE_APPROVED`; GSC when granted; DataForSEO keywords + LLM Mentions estimate-gated. Add as custom prompt + evidence links from Prompts. Screenshots `p2b1-demand-{demo,unc}-{390,1024,1440}.png`. COVERAGE **2, 3, 6** updated. **V1: 1 of 6**.
+
+## 2026-11-09: Wave 6 P2 B4 (Competitors + coverage matrix)
+
+- Competitors: SoV trend us vs top 3 peers per index (never pooled), grouped bars for latest scan, peer-average benchmark on SoV KPIs.
+- Visibility: intent × engine coverage matrix (strong ≥60% / partial ≥20% / invisible; displayable rule; METRICS.md §6–7).
+- COVERAGE **13, 14, 23** done. Screenshots `p2b4-*-{390,1024,1440}.png`.
+
+## 2026-11-09: Wave 6 P1d review + real leadership PDF
+
+- Leadership PDF returns `Content-Type: application/pdf` (binary via `lib/exports/simplePdf.ts`); demo sample `docs/phase9-screenshots/p1d-leadership-demo.pdf` with analyst note, Baseline/Target, headline CI, DEMO DATA watermark on every page.
+- Cross-org: other org → 404, right-org viewer → PDF, unauthenticated → 401.
+- Row **23** was briefly partial pending B4; closed with peer-average benchmark in P2 B4.
+
+## 2026-11-09: Wave 6 P1c checks + P1d (closes P1)
+
+- **P1c checks:** Freeze rejects `provenance=fixture` outside demo (UI: “Fixture — cannot be frozen”); live Fireworks writer behind key + estimate/cost guard with `CONTENT_MODEL ≠ JUDGE_MODEL` (no key → “not connected”, fixture stays); cosine **0.92** documented in `docs/PERSONAS.md`; near-dupes kept as `similar to: …` (custom carries `provenance=custom` + author); freeze enforces ≥70% unbranded with override reason + audit.
+- **P1d:** Baseline on first scan per prompt set; optional campaign target (dashed Target); analyst note 3–5 sentences (AI draft labeled Draft; writer≠judge); leadership Overview+Visibility PDF. Screenshots `p1d-overview-{390,1024,1440}.png`. **V1: 1 of 6**.
+
+## 2026-11-09: Wave 6 P1b checks + P1c generation UI
+
+- **P1b checks:** One late catch-up per schedule on wake (original due stamped; never N catch-ups). Per-run re-estimate pauses when >20% over approved estimate or a provider cap would be crossed (editor re-approval). Admin **Pause all schedules** + audit. `docs/V1_EXIT.md` (6 gates; reports end with **V1: x of 6**) and `docs/BACKLOG.md`.
+- **P1c:** Prompts page generation UI (editors): 3–5 personas + intents, fixture-labeled builtin pack, drafts into approval queue with demand evidence + embedding dedupe; Add custom prompt (intent, persona, branded). Openings/fixture stems brand-safe (existing + extended test). Screenshots `p1c-prompts-generate-{390,1024,1440}.png`. COVERAGE row **2** updated (still partial — live keys). **V1: 0 of 6**.
+
+## 2026-11-08: Wave 6 P1a checks + P1b Schedules UI
+
+- **P1a checks:** Demo `cited_pages` tagged `demo_seed:v1` with fictional domains; forbid-list/.edu test. Gap terms exclude brand+aliases and stopwords, require ≥2 pages. Share table uses `displayableCitedPagesShare` (n&lt;3 → “Too few cited pages”; raw for editors). Features labeled “detected automatically” with tooltip; freshness uses published/modified only (never `fetched_at`; no date → `unknown`).
+- **P1b:** Settings Schedules UI (editors): create / pause / resume / delete; frozen prompt sets only; biweekly or monthly; next run in America/New_York; per-run estimate + monthly projection vs provider caps; create requires explicit estimate approval; audit on every change. Screenshots: `p1b-schedules-{390,1024,1440}.png`. COVERAGE row **7** evidence updated (still **partial** — live schedule pending funding).
+
+## 2026-11-08: Wave 6 P1a (B2) + P0 approval fixes
+
+- P0 approval fixes: provider error rate **strictly > 0.20** (exactly 20% does not alert); METRICS + renamed test. COVERAGE row **14** stays **missing**; counts **3 done / 19 partial / 6 missing**. `docs/phase9-screenshots/` gitignored; no tracked PNGs.
+- **P1a B2:** Answer Explorer citations panel shows cited-page title/H1/H2s, dates, source class, features; gap terms highlighted via `highlightGapTermsHtml` (escape-per-segment). Gap cards render structured **What cited pages share** table with n and `correlation, not cause`. Demo seed writes `cited_pages` + `citedPagesShare` payload. Screenshots: `p1a-*-{390,1024,1440}.png`.
+
+## 2026-11-07: Wave 6 P0 (approved)
+
+- Coverage: row **16** partial→done; row **28** stays **missing** (Budget PDF ≠ Overview+Visibility leadership PDF). Row **14** remains missing (matrix). Final **3 / 19 / 6**.
+- Overview questions: intent from stored `prompts.intent` or `"untagged"` (no position-based fabrication).
+- Won rule: strict majority `floor(n/2)+1` (n=2 → **2 of 2**); METRICS.md + rollup/`HowMeasured` `w.rule` copy.
+- Answer Explorer: `highlightAnswerHtml` applies spans on raw UTF-16 text then escapes segments; returns `{html,skipped}`; sole `dangerouslySetInnerHTML` input. XSS / overlap / null-offset tests in `tests/analysis/highlightAnswerHtml.test.ts`.
+- Screenshots: `scripts/p0-review-screenshots.ts` → `docs/phase9-screenshots/p0-*-1440.png` (gitignored).
+
 ## 2026-11-06: Pilot ready, pending funding and prompt approval
 
 - Wave 5 complete: stop-loss enforced in `runScan`, fixture rehearsal (`npm run pilot:rehearse`), `docs/PILOT_RUNBOOK.md`, `docs/FUNDING_BRIEF.md`, gold-label sample UI/API.
@@ -323,7 +399,7 @@ Goal: “x of N prompts” with honest intervals, schedules, and alerts. Formula
 
 **Schedules:** `lib/schedules.ts` + migration `0005` (`schedules.enabled`, `scans.period_key`, unique period). `schedule.tick` creates one scan per period; auto-runs only under `budget_cap_usd`; else awaits approval and raises `budget_threshold`.
 
-**Alerts:** `alerts.evaluate` — significant decline, budget 80%/100%, provider error rate ≥20%, blocked. Canary failures remain Phase 3.
+**Alerts:** `alerts.evaluate` — significant decline, budget 80%/100%, provider error rate strictly >20%, blocked. Canary failures remain Phase 3.
 
 **Scan hardening:** atomic `approveScan`; `assertScanOrg` on all paid worker jobs; canary reuse on `scan.run` redelivery; `runScan` only while `status=running`.
 

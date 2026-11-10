@@ -5,7 +5,7 @@ import { campaigns, personas, prompts } from "@/lib/db/pg/schema";
 import { NEAR_DUPLICATE_QIDS } from "@/lib/contentTeam/personas";
 import { brandedShare, type BrandedShare } from "@/lib/prompts/branded";
 import { createLocalEmbedder, type DedupeStatus } from "@/lib/prompts/embeddings";
-import { demandEvidenceLabel } from "@/lib/prompts/generate";
+import { demandEvidenceLabel, isSimilarToNote } from "@/lib/prompts/generate";
 
 export class PromptNotFoundError extends Error {}
 export class PromptValidationError extends Error {}
@@ -58,6 +58,7 @@ export type PromptRow = {
   intent: string | null;
   demand_evidence: unknown;
   demand_evidence_label: string;
+  demand_evidence_ids: string[];
   updated_at: string;
 };
 
@@ -86,7 +87,14 @@ export async function listPromptsForReview(db: Db, filters: PromptListFilters): 
     conds.push(
       eq(
         prompts.provenance,
-        filters.provenance as "observed_ai_log" | "web_query" | "paa" | "fanout" | "synthesized" | "custom",
+        filters.provenance as
+          | "observed_ai_log"
+          | "web_query"
+          | "paa"
+          | "fanout"
+          | "synthesized"
+          | "custom"
+          | "fixture",
       ),
     );
   }
@@ -155,14 +163,22 @@ export async function listPromptsForReview(db: Db, filters: PromptListFilters): 
       question_id: qid,
       pillar: tagValue(r.tags, "pillar:"),
       region: tagValue(r.tags, "region:"),
-      near_duplicate: qid ? NEAR_DUPLICATE_QIDS.has(qid) : false,
+      near_duplicate: (qid ? NEAR_DUPLICATE_QIDS.has(qid) : false) || isSimilarToNote(r.note),
       provenance: r.provenance,
       intent: r.intent,
       demand_evidence: r.demandEvidence,
       demand_evidence_label: demandEvidenceLabel(r.demandEvidence),
+      demand_evidence_ids: demandEvidenceIds(r.demandEvidence),
       updated_at: r.updatedAt.toISOString(),
     };
   });
+}
+
+function demandEvidenceIds(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") return [];
+  const ids = (payload as { ids?: unknown }).ids;
+  if (!Array.isArray(ids)) return [];
+  return ids.filter((id): id is string => typeof id === "string");
 }
 
 export async function patchPrompt(
@@ -170,6 +186,7 @@ export async function patchPrompt(
   orgId: string,
   promptId: string,
   patch: z.infer<typeof promptPatch>,
+  opts: { approvedById?: string | null } = {},
 ): Promise<PromptRow> {
   const [row] = await db
     .select({ id: prompts.id, campaignId: prompts.campaignId })
@@ -181,6 +198,8 @@ export async function patchPrompt(
   if (patch.text !== undefined) data.text = patch.text;
   if (patch.status !== undefined) data.status = patch.status;
   if (patch.note !== undefined) data.note = patch.note;
+  if (patch.status === "approved" && opts.approvedById) data.approvedById = opts.approvedById;
+  if (patch.status !== undefined && patch.status !== "approved") data.approvedById = null;
   await db.update(prompts).set(data).where(eq(prompts.id, promptId));
   const list = await listPromptsForReview(db, { orgId, campaignId: row.campaignId });
   const found = list.find((p) => p.id === promptId);
@@ -194,6 +213,7 @@ export async function bulkSetStatus(
   campaignId: string,
   ids: string[],
   status: "draft" | "approved" | "rejected",
+  opts: { approvedById?: string | null } = {},
 ): Promise<number> {
   await campaignOwned(db, orgId, campaignId);
   const owned = await db
@@ -201,9 +221,12 @@ export async function bulkSetStatus(
     .from(prompts)
     .where(and(eq(prompts.campaignId, campaignId), inArray(prompts.id, ids)));
   if (!owned.length) return 0;
+  const patch: Partial<typeof prompts.$inferInsert> = { status, updatedAt: new Date() };
+  if (status === "approved" && opts.approvedById) patch.approvedById = opts.approvedById;
+  if (status !== "approved") patch.approvedById = null;
   await db
     .update(prompts)
-    .set({ status, updatedAt: new Date() })
+    .set(patch)
     .where(
       and(
         eq(prompts.campaignId, campaignId),

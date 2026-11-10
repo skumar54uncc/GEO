@@ -153,10 +153,13 @@ describe("Wave 1 shell contracts", () => {
   });
 
   it("labels every remaining page that imports the legacy metrics module", () => {
-    for (const route of ["app/legacy/page.tsx", "app/demand/page.tsx"]) {
+    // `/demand` redirects to campaign Demand (P2 B1); only `/legacy` still carries the banner.
+    for (const route of ["app/legacy/page.tsx"]) {
       const source = fs.readFileSync(path.join(process.cwd(), route), "utf8");
       expect(source).toContain("Legacy, not METRICS.md compliant");
     }
+    const demand = fs.readFileSync(path.join(process.cwd(), "app/demand/page.tsx"), "utf8");
+    expect(demand).toMatch(/campaigns\/\$\{.*\}\/demand|replace\(`\/campaigns/);
   });
 
   it("gates every legacy API surface to its original organization", () => {

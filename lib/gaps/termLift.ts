@@ -106,7 +106,7 @@ const STOPWORDS = new Set([
   "versus",
 ]);
 
-/** Tokenize title / H1 / H2 text into lowercase unigrams (length ≥ 3, no stopwords). */
+/** Tokenize title / H1 / H2 text into lowercase unigrams (length ≥ 3, no stopwords). Exported for gap term selection. */
 export function extractHeadlineTerms(page: PageTermSource): Set<string> {
   const parts = [page.title, page.h1, ...(page.h2s ?? [])].filter(Boolean).join(" ");
   const terms = new Set<string>();

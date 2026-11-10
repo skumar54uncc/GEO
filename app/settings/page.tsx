@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { SchedulesPanel } from "@/components/settings/SchedulesPanel";
 import { PageTitle, ScoutCard } from "@/components/scout/primitives";
 import { Badge } from "@/components/ui/card";
 import type { Role } from "@/lib/auth";
@@ -28,6 +29,7 @@ export default function SettingsPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [providers, setProviders] = useState<ProviderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminHome, setAdminHome] = useState<"overview" | "visibility">("overview");
 
   const load = useCallback(async () => {
     try {
@@ -55,6 +57,15 @@ export default function SettingsPage() {
     document.title = "Settings · Scout";
   }, []);
 
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("scout_admin_home");
+      if (v === "visibility" || v === "overview") setAdminHome(v);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   if (error) return <ErrorState message={error} />;
   if (!me || !providers) return <LoadingState label="Loading settings…" />;
 
@@ -68,6 +79,49 @@ export default function SettingsPage() {
           subtitle={`Platform settings — providers, budgets, schedules, evaluation quality, and users. Signed in as ${audience} (${me.user?.role}).`}
         />
       </header>
+
+      {me.user?.role === "admin" ? (
+        <ScoutCard data-testid="admin-home-preference">
+          <h2 className="font-serif text-xl font-semibold">Default home after sign-in</h2>
+          <p className="mt-1 text-sm text-scout-muted">
+            Viewers land on Overview. Editors land on Visibility. Admins can choose.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`min-h-11 rounded border px-3 py-2 text-sm ${
+                adminHome === "overview" ? "border-scout-brand bg-scout-page" : "border-scout-border"
+              }`}
+              onClick={() => {
+                setAdminHome("overview");
+                try {
+                  window.localStorage.setItem("scout_admin_home", "overview");
+                } catch {
+                  /* ignore */
+                }
+              }}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              className={`min-h-11 rounded border px-3 py-2 text-sm ${
+                adminHome === "visibility" ? "border-scout-brand bg-scout-page" : "border-scout-border"
+              }`}
+              onClick={() => {
+                setAdminHome("visibility");
+                try {
+                  window.localStorage.setItem("scout_admin_home", "visibility");
+                } catch {
+                  /* ignore */
+                }
+              }}
+            >
+              Visibility
+            </button>
+          </div>
+        </ScoutCard>
+      ) : null}
 
       <ScoutCard>
         <h2 id="tokens-title" className="font-serif text-xl font-semibold">
@@ -139,6 +193,10 @@ export default function SettingsPage() {
         <Link href="/budget" className="mt-4 inline-block font-medium text-scout-brand underline" data-testid="settings-budget-link">
           Open Budget &amp; Funding
         </Link>
+      </ScoutCard>
+
+      <ScoutCard>
+        <SchedulesPanel role={me.user?.role ?? me.activeOrganization.role} />
       </ScoutCard>
 
       <ScoutCard>

@@ -29,7 +29,7 @@ export type SeriesOutcomes = {
   key: SeriesKey;
   /** Prompt id to one boolean per valid draw: was the brand mentioned. */
   outcomes: Map<string, boolean[]>;
-  /** Prompt id to won (the brand is mentioned in at least ceil(valid / 2) of its valid draws). */
+  /** Prompt id to won (strict majority: brand mentioned in at least floor(valid/2)+1 of its valid draws). */
   won: Map<string, boolean>;
 };
 

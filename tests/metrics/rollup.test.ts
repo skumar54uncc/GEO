@@ -43,6 +43,7 @@ function draw(o: D): MetricDraw {
     regionHonored: o.honored ?? "unknown",
     personaId: o.persona ?? null,
     branded: o.branded ?? false,
+    intent: null,
     mentions,
     citations: (o.citations ?? []).map((c) => ({ domain: c.domain, sourceClass: c.sourceClass ?? "other" })),
     claims: (o.claims ?? []).map((verdict) => ({ verdict })),
@@ -85,9 +86,11 @@ describe("rollup: prompts won", () => {
     expect(headline[0].draws).toBe(9); // the 3 branded draws are not in it
   });
 
-  it("a prompt with an error draw uses its own n (2 draws needs 1)", () => {
-    const cell = roll([draw({ prompt: "p1", brand: true }), draw({ prompt: "p1", brand: false })]);
-    expect(cell.promptsWon).toMatchObject({ won: 1, prompts: 1, rule: "at least 1 of 2 draws" });
+  it("a prompt with 2 valid draws needs strict majority (2 of 2), so 1 mention is a loss", () => {
+    const loss = roll([draw({ prompt: "p1", brand: true }), draw({ prompt: "p1", brand: false })]);
+    expect(loss.promptsWon).toMatchObject({ won: 0, prompts: 1, rule: "at least 2 of 2 draws" });
+    const win = roll([draw({ prompt: "p1", brand: true }), draw({ prompt: "p1", brand: true })]);
+    expect(win.promptsWon).toMatchObject({ won: 1, prompts: 1, rule: "at least 2 of 2 draws" });
   });
 });
 
@@ -204,7 +207,9 @@ describe("rollup: position, consistency, accuracy", () => {
     ]);
     expect(cell.accuracy).toMatchObject({ claims: 4, supported: 2, contradicted: 1, unverifiable: 1 });
     expect(cell.accuracy.rate!.rate).toBeCloseTo(0.75, 12); // 1 - 1/4
+    // Few prompts → approximate Wilson fallback from clusterRate (claims clustered by prompt).
     expect(cell.accuracy.rate).toMatchObject({ numerator: 3, n: 4, method: "wilson" });
+    expect(cell.accuracy.rate!.prompts).toBe(1);
     const w = wilsonInterval(3, 4);
     expect(cell.accuracy.rate!.ciLow!).toBeCloseTo(w.ci_low!, 12);
   });

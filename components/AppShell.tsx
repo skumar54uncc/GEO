@@ -61,7 +61,6 @@ const LEGACY_OPERATOR_PREFIXES = [
   "/analyze",
   "/recommend",
   "/bots",
-  "/demand",
   "/legacy",
   "/settings/providers",
   "/settings/demand",
@@ -153,6 +152,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       })
       .then(async (state) => {
         setSession(state);
+        // Show shell (and demo banner) as soon as session is known — do not wait on campaigns/budget.
+        setLoading(false);
         if (state) {
           if (state.user.role === "viewer" && isLegacyOperatorPath(pathname)) {
             // Hard navigate so Playwright waitForURL and leadership RBAC always leave legacy routes.
@@ -189,7 +190,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }
         }
       })
-      .finally(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, router, pathCampaignId]);
 
@@ -241,6 +244,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {
         label: "Content intelligence",
         items: [
+          { href: cid ? `/campaigns/${cid}/demand` : "/campaigns", label: "Demand", icon: Search },
           { href: cid ? `/campaigns/${cid}/citations` : "/campaigns", label: "Citations", icon: Link2 },
           { href: cid ? `/campaigns/${cid}/gaps` : "/campaigns", label: "Gaps & recommendations", icon: ShieldCheck },
           { href: cid ? `/campaigns/${cid}/strategy` : "/campaigns", label: "Strategy", icon: Lightbulb },
@@ -293,6 +297,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     else if (pathname.includes("/citations")) router.push(`/campaigns/${id}/citations`);
     else if (pathname.includes("/gaps")) router.push(`/campaigns/${id}/gaps`);
     else if (pathname.includes("/strategy")) router.push(`/campaigns/${id}/strategy`);
+    else if (pathname.includes("/demand")) router.push(`/campaigns/${id}/demand`);
     else if (pathname === "/" || pathname === "/overview") router.push("/");
     else router.push(`/campaigns/${id}/dashboard`);
   }

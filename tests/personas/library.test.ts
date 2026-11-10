@@ -29,8 +29,9 @@ import {
   PERSONA_LIBRARY,
   selectableDbKeyForCanonical,
 } from "@/lib/personas/library";
-import { assertLibraryOpeningsBrandSafe, TEST_BRAND_ALIASES } from "@/lib/personas/openings";
+import { assertLibraryOpeningsBrandSafe, openingContainsBrandOrAlias, TEST_BRAND_ALIASES } from "@/lib/personas/openings";
 import { ensureCanonicalPersonas } from "@/lib/personas/seed";
+import { assertFixturePackBrandSafe, buildBuiltinFixture, FIXTURE_INTENT_STEMS } from "@/lib/prompts/fixturePack";
 import { resetDatabase } from "../helpers";
 
 const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "geo-persona-phase4-"));
@@ -110,6 +111,23 @@ describe("Persona library (Christy taxonomy)", () => {
       business_leader: "business_partner",
     });
     assertLibraryOpeningsBrandSafe(TEST_BRAND_ALIASES);
+  });
+
+  it("fixture pack stems and openings stay brand-free (covers generated output openings)", () => {
+    assertFixturePackBrandSafe(TEST_BRAND_ALIASES);
+    expect(FIXTURE_INTENT_STEMS.discovery.length).toBeGreaterThan(0);
+    // Generated texts concatenate openings + stems — both must already be brand-safe.
+    const pack = buildBuiltinFixture({
+      personas: [
+        { id: "00000000-0000-4000-8000-000000000001", key: "a", opening: "I'm a high school senior in North Carolina choosing a college." },
+        { id: "00000000-0000-4000-8000-000000000002", key: "b", opening: "I'm looking for a master's program." },
+        { id: "00000000-0000-4000-8000-000000000003", key: "c", opening: "I'm an employer hiring early-career talent." },
+      ],
+      intents: ["discovery"],
+    });
+    for (const p of pack.prompts) {
+      expect(openingContainsBrandOrAlias(p.text, TEST_BRAND_ALIASES)).toBe(false);
+    }
   });
 
   it("keeps the five content-team persona IDs stable and preserves 459 imported prompts", async () => {

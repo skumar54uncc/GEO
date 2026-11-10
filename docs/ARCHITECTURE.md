@@ -91,6 +91,7 @@ Postgres, Drizzle. `id` is a uuid unless noted. Every table has `created_at`. Ta
 - `demand_signals` (campaign_id, source: google_trends | keyword_volume | paa | autocomplete | related_search | exa | search_console, term, region_id, value jsonb, raw_payload_id, fetched_at)
 - `search_console_queries` (site_id, query, page, country, device, clicks, impressions, ctr, position, date) (added 2026-11-03). Real queries that reach our site. Needs property access from the web team.
 - `ai_referral_traffic` (site_id, source: chatgpt | perplexity | gemini | claude | copilot | other, landing_page, sessions, engaged_sessions, conversions jsonb, date) (added 2026-11-03). From the GA4 Data API. The business outcome metric. Never mixed into visibility scores.
+- Demand card status (`DemandCardStatus` in `lib/demand/types.ts`): `connected` | `not_connected` | `estimated` | `approval_pending`. **`estimated` means modeled estimate values only** (e.g. keyword volume / LLM Mentions before a paid fetch). Trends with a key but without `GOOGLE_TRENDS_LIVE_APPROVED` is `approval_pending` → UI “Not connected (approval pending)”. Non-demo orgs never show fixture rows; a source shows rows only after a real fetch with stored provenance — otherwise “Connected, not fetched yet”, no chart.
 
 ### 3.6 Scans and the draw ledger (the core)
 - `schedules` (campaign_id, cadence: biweekly | monthly | manual, prompt_set_id, next_run_at, budget_cap_usd)

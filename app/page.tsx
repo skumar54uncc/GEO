@@ -67,7 +67,21 @@ type OverviewCard = {
 
 type Dashboard = {
   campaign: { id: string; name: string; topic?: string; status?: string };
-  organization: { name: string; brandId: string; brandName: string };
+  organization: { name: string; brandId: string; brandName: string; isDemo?: boolean };
+  target?: {
+    metric: "prompts_won" | "citation_rate" | "share_of_voice";
+    engine: string;
+    value: number;
+    date: string;
+  } | null;
+  peerAverageBenchmark?: { chat: number | null; google: number | null };
+  analystNote?: {
+    scanId: string;
+    text: string;
+    status: "draft" | "published";
+    authorName: string | null;
+    at: string;
+  } | null;
   institutions: InstitutionRank[];
   promptSets: Array<{
     sha256: string | null;
@@ -336,15 +350,46 @@ export default function OverviewPage() {
           title={card ? `${card.name}` : "Overview"}
           subtitle={card?.topic ?? "AI search visibility across engines"}
         />
-        <Segmented
-          value={surface}
-          onChange={setSurface}
-          options={[
-            { value: "chat", label: "Chat engines" },
-            { value: "google", label: "Google surfaces" },
-          ]}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {campaignId ? (
+            <Button asChild variant="outline" size="sm" data-testid="leadership-pdf-link">
+              <a href={`/api/campaigns/${campaignId}/leadership-pdf`} target="_blank" rel="noreferrer">
+                Leadership PDF
+              </a>
+            </Button>
+          ) : null}
+          <Segmented
+            value={surface}
+            onChange={setSurface}
+            options={[
+              { value: "chat", label: "Chat engines" },
+              { value: "google", label: "Google surfaces" },
+            ]}
+          />
+        </div>
       </div>
+
+      {dashboard?.analystNote?.status === "published" ? (
+        <div
+          className="rounded-[12px] border border-scout-border bg-scout-card px-4 py-3 shadow-scout"
+          data-testid="analyst-note"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-scout-muted">Analyst note</p>
+          <p className="mt-1 text-sm leading-6 text-scout-text">{dashboard.analystNote.text}</p>
+          <p className="mt-1 text-xs text-scout-muted">
+            {dashboard.analystNote.authorName ?? "Editor"} · {formatScanDate(dashboard.analystNote.at)}
+          </p>
+        </div>
+      ) : dashboard?.analystNote?.status === "draft" && canShowRaw ? (
+        <div
+          className="rounded-[12px] border border-amber-300 bg-amber-50 px-4 py-3"
+          data-testid="analyst-note-draft"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Draft</p>
+          <p className="mt-1 text-sm leading-6 text-amber-950">{dashboard.analystNote.text}</p>
+          <p className="mt-1 text-xs text-amber-800">AI draft — edit and approve before it appears for leadership.</p>
+        </div>
+      ) : null}
 
       {partialNotice}
 
@@ -378,6 +423,12 @@ export default function OverviewPage() {
                   <div className="mt-1 text-scout-kpi text-scout-text">
                     <MetricValueScout value={won} showRaw={showRaw} canShowRaw={canShowRaw} grey={active.tooFewDraws} className="block" />
                   </div>
+                ) : null}
+                {dashboard?.target?.metric === "prompts_won" &&
+                (!dashboard.target.engine || dashboard.target.engine === active.key.engine) ? (
+                  <p className="mt-1 text-xs text-scout-muted" data-testid="kpi-target-prompts-won">
+                    Target {(dashboard.target.value * 100).toFixed(0)}% by {dashboard.target.date}
+                  </p>
                 ) : null}
                 <div className="mt-1.5">
                   {(() => {
@@ -429,6 +480,17 @@ export default function OverviewPage() {
                     <MetricValueScout value={sov} showRaw={showRaw} canShowRaw={canShowRaw} grey={active.tooFewDraws} className="block" />
                   </div>
                 ) : null}
+                {(() => {
+                  const peer =
+                    surface === "chat"
+                      ? dashboard?.peerAverageBenchmark?.chat
+                      : dashboard?.peerAverageBenchmark?.google;
+                  return peer != null ? (
+                    <p className="mt-1 text-xs text-scout-muted" data-testid="kpi-peer-average">
+                      Peer average {(peer * 100).toFixed(0)}%
+                    </p>
+                  ) : null;
+                })()}
                 <div className="mt-1.5">
                   <StatusBadge tone={sovStatus.tone === "decline" ? "decline" : sovStatus.tone === "gain" ? "gain" : "noise"}>
                     {sovStatus.label}
@@ -476,6 +538,11 @@ export default function OverviewPage() {
                   <div>
                     Latest scan
                     <b className="block font-medium text-scout-text">{formatScanDate(view?.latestScan.createdAt)}</b>
+                    {view?.trend.some((t) => t.isBaseline && t.scanId === view.latestScan.id) ? (
+                      <span className="mt-0.5 inline-block text-[11px] font-semibold text-scout-brand" data-testid="baseline-scan-badge">
+                        Baseline
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-[19px] font-bold text-scout-chart">
                     {latestPoint ? (
@@ -487,6 +554,13 @@ export default function OverviewPage() {
               {view ? (
                 <VisibilityChart
                   trend={view.trend}
+                  targetValue={
+                    dashboard?.target &&
+                    dashboard.target.metric === "prompts_won" &&
+                    (!dashboard.target.engine || dashboard.target.engine === active.key.engine)
+                      ? dashboard.target.value
+                      : null
+                  }
                   engine={active.key.engine}
                   runner={active.key.runner}
                   events={dashboard?.modelEvents ?? []}
@@ -698,6 +772,24 @@ export default function OverviewPage() {
                   Open Answer Explorer
                 </Link>
               ) : null}
+              </div>
+            </ScoutCard>
+
+            <ScoutCard delayMs={320}>
+              <div data-testid="ga4-panel">
+                <h2 className="text-scout-card text-scout-text">AI referral traffic (GA4)</h2>
+                <p className="mt-2 text-scout-body text-scout-muted" data-testid="ga4-status">
+                  Not connected (GA4 access pending from the web team)
+                </p>
+              </div>
+            </ScoutCard>
+
+            <ScoutCard delayMs={330}>
+              <div data-testid="gsc-panel">
+                <h2 className="text-scout-card text-scout-text">Branded search impressions (Search Console)</h2>
+                <p className="mt-2 text-scout-body text-scout-muted" data-testid="gsc-status">
+                  Not connected (property access pending from the web team)
+                </p>
               </div>
             </ScoutCard>
 

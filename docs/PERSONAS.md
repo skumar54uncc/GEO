@@ -18,6 +18,16 @@ Dashboards report by **persona group** by default. A **specific persona** appear
 3. **Existing content-team IDs stay.** `undergrad`, `grad`, `business_partner`, `research_partner`, and `business_leader` keep their database IDs. The 459 imported prompts are unchanged (test).
 4. **Business leaders and potential partners are one persona.** `business_partner` is the selectable canonical key. `business_leader` is a legacy alias of the same persona (same group, same metrics meaning). Do not split hiring vs partnering into two personas.
 
+## Embedding dedupe
+
+Near-duplicate detection uses cosine similarity on prompt embeddings.
+
+| Constant | Value | Location |
+|---|---|---|
+| **Default cosine threshold** | **0.92** | `DEFAULT_COSINE_THRESHOLD` in `lib/prompts/embeddings.ts` |
+
+A candidate at or above the threshold is flagged for the reviewer as **similar to: \<matched prompt\>**. Near-duplicates are **never silently dropped** — they stay in the approval queue with that note (including custom prompts). When the local embedder is unavailable, status is `disabled` and every candidate is kept without similarity flags.
+
 ## Groups and personas
 
 | Group | Persona key | Label | What they look for | Example opening |

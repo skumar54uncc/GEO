@@ -1,11 +1,13 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import {
+  citedPagesShareFromPayload,
   gapTitleFromPayload,
   leverTypeToLabel,
   parseGapEvidence,
   sharedAmongSummary,
   suggestedActionFromPayload,
+  type CitedPagesShareTable,
 } from "@/lib/gaps/display";
 import { campaigns, prompts, recommendations } from "@/lib/db/pg/schema";
 
@@ -28,6 +30,8 @@ export type GapRecommendationRow = {
   suggestedAction: string | null;
   sharedAmongCitedPages: string | null;
   sharedAmongCitedPagesN: number | null;
+  /** Structured B2 share table when present on the payload. */
+  citedPagesShare: CitedPagesShareTable | null;
   evidenceCount: number;
   evidenceItems: Array<{ detail: string; url?: string }>;
   baselineScanId: string | null;
@@ -78,6 +82,7 @@ export async function listCampaignGaps(
         suggestedAction: suggestedActionFromPayload(r.payload),
         sharedAmongCitedPages: shared.text,
         sharedAmongCitedPagesN: shared.n,
+        citedPagesShare: citedPagesShareFromPayload(r.payload),
         evidenceCount: count,
         evidenceItems: items,
         baselineScanId: r.baselineScanId,

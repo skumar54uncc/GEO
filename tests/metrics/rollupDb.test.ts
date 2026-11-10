@@ -34,7 +34,7 @@ describe("rollupScan", () => {
     const overall = r.cells.filter((x) => x.key.regionId === null && x.key.personaId === null && x.key.personaGroup === null);
     const chatgpt = overall.find((x) => x.key.engine === "chatgpt")!;
     expect(chatgpt.draws).toBe(3); // p0 x2 and p1's retry
-    expect(chatgpt.promptsWon).toMatchObject({ won: 2, prompts: 2 }); // p0 1 of 2 is won (at least 1 of 2), p1 won
+    expect(chatgpt.promptsWon).toMatchObject({ won: 1, prompts: 2, rule: "strict majority of valid draws" }); // p0 1 of 2 loses (needs 2 of 2); p1 1 of 1 wins
     const claude = overall.find((x) => x.key.engine === "claude")!;
     expect(claude.draws).toBe(1);
     expect(claude.key).toMatchObject({ runner: "api_search", index: "chat" });

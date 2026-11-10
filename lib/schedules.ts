@@ -1,16 +1,52 @@
 import { and, asc, eq, isNotNull, lte } from "drizzle-orm";
 import { z } from "zod";
 import { NotFoundError, ValidationError } from "./campaigns";
-import { approveScan, planScan } from "./capture/batch";
+import { approveScan, computeScanEstimate, planScan, type ScanEstimate } from "./capture/batch";
 import { batchSpec } from "./capture/service";
 import type { Db } from "./db/pg/client";
-import { alerts, campaigns, promptSets, scans, schedules } from "./db/pg/schema";
+import { alerts, campaigns, promptSets, providerAccounts, scans, schedules } from "./db/pg/schema";
 import { QUEUES } from "./queues";
 
 export type Cadence = (typeof schedules.$inferSelect)["cadence"];
 export type ScheduleRow = typeof schedules.$inferSelect;
 
+/** Display and UI create flows only offer biweekly / monthly (manual stays API-only for tests). */
+export const UI_CADENCES = ["biweekly", "monthly"] as const;
+export type UiCadence = (typeof UI_CADENCES)[number];
+
+export const SCHEDULE_TZ = "America/New_York" as const;
+
 const pad = (n: number, width = 2) => String(n).padStart(width, "0");
+
+/** Next run for Settings UI — America/New_York wall time. */
+export function formatNextRunNy(at: Date | string | null | undefined): string | null {
+  if (at == null) return null;
+  const d = at instanceof Date ? at : new Date(at);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: SCHEDULE_TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(d);
+}
+
+/** Expected runs per calendar month for monthly projection (biweekly ≈ 26/12). */
+export function runsPerMonth(cadence: Cadence): number | null {
+  if (cadence === "monthly") return 1;
+  if (cadence === "biweekly") return 26 / 12;
+  return null;
+}
+
+export function monthlyProjectionUsd(perRunUsd: number | null, cadence: Cadence): number | null {
+  if (perRunUsd == null) return null;
+  const n = runsPerMonth(cadence);
+  if (n == null) return null;
+  return Math.round(perRunUsd * n * 100) / 100;
+}
 
 /**
  * The period a scheduled scan covers, in UTC. Monthly: `YYYY-MM`. Biweekly: the ISO 8601 week the run falls in,
@@ -48,6 +84,13 @@ export const scheduleInput = z.object({
   budget_cap_usd: z.number().nonnegative().nullable().optional(),
   next_run_at: z.string().datetime().nullable().optional(),
   enabled: z.boolean().optional(),
+  /**
+   * Explicit estimate approval gate. Create refuses unless true.
+   * Prevents a schedule that could later auto-run a paid scan without a human accepting the price.
+   */
+  estimate_approved: z.literal(true),
+  /** The per-run USD the editor approved (may be null only when the estimate itself is unknown — still refused for paid auto-run). */
+  approved_estimate_usd: z.number().nonnegative().nullable(),
 });
 export type ScheduleInput = z.infer<typeof scheduleInput>;
 
@@ -61,6 +104,13 @@ export const schedulePatch = z
   })
   .partial();
 export type SchedulePatch = z.infer<typeof schedulePatch>;
+
+export const scheduleEstimateInput = z.object({
+  campaign_id: z.string().uuid(),
+  prompt_set_id: z.string().uuid(),
+  cadence: z.enum(["biweekly", "monthly"]),
+});
+export type ScheduleEstimateInput = z.infer<typeof scheduleEstimateInput>;
 
 /** The schedule if its campaign belongs to the org. Never trust a schedule id alone. */
 export async function scheduleOwned(db: Db, orgId: string, scheduleId: string): Promise<ScheduleRow> {
@@ -79,10 +129,92 @@ async function assertFrozenSetInCampaign(db: Db, campaignId: string, promptSetId
   if (!set.frozenAt) throw new ValidationError("Freeze the prompt set before scheduling scans on it.");
 }
 
-export async function createSchedule(db: Db, orgId: string, raw: unknown, now = new Date()): Promise<ScheduleRow> {
+export type ScheduleCostPreview = {
+  estimate: ScanEstimate;
+  perRunUsd: number | null;
+  monthlyProjectionUsd: number | null;
+  cadence: UiCadence;
+  providerCaps: Array<{
+    provider: string;
+    monthlyBudgetUsd: number | null;
+    perScanCapUsd: number | null;
+    exceedsMonthlyCap: boolean | null;
+    exceedsPerScanCap: boolean | null;
+  }>;
+};
+
+/** Estimate a typical scheduled scan (same draws/canary as tick) without creating a scan row. */
+export async function estimateScheduleRun(
+  db: Db,
+  orgId: string,
+  raw: unknown,
+  adapters?: Parameters<typeof computeScanEstimate>[1]["adapters"],
+): Promise<ScheduleCostPreview> {
+  const parsed = scheduleEstimateInput.safeParse(raw);
+  if (!parsed.success) throw new ValidationError(parsed.error.issues.map((i) => i.message).join("; "));
+  const input = parsed.data;
+  const [campaign] = await db.select({ id: campaigns.id }).from(campaigns).where(and(eq(campaigns.id, input.campaign_id), eq(campaigns.orgId, orgId)));
+  if (!campaign) throw new NotFoundError("Campaign not found.");
+  await assertFrozenSetInCampaign(db, campaign.id, input.prompt_set_id);
+  const spec = await batchSpec(db, orgId, {
+    campaign_id: campaign.id,
+    prompt_set_id: input.prompt_set_id,
+    kind: "scan",
+    draws: 3,
+    canary: true,
+    name: `Schedule estimate ${input.cadence}`,
+  });
+  const estimate = await computeScanEstimate(db, {
+    orgId,
+    promptSetId: spec.promptSetId,
+    spec: spec.spec,
+    adapters,
+  });
+  const perRunUsd = estimate.totalUsd;
+  const monthly = monthlyProjectionUsd(perRunUsd, input.cadence);
+  const accounts = await db.select().from(providerAccounts).where(eq(providerAccounts.orgId, orgId));
+  const byProvider = new Map<string, { usd: number }>();
+  for (const cell of estimate.cells) {
+    if (cell.usd == null) continue;
+    const agg = byProvider.get(cell.provider) ?? { usd: 0 };
+    agg.usd += cell.usd;
+    byProvider.set(cell.provider, agg);
+  }
+  const providerCaps = accounts.map((a) => {
+    const monthlyBudgetUsd = a.monthlyBudgetUsd == null ? null : Number(a.monthlyBudgetUsd);
+    const perScanCapUsd = a.perScanCapUsd == null ? null : Number(a.perScanCapUsd);
+    const share = byProvider.get(a.provider)?.usd ?? null;
+    const monthlyShare = share == null || monthly == null || perRunUsd == null || perRunUsd === 0 ? null : (share / perRunUsd) * monthly;
+    return {
+      provider: a.provider,
+      monthlyBudgetUsd,
+      perScanCapUsd,
+      exceedsMonthlyCap:
+        monthlyBudgetUsd == null || monthlyShare == null ? null : monthlyShare > monthlyBudgetUsd,
+      exceedsPerScanCap: perScanCapUsd == null || share == null ? null : share > perScanCapUsd,
+    };
+  });
+  return {
+    estimate,
+    perRunUsd,
+    monthlyProjectionUsd: monthly,
+    cadence: input.cadence,
+    providerCaps,
+  };
+}
+
+export async function createSchedule(
+  db: Db,
+  orgId: string,
+  raw: unknown,
+  now = new Date(),
+): Promise<Omit<ScheduleRow, "approvedEstimateUsd"> & { approvedEstimateUsd: number | null }> {
   const parsed = scheduleInput.safeParse(raw);
   if (!parsed.success) throw new ValidationError(parsed.error.issues.map((i) => i.message).join("; "));
   const input = parsed.data;
+  if (input.estimate_approved !== true) {
+    throw new ValidationError("Creating a schedule requires explicit estimate approval (estimate_approved: true).");
+  }
   const [campaign] = await db.select({ id: campaigns.id }).from(campaigns).where(and(eq(campaigns.id, input.campaign_id), eq(campaigns.orgId, orgId)));
   if (!campaign) throw new NotFoundError("Campaign not found.");
   await assertFrozenSetInCampaign(db, campaign.id, input.prompt_set_id);
@@ -97,10 +229,50 @@ export async function createSchedule(db: Db, orgId: string, raw: unknown, now = 
       cadence: input.cadence,
       nextRunAt,
       budgetCapUsd: input.budget_cap_usd === undefined || input.budget_cap_usd === null ? null : String(input.budget_cap_usd),
+      approvedEstimateUsd:
+        input.approved_estimate_usd === undefined || input.approved_estimate_usd === null
+          ? null
+          : String(input.approved_estimate_usd),
       enabled: input.enabled ?? true,
     })
     .returning();
-  return row;
+  const { approvedEstimateUsd: _dbUsd, ...rest } = row;
+  return {
+    ...rest,
+    approvedEstimateUsd:
+      input.approved_estimate_usd === undefined || input.approved_estimate_usd === null
+        ? null
+        : input.approved_estimate_usd,
+  };
+}
+
+/**
+ * Delete a schedule. Detaches past scans (schedule_id → null) so history remains,
+ * then removes the row. Pause/resume is preferred when you only want to stop future runs.
+ */
+export async function deleteSchedule(db: Db, orgId: string, scheduleId: string): Promise<ScheduleRow> {
+  const current = await scheduleOwned(db, orgId, scheduleId);
+  await db.update(scans).set({ scheduleId: null }).where(eq(scans.scheduleId, scheduleId));
+  await db.delete(schedules).where(eq(schedules.id, scheduleId));
+  return current;
+}
+
+/** Frozen prompt sets only — unfrozen sets are not selectable in the Schedules UI. */
+export async function listFrozenPromptSetsForOrg(db: Db, orgId: string, campaignId: string) {
+  const [campaign] = await db.select({ id: campaigns.id }).from(campaigns).where(and(eq(campaigns.id, campaignId), eq(campaigns.orgId, orgId)));
+  if (!campaign) throw new NotFoundError("Campaign not found.");
+  const rows = await db
+    .select({
+      id: promptSets.id,
+      version: promptSets.version,
+      label: promptSets.label,
+      frozenAt: promptSets.frozenAt,
+      sha256: promptSets.sha256,
+    })
+    .from(promptSets)
+    .where(and(eq(promptSets.campaignId, campaignId), isNotNull(promptSets.frozenAt)))
+    .orderBy(asc(promptSets.version));
+  return rows;
 }
 
 export async function listSchedules(db: Db, orgId: string, campaignId: string): Promise<ScheduleRow[]> {
@@ -140,12 +312,30 @@ export async function disableSchedule(db: Db, orgId: string, scheduleId: string)
   return updateSchedule(db, orgId, scheduleId, { enabled: false });
 }
 
+/** Admin: pause every enabled schedule in the org. Returns how many rows were updated. */
+export async function pauseAllSchedules(db: Db, orgId: string): Promise<{ paused: number; ids: string[] }> {
+  const rows = await db
+    .select({ id: schedules.id })
+    .from(schedules)
+    .innerJoin(campaigns, eq(campaigns.id, schedules.campaignId))
+    .where(and(eq(campaigns.orgId, orgId), eq(schedules.enabled, true)));
+  if (!rows.length) return { paused: 0, ids: [] };
+  const ids = rows.map((r) => r.id);
+  for (const id of ids) {
+    await db.update(schedules).set({ enabled: false }).where(eq(schedules.id, id));
+  }
+  return { paused: ids.length, ids };
+}
+
 export type TickResult = {
   scheduleId: string;
   periodKey: string | null;
   scanId: string | null;
-  action: "started" | "awaiting_approval" | "skipped_existing" | "error";
+  action: "started" | "awaiting_approval" | "paused_reestimate" | "skipped_existing" | "error";
   detail: string | null;
+  /** True when this run is a single catch-up after the laptop/worker missed one or more dues. */
+  late?: boolean;
+  originalDueAt?: string | null;
 };
 
 type SendJob = (queue: string, data: object) => Promise<string | null>;
@@ -156,17 +346,58 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /** The first run strictly after `now`, stepping from the schedule's own cadence so a late tick does not shift the calendar. */
-function nextAfter(cadence: Cadence, from: Date, now: Date): Date {
+export function nextAfter(cadence: Cadence, from: Date, now: Date): Date {
   let next = advanceNextRun(cadence, from);
   while (next.getTime() <= now.getTime()) next = advanceNextRun(cadence, next);
   return next;
 }
 
+/** True when at least one full cadence step was skipped (laptop asleep across dues). */
+export function isLateCatchUp(cadence: Cadence, dueAt: Date, now: Date): boolean {
+  return advanceNextRun(cadence, dueAt).getTime() <= now.getTime();
+}
+
+/** Re-estimate must not exceed the approved create-time estimate by more than 20%. */
+export const REESTIMATE_OVERAGE_RATIO = 0.2;
+
+export function estimateExceedsApproved(newUsd: number | null, approvedUsd: number | null): boolean {
+  if (newUsd == null || approvedUsd == null) return false;
+  if (approvedUsd <= 0) return newUsd > 0;
+  return newUsd > approvedUsd * (1 + REESTIMATE_OVERAGE_RATIO);
+}
+
+async function providerCapCrossed(
+  db: Db,
+  orgId: string,
+  estimate: ScanEstimate,
+): Promise<{ crossed: boolean; detail: string | null }> {
+  const accounts = await db.select().from(providerAccounts).where(eq(providerAccounts.orgId, orgId));
+  const byProvider = new Map<string, number>();
+  for (const cell of estimate.cells) {
+    if (cell.usd == null) continue;
+    byProvider.set(cell.provider, (byProvider.get(cell.provider) ?? 0) + cell.usd);
+  }
+  for (const a of accounts) {
+    const share = byProvider.get(a.provider);
+    if (share == null) continue;
+    const perScan = a.perScanCapUsd == null ? null : Number(a.perScanCapUsd);
+    if (perScan != null && share > perScan) {
+      return { crossed: true, detail: `${a.provider} per-scan cap $${perScan} would be crossed ($${share})` };
+    }
+    const monthly = a.monthlyBudgetUsd == null ? null : Number(a.monthlyBudgetUsd);
+    // Conservative: treat this run's share alone as the monthly check when spent is unknown here.
+    if (monthly != null && share > monthly) {
+      return { crossed: true, detail: `${a.provider} monthly cap $${monthly} would be crossed ($${share})` };
+    }
+  }
+  return { crossed: false, detail: null };
+}
+
 /**
- * Runs every enabled, due schedule once per period. One scan per (schedule, period): a second tick in the same
- * period finds the scan and does nothing. The scan is estimated first; it auto-runs only when the estimate is known,
- * has no refusals, and is within the schedule's budget cap (no cap set means no auto-run). Otherwise it waits for a
- * person and a budget_threshold alert says so. A schedule that fails is reported and does not stop the others.
+ * Runs every enabled, due schedule. On wake after missed dues: exactly ONE catch-up scan per schedule
+ * (period of the original due), marked late, then next_run_at jumps past every skipped slot.
+ * Every run re-estimates; if the new estimate exceeds the approved create estimate by >20% or a
+ * provider cap would be crossed, the scan is paused for editor re-approval (never auto-captured).
  */
 export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob; log?: (m: string) => void; adapters?: Parameters<typeof planScan>[1]["adapters"] }): Promise<TickResult[]> {
   const now = opts.now ?? new Date();
@@ -180,41 +411,111 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
   const results: TickResult[] = [];
   for (const { s, orgId } of due) {
     if (s.cadence === "manual" || !s.nextRunAt) continue;
-    // Period comes from the due instant (next_run_at), not wall-clock now, so a late tick still attributes the correct slot.
-    const period = periodKey(s.cadence, s.nextRunAt) as string;
-    const done = (r: Omit<TickResult, "scheduleId" | "periodKey">) => {
-      const full = { scheduleId: s.id, periodKey: period, ...r };
+    const originalDueAt = s.nextRunAt;
+    const late = isLateCatchUp(s.cadence, originalDueAt, now);
+    // Period from the original due — never invent periods for the skipped slots.
+    const period = periodKey(s.cadence, originalDueAt) as string;
+    const done = (r: Omit<TickResult, "scheduleId" | "periodKey" | "late" | "originalDueAt">) => {
+      const full: TickResult = {
+        scheduleId: s.id,
+        periodKey: period,
+        late,
+        originalDueAt: originalDueAt.toISOString(),
+        ...r,
+      };
       results.push(full);
-      log(`[schedule.tick] ${s.id} ${period}: ${full.action}${full.detail ? ` (${full.detail})` : ""}`);
+      log(`[schedule.tick] ${s.id} ${period}: ${full.action}${late ? " late" : ""}${full.detail ? ` (${full.detail})` : ""}`);
     };
     try {
       const [existing] = await db.select({ id: scans.id }).from(scans).where(and(eq(scans.scheduleId, s.id), eq(scans.periodKey, period)));
       if (existing) {
-        await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, s.nextRunAt, now) }).where(eq(schedules.id, s.id));
+        // Still advance past all missed slots so we never queue N catch-ups.
+        await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, originalDueAt, now) }).where(eq(schedules.id, s.id));
         done({ scanId: existing.id, action: "skipped_existing", detail: "a scan for this period already exists" });
         continue;
       }
+      const lateLabel = late ? ` (late; due ${originalDueAt.toISOString()})` : "";
       const spec = await batchSpec(db, orgId, {
         campaign_id: s.campaignId,
         prompt_set_id: s.promptSetId,
         kind: "scan",
         draws: 3,
         canary: true,
-        name: `Scheduled ${s.cadence} scan ${period}`,
+        name: `Scheduled ${s.cadence} scan ${period}${lateLabel}`,
       });
       let planned: Awaited<ReturnType<typeof planScan>>;
       try {
         planned = await planScan(db, { orgId, ...spec, scheduleId: s.id, periodKey: period, adapters: opts.adapters });
       } catch (err) {
         if (!isUniqueViolation(err)) throw err;
-        // Another tick won the race for this period.
-        await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, s.nextRunAt, now) }).where(eq(schedules.id, s.id));
+        await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, originalDueAt, now) }).where(eq(schedules.id, s.id));
         done({ scanId: null, action: "skipped_existing", detail: "a scan for this period was created concurrently" });
         continue;
       }
       const { scanId, estimate } = planned;
-      const cap = s.budgetCapUsd === null ? null : Number(s.budgetCapUsd);
-      const withinCap = estimate.totalUsd !== null && cap !== null && estimate.totalUsd <= cap && estimate.refusals.length === 0;
+      const approvedUsd = s.approvedEstimateUsd == null ? null : Number(s.approvedEstimateUsd);
+      const overApproved = estimateExceedsApproved(estimate.totalUsd, approvedUsd);
+      const caps = await providerCapCrossed(db, orgId, estimate);
+      const cap = s.budgetCapUsd == null ? null : Number(s.budgetCapUsd);
+      const overBudgetCap = estimate.totalUsd !== null && cap !== null && estimate.totalUsd > cap;
+
+      // Stamp late metadata + re-estimate snapshot onto the immutable estimate blob (scan row update of estimate is allowed only before approval/capture).
+      const stamped = {
+        ...estimate,
+        late,
+        originalDueAt: originalDueAt.toISOString(),
+        approvedEstimateUsd: approvedUsd,
+        reestimateOverage: overApproved,
+        providerCapCrossed: caps.crossed,
+      };
+      await db
+        .update(scans)
+        .set({
+          estimate: stamped,
+          name: late ? `Scheduled ${s.cadence} scan ${period} (late; due ${originalDueAt.toISOString()})` : spec.name,
+        })
+        .where(eq(scans.id, scanId));
+
+      if (overApproved || caps.crossed) {
+        const reason = overApproved
+          ? `re-estimate $${estimate.totalUsd} exceeds approved $${approvedUsd} by more than ${REESTIMATE_OVERAGE_RATIO * 100}%`
+          : caps.detail ?? "provider cap would be crossed";
+        await db
+          .update(scans)
+          .set({
+            status: "paused",
+            pausedAt: now,
+            pausedReason: reason,
+          })
+          .where(eq(scans.id, scanId));
+        await db.insert(alerts).values({
+          orgId,
+          campaignId: s.campaignId,
+          kind: "budget_threshold",
+          payload: {
+            source: "schedule",
+            state: "paused_reestimate",
+            message: `Scheduled scan ${period} paused: ${reason}. Editor re-approval required.`,
+            schedule_id: s.id,
+            scan_id: scanId,
+            period_key: period,
+            estimate_usd: estimate.totalUsd,
+            approved_estimate_usd: approvedUsd,
+            late,
+            original_due_at: originalDueAt.toISOString(),
+            refusals: estimate.refusals,
+          },
+        });
+        await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, originalDueAt, now) }).where(eq(schedules.id, s.id));
+        done({ scanId, action: "paused_reestimate", detail: reason });
+        continue;
+      }
+
+      const withinCap =
+        estimate.totalUsd !== null &&
+        cap !== null &&
+        !overBudgetCap &&
+        estimate.refusals.length === 0;
       let action: TickResult["action"] = "awaiting_approval";
       let detail: string | null = null;
       if (withinCap) {
@@ -224,7 +525,6 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
             await opts.sendJob(QUEUES.scanRun, { scan_id: scanId, org_id: orgId });
             action = "started";
           } catch (err) {
-            // Approved but not queued. Say so; never retry a paid run automatically.
             action = "error";
             detail = `scan approved but scan.run was not queued: ${err instanceof Error ? err.message : String(err)}`;
           }
@@ -253,11 +553,14 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
             period_key: period,
             estimate_usd: estimate.totalUsd,
             budget_cap_usd: cap,
+            late,
+            original_due_at: originalDueAt.toISOString(),
             refusals: estimate.refusals,
           },
         });
       }
-      await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, s.nextRunAt, now) }).where(eq(schedules.id, s.id));
+      // One catch-up only: jump past every skipped due to the next future slot.
+      await db.update(schedules).set({ nextRunAt: nextAfter(s.cadence, originalDueAt, now) }).where(eq(schedules.id, s.id));
       done({ scanId, action, detail });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

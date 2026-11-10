@@ -62,3 +62,17 @@ export function displayableFromPromptsWon(w: {
     tooFewDraws: w.tooFewDraws,
   });
 }
+
+/** Minimum cited pages before the "What cited pages share" table is shown to viewers. */
+export const MIN_CITED_PAGES_FOR_SHARE_TABLE = 3;
+
+/**
+ * Share-table displayable rule: n &lt; 3 → suppress for viewers ("Too few cited pages").
+ * Editors still see raw via showRaw (same pattern as MetricValue).
+ */
+export function displayableCitedPagesShare(n: number): DisplayableDecision {
+  if (n < MIN_CITED_PAGES_FOR_SHARE_TABLE) {
+    return { kind: "too_few_answers", n, message: `Too few cited pages (n=${n})` };
+  }
+  return { kind: "show" };
+}

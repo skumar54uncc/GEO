@@ -6,23 +6,27 @@ import { loadScanDraws, type MetricDraw } from "@/lib/metrics/load";
 import { brandMentioned } from "@/lib/metrics/rollup";
 import { isPromptWon } from "@/lib/metrics/stats";
 
+export type OverviewIntent = "comparison" | "discovery" | "evaluation" | "decision" | "untagged";
+
 export type OverviewQuestionRow = {
   promptId: string;
   text: string;
   audience: string | null;
-  intent: "comparison" | "discovery" | "evaluation" | "decision";
+  /** Stored `prompts.intent`, or `"untagged"` when null. Never invented from list position. */
+  intent: OverviewIntent;
   namedByEngines: number;
   enginesTotal: number;
-  /** Won on the selected engine (majority brand mentions among that engine's draws). */
+  /** Won on the selected engine (strict majority brand mentions among that engine's draws). */
   wonOnEngine: boolean;
   lastScanAt: string;
   branded: boolean;
 };
 
-const INTENTS = ["comparison", "discovery", "evaluation", "decision"] as const;
+const STORED_INTENTS = new Set(["comparison", "discovery", "evaluation", "decision"]);
 
-function intentForPrompt(index: number): (typeof INTENTS)[number] {
-  return INTENTS[index % INTENTS.length];
+export function displayIntentFromStored(stored: string | null | undefined): OverviewIntent {
+  if (stored && STORED_INTENTS.has(stored)) return stored as OverviewIntent;
+  return "untagged";
 }
 
 /**
@@ -60,7 +64,12 @@ export async function listOverviewQuestions(
     scanPromptIds.size === 0
       ? []
       : await db
-          .select({ id: prompts.id, text: prompts.text, branded: prompts.branded })
+          .select({
+            id: prompts.id,
+            text: prompts.text,
+            branded: prompts.branded,
+            intent: prompts.intent,
+          })
           .from(prompts)
           .where(inArray(prompts.id, [...scanPromptIds]));
 
@@ -96,7 +105,6 @@ export async function listOverviewQuestions(
   const engine = opts.engine;
 
   const rows: OverviewQuestionRow[] = [];
-  let i = 0;
   for (const [promptId, cellDraws] of byPrompt) {
     const meta = metaById.get(promptId);
     if (!meta) continue;
@@ -122,14 +130,13 @@ export async function listOverviewQuestions(
       promptId,
       text: meta.text,
       audience: null,
-      intent: intentForPrompt(i),
+      intent: displayIntentFromStored(meta.intent),
       namedByEngines: named,
       enginesTotal,
       wonOnEngine,
       lastScanAt,
       branded: meta.branded,
     });
-    i += 1;
   }
 
   rows.sort((a, b) => b.namedByEngines - a.namedByEngines || a.text.localeCompare(b.text));

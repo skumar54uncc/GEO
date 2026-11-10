@@ -16,6 +16,7 @@ import {
   regions,
   runnerEnum,
 } from "./db/pg/schema";
+import { ensureCatalogRegions, REGION_CATALOG } from "./capture/regions";
 import { PERSONA_LIBRARY } from "./personas/library";
 
 export const ENGINES = engineEnum.enumValues;
@@ -33,6 +34,15 @@ export const DEFAULT_RUNNER: Record<(typeof ENGINES)[number], (typeof RUNNERS)[n
 
 const engineSel = z.object({ engine: z.enum(ENGINES), runner: z.enum(RUNNERS) });
 
+const campaignTargetInput = z
+  .object({
+    metric: z.enum(["prompts_won", "citation_rate", "share_of_voice"]),
+    engine: z.string().trim().min(1).max(64),
+    value: z.number().min(0).max(1),
+    date: z.string().trim().min(4).max(32),
+  })
+  .nullable();
+
 export const campaignInput = z.object({
   name: z.string().trim().min(1, "Name is required").max(200),
   topic: z.string().trim().max(500).default(""),
@@ -41,6 +51,8 @@ export const campaignInput = z.object({
   region_ids: z.array(z.string().uuid()).max(50).optional(),
   /** Campaign subset of library personas. Prefer 3–5 menu personas (see docs/PERSONAS.md). */
   persona_ids: z.array(z.string().uuid()).max(50).optional(),
+  /** Optional KPI target (dashed "Target" on charts). */
+  target: campaignTargetInput.optional(),
 });
 export type CampaignInput = z.infer<typeof campaignInput>;
 export const campaignPatch = campaignInput.partial();
@@ -63,7 +75,15 @@ export type CampaignView = {
   persona_subset_ok: boolean;
   prompt_count: number;
   approved_count: number;
+  /** Approved prompts with provenance=fixture (cannot freeze outside demo org). */
+  fixture_approved_count: number;
   prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null; label: string | null }>;
+  target: {
+    metric: "prompts_won" | "citation_rate" | "share_of_voice";
+    engine: string;
+    value: number;
+    date: string;
+  } | null;
 };
 
 export async function listCampaigns(db: Db, orgId: string, opts: { includeArchived?: boolean } = {}) {
@@ -116,6 +136,12 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
     .select({ approved: count() })
     .from(prompts)
     .where(and(eq(prompts.campaignId, id), eq(prompts.status, "approved")));
+  const [{ fixtureApproved }] = await db
+    .select({ fixtureApproved: count() })
+    .from(prompts)
+    .where(
+      and(eq(prompts.campaignId, id), eq(prompts.status, "approved"), eq(prompts.provenance, "fixture")),
+    );
   const sets = await db
     .select()
     .from(promptSets)
@@ -135,6 +161,7 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
     persona_subset_ok: personaSubsetOk,
     prompt_count: total,
     approved_count: approved,
+    fixture_approved_count: fixtureApproved,
     prompt_sets: sets.map((s) => ({
       id: s.id,
       version: s.version,
@@ -142,6 +169,24 @@ export async function getCampaign(db: Db, orgId: string, id: string): Promise<Ca
       frozen_at: s.frozenAt ? s.frozenAt.toISOString() : null,
       label: s.label ?? null,
     })),
+    target: (() => {
+      const t = c.target as {
+        metric?: string;
+        engine?: string;
+        value?: number;
+        date?: string;
+      } | null;
+      if (
+        t &&
+        (t.metric === "prompts_won" || t.metric === "citation_rate" || t.metric === "share_of_voice") &&
+        typeof t.engine === "string" &&
+        typeof t.value === "number" &&
+        typeof t.date === "string"
+      ) {
+        return { metric: t.metric, engine: t.engine, value: t.value, date: t.date };
+      }
+      return null;
+    })(),
   };
 }
 
@@ -182,7 +227,13 @@ async function replaceLinks(db: Db, campaignId: string, input: Partial<CampaignI
 export async function createCampaign(db: Db, user: SessionUser, raw: unknown): Promise<CampaignView> {
   const parsed = campaignInput.safeParse(raw);
   if (!parsed.success) throw new ValidationError(parsed.error.issues.map((i) => i.message).join("; "));
-  const input = parsed.data;
+  const input = { ...parsed.data };
+  // Default stays 1 region (Charlotte metro) when the client omits region_ids.
+  if (!input.region_ids || input.region_ids.length === 0) {
+    const catalog = await ensureCatalogRegions(db);
+    const charlotte = catalog.find((r) => r.city === "Charlotte") ?? catalog[0];
+    if (charlotte) input.region_ids = [charlotte.id];
+  }
   await validateRefs(db, user.orgId, input);
   const [brand] = await db.select({ id: brands.id }).from(brands).where(eq(brands.orgId, user.orgId)).limit(1);
   if (!brand) throw new ValidationError("This organization has no brand yet.");
@@ -196,6 +247,7 @@ export async function createCampaign(db: Db, user: SessionUser, raw: unknown): P
         name: input.name,
         topic: input.topic,
         status: input.status ?? "draft",
+        target: input.target === undefined ? undefined : input.target,
       })
       .returning({ id: campaigns.id });
     await replaceLinks(tx, row.id, input);
@@ -225,6 +277,7 @@ export async function updateCampaign(db: Db, user: SessionUser, id: string, raw:
     if (input.name !== undefined) set.name = input.name;
     if (input.topic !== undefined) set.topic = input.topic;
     if (input.status !== undefined) set.status = input.status;
+    if (input.target !== undefined) set.target = input.target;
     await tx
       .update(campaigns)
       .set(set)
@@ -245,7 +298,20 @@ export async function updateCampaign(db: Db, user: SessionUser, id: string, raw:
 }
 
 export async function campaignOptions(db: Db, orgId: string) {
-  const regionRows = await db.select({ id: regions.id, label: regions.label }).from(regions).orderBy(asc(regions.label));
+  await ensureCatalogRegions(db);
+  const catalogByLabel = new Map(REGION_CATALOG.map((e) => [e.label, e]));
+  const regionRows = (await db.select({ id: regions.id, label: regions.label }).from(regions).orderBy(asc(regions.label))).map(
+    (r) => {
+      const entry = catalogByLabel.get(r.label);
+      return {
+        id: r.id,
+        label: r.label,
+        picker_label: entry?.pickerLabel ?? r.label,
+        location_code: entry?.locationCode ?? null,
+        catalog_key: entry?.key ?? null,
+      };
+    },
+  );
   const personaRows = await db
     .select({
       id: personas.id,
@@ -276,10 +342,13 @@ export async function campaignOptions(db: Db, orgId: string) {
       };
     })
     .filter((p) => p.selectable);
+  const { orgHasSiteAudit } = await import("@/lib/site/auditStatus");
+  const has_site_audit = await orgHasSiteAudit(db, orgId);
   return {
     engines: ENGINES,
     runners: RUNNERS,
     default_runner: DEFAULT_RUNNER,
+    has_site_audit,
     regions: regionRows,
     personas: personasOut,
     persona_groups: Object.entries(PERSONA_GROUP_LABELS).map(([key, label]) => ({ key, label })),

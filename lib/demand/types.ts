@@ -2,13 +2,22 @@ import { demandSourceEnum } from "@/lib/db/pg/schema";
 
 export type DemandSource = (typeof demandSourceEnum.enumValues)[number];
 
+/**
+ * Card / connection status:
+ * - connected: keys/access present (may still need estimate gate to fetch)
+ * - not_connected: missing keys/access
+ * - approval_pending: Trends key present but live approval not granted
+ * - estimated: stored values are modeled estimates (e.g. DataForSEO volumeKind=modeled) — never a stand-in for "not fetched"
+ */
+export type DemandCardStatus = "connected" | "not_connected" | "estimated" | "approval_pending";
+
 export type DemandConnectionStatus = {
   id: string;
   source: DemandSource;
   label: string;
   provider: string;
   connected: boolean;
-  status: "connected" | "not_connected";
+  status: DemandCardStatus;
   missing: string[];
   mode: "fixture_only";
   note: string;
@@ -40,7 +49,7 @@ export type DemandEstimate = {
   paramsHash: string;
   available: boolean;
   connected: boolean;
-  status: "connected" | "not_connected";
+  status: DemandCardStatus;
   missing: string[];
 };
 

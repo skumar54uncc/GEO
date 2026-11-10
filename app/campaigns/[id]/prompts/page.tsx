@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OperatorOnly, canMutate } from "@/components/CanAct";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { CustomPromptForm } from "@/components/prompts/CustomPromptForm";
+import { GeneratePanel } from "@/components/prompts/GeneratePanel";
 import { PageTitle } from "@/components/scout/primitives";
 import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +32,7 @@ type PromptRow = {
   provenance: string;
   intent: string | null;
   demand_evidence_label: string;
+  demand_evidence_ids?: string[];
 };
 
 type Counts = {
@@ -50,6 +53,7 @@ export default function PromptReviewPage() {
   const [prompts, setPrompts] = useState<PromptRow[] | null>(null);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [dedupeStatus, setDedupeStatus] = useState<"enabled" | "disabled" | null>(null);
+  const [personaOpts, setPersonaOpts] = useState<Array<{ id: string; key: string | null; name: string; group: string | null }>>([]);
   const [role, setRole] = useState<Role | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -59,6 +63,9 @@ export default function PromptReviewPage() {
   const [branded, setBranded] = useState("");
   const [status, setStatus] = useState("");
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  const [frozenSets, setFrozenSets] = useState<
+    Array<{ id: string; version: number; label: string | null; frozenAt: string | null; sha256: string | null }>
+  >([]);
 
   const load = useCallback(async () => {
     const q = new URLSearchParams();
@@ -68,9 +75,10 @@ export default function PromptReviewPage() {
     if (branded) q.set("branded", branded);
     if (status) q.set("status", status);
     try {
-      const [res, me] = await Promise.all([
+      const [res, me, setsRes] = await Promise.all([
         fetch(`/api/campaigns/${campaignId}/prompts?${q}`),
         fetch("/api/auth/me", { cache: "no-store" }),
+        fetch(`/api/schedules?campaign_id=${campaignId}&include=form`, { cache: "no-store" }),
       ]);
       const json = await res.json();
       if (!res.ok) {
@@ -82,7 +90,14 @@ export default function PromptReviewPage() {
       setError(null);
       setPrompts(json.prompts);
       setCounts(json.counts);
+      setPersonaOpts(Array.isArray(json.personas) ? json.personas : []);
       setDedupeStatus(json.dedupeStatus === "enabled" || json.dedupeStatus === "disabled" ? json.dedupeStatus : null);
+      if (setsRes.ok) {
+        const setsJson = await setsRes.json();
+        setFrozenSets(Array.isArray(setsJson.frozen_prompt_sets) ? setsJson.frozen_prompt_sets : []);
+      } else {
+        setFrozenSets([]);
+      }
       setSelected(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -198,6 +213,51 @@ export default function PromptReviewPage() {
         </p>
       ) : null}
 
+      <Card data-testid="prompt-library-export">
+        <CardHeader>
+          <CardTitle>Prompt library export</CardTitle>
+          <CardDescription>
+            Download a frozen prompt set as CSV or PDF (text, category, persona, intent, branded, provenance, demand
+            evidence, author, approved by, set hash, frozen date). Viewers and editors.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {frozenSets.length === 0 ? (
+            <p className="text-sm text-scout-muted">No frozen prompt set yet. Freeze approved prompts before exporting.</p>
+          ) : (
+            <ul className="space-y-2">
+              {frozenSets.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-medium text-scout-text">
+                    v{s.version}
+                    {s.label ? ` · ${s.label}` : ""}
+                  </span>
+                  <span className="text-scout-muted">
+                    {s.frozenAt ? new Date(s.frozenAt).toLocaleString() : "frozen date unknown"}
+                  </span>
+                  <Button asChild variant="outline" size="sm">
+                    <a
+                      href={`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.csv`}
+                      data-testid={`library-csv-${s.id}`}
+                    >
+                      CSV
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <a
+                      href={`/api/campaigns/${campaignId}/prompt-sets/${s.id}/library.pdf`}
+                      data-testid={`library-pdf-${s.id}`}
+                    >
+                      PDF
+                    </a>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
@@ -228,16 +288,20 @@ export default function PromptReviewPage() {
       </Card>
 
       <OperatorOnly role={role}>
-        <div className="flex flex-wrap gap-2" data-testid="prompt-mutate-actions">
-          <Button type="button" variant="outline" onClick={toggleAll}>
-            {allSelected ? "Clear selection" : "Select all"}
-          </Button>
-          <Button type="button" data-testid="bulk-approve" onClick={() => bulk("approved")} disabled={!selected.size}>
-            Bulk approve ({selected.size})
-          </Button>
-          <Button type="button" variant="outline" onClick={() => bulk("rejected")} disabled={!selected.size}>
-            Bulk reject
-          </Button>
+        <div className="space-y-4">
+          <GeneratePanel campaignId={campaignId} personas={personaOpts} onDone={load} />
+          <CustomPromptForm campaignId={campaignId} personas={personaOpts} onDone={load} />
+          <div className="flex flex-wrap gap-2" data-testid="prompt-mutate-actions">
+            <Button type="button" variant="outline" onClick={toggleAll}>
+              {allSelected ? "Clear selection" : "Select all"}
+            </Button>
+            <Button type="button" data-testid="bulk-approve" onClick={() => bulk("approved")} disabled={!selected.size}>
+              Bulk approve ({selected.size})
+            </Button>
+            <Button type="button" variant="outline" onClick={() => bulk("rejected")} disabled={!selected.size}>
+              Bulk reject
+            </Button>
+          </div>
         </div>
       </OperatorOnly>
       {!canMutate(role) ? (
@@ -314,7 +378,24 @@ export default function PromptReviewPage() {
                     <div>{p.provenance}</div>
                     {p.intent ? <div className="text-uncc-ink/60">{p.intent}</div> : null}
                   </td>
-                  <td className="px-3 py-2 text-xs text-uncc-ink/80">{p.demand_evidence_label}</td>
+                  <td className="px-3 py-2 text-xs text-uncc-ink/80">
+                    {p.demand_evidence_ids && p.demand_evidence_ids.length > 0 ? (
+                      <span className="flex flex-col gap-1">
+                        {p.demand_evidence_ids.map((eid) => (
+                          <Link
+                            key={eid}
+                            href={`/campaigns/${params.id}/demand#demand-signal-${eid}`}
+                            className="underline"
+                            data-testid={`demand-evidence-link-${eid}`}
+                          >
+                            Demand row {eid.slice(0, 8)}…
+                          </Link>
+                        ))}
+                      </span>
+                    ) : (
+                      p.demand_evidence_label
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-xs">
                     <div>doc: {p.doc_personas.join("; ") || "n/a"}</div>
                     <div>suggested: {p.suggested_personas.join("; ") || "n/a"}</div>

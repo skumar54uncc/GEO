@@ -6,7 +6,7 @@
  *   api_search requires search_used=true — enforced by loadScanDraws).
  * - Branded prompts are excluded (headline / gap series is unbranded only).
  * - Series key is engine × runner only; runners and indexes are never pooled.
- * - Won = brand mentions ≥ ceil(valid / 2) with valid ≥ 1 (isPromptWon).
+ * - Won = brand mentions ≥ floor(valid / 2) + 1 with valid ≥ 1 (isPromptWon).
  */
 import type { Engine, Runner } from "@/lib/capture/types";
 import { brandMentioned } from "@/lib/metrics/rollup";

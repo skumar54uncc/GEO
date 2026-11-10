@@ -166,7 +166,8 @@ function clusterRateLocal(opts: { clusters: boolean[][]; iterations?: number; se
 }
 
 function promptWonThreshold(validDraws: number): number {
-  return Math.ceil(validDraws / 2);
+  if (validDraws < 1) return 1;
+  return Math.floor(validDraws / 2) + 1;
 }
 
 function isPromptWon(mentions: number, validDraws: number): boolean {
@@ -189,7 +190,7 @@ function promptsWonLocal(perPrompt: ReadonlyArray<{ mentions: number; validDraws
     ciHigh: ci_high,
     draws,
     method: "wilson",
-    rule: sizes.length === 1 ? `at least ${promptWonThreshold(sizes[0]!)} of ${sizes[0]!} draws` : "at least half of valid draws",
+    rule: sizes.length === 1 ? `at least ${promptWonThreshold(sizes[0]!)} of ${sizes[0]!} draws` : "strict majority of valid draws",
     tooFewDraws,
     tooFewPrompts,
     approximate: (tooFewDraws || tooFewPrompts) && scored.length > 0,

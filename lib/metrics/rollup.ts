@@ -11,17 +11,30 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getCampaign } from "@/lib/campaigns";
 import type { Db } from "@/lib/db/pg/client";
-import { brands, competitors, modelEvents, organizations, personas, promptSets, scans } from "@/lib/db/pg/schema";
+import {
+  brands,
+  campaigns,
+  competitors,
+  campaignAnnotations,
+  modelEvents,
+  organizations,
+  personas,
+  promptSets,
+  scans,
+} from "@/lib/db/pg/schema";
 import { listOpenAlerts } from "@/lib/alerts/service";
 import type { Engine, Runner } from "@/lib/capture/types";
 import { PERSONA_GROUP_LABELS } from "@/lib/contracts/personas";
 import { selectableDbKeyForCanonical, canonicalKeyForDbKey } from "@/lib/personas/library";
 import { compareScans, previousComparableScan, type SeriesComparison } from "./compare";
+import { competitorTrendForIndex } from "./competitorsTrend";
+import { intentEngineCoverageMatrix } from "./coverageMatrix";
+import { regionComparisonCells } from "./regionComparison";
 import { assertSameIndex, ENGINE_INDEX, type SearchIndex } from "./indexes";
 import { institutionRanks, type InstitutionRank } from "./institutions";
 import { loadScanDraws, type ExcludedCounts, type LoadedScan, type MetricDraw, type Verdict } from "./load";
 import { buildPersonaCellMeta, type PersonaCellMeta } from "./personaCells";
-import { BOOTSTRAP_ITERS, BOOTSTRAP_SEED, clusterBootstrap, clusterRate, median, promptsWon, TOO_FEW_DRAWS, wilsonRate } from "./stats";
+import { BOOTSTRAP_ITERS, BOOTSTRAP_SEED, clusterBootstrap, clusterRate, median, promptsWon, TOO_FEW_DRAWS } from "./stats";
 import type { CellKey, PromptsWon, RateWithCi } from "./types";
 
 // ---------- small pure helpers ----------
@@ -201,8 +214,17 @@ export function rollupCell(input: { key: CellKey; draws: readonly MetricDraw[]; 
   const verdicts = cellDraws.flatMap((d) => d.claims.map((c) => c.verdict as Verdict));
   const count = (v: Verdict) => verdicts.filter((x) => x === v).length;
   const contradicted = count("contradicted");
+  // Claims inside a draw/prompt are correlated — cluster by prompt, not Wilson on claim counts.
+  const accuracyClusters = byPrompt.map((p) =>
+    p.draws.flatMap((d) => d.claims.map((c) => (c.verdict as Verdict) !== "contradicted")),
+  );
   const accuracy: Accuracy = {
-    rate: verdicts.length ? wilsonRate(verdicts.length - contradicted, verdicts.length, cellDraws.length) : null,
+    rate: verdicts.length
+      ? clusterRate({
+          clusters: accuracyClusters.filter((c) => c.length > 0),
+          ...opts,
+        })
+      : null,
     claims: verdicts.length,
     supported: count("supported"),
     contradicted,
@@ -311,6 +333,35 @@ export function headlinePromptsWon(drawsIn: readonly MetricDraw[]): Array<{ engi
   });
 }
 
+/**
+ * Overall unbranded citation rate (owned citations) per engine × runner for Visibility trend (Gate 3 row 12).
+ * Same grouping and displayable rule as prompts-won trend; runners are never averaged.
+ */
+export function headlineCitationRates(
+  drawsIn: readonly MetricDraw[],
+  ownedDomains: readonly string[],
+  opts: CellOptions = {},
+): Array<{ engine: Engine; runner: Runner; citationRate: RateWithCi }> {
+  const groups = new Map<string, { engine: Engine; runner: Runner; draws: MetricDraw[] }>();
+  for (const d of drawsIn) {
+    if (d.branded) continue;
+    const id = `${d.engine}|${d.runner}`;
+    const g = groups.get(id) ?? { engine: d.engine, runner: d.runner, draws: [] };
+    g.draws.push(d);
+    groups.set(id, g);
+  }
+  return [...groups.keys()].sort().map((id) => {
+    const g = groups.get(id)!;
+    const byPrompt = groupByPrompt(g.draws);
+    const citationClusters = byPrompt.map((p) => p.draws.map((d) => hasOwnedCitation(d, ownedDomains)));
+    return {
+      engine: g.engine,
+      runner: g.runner,
+      citationRate: clusterRate({ clusters: citationClusters, ...opts }),
+    };
+  });
+}
+
 // ---------- scan rollup ----------
 
 export type ScanRollup = {
@@ -375,8 +426,41 @@ export async function rollupScan(db: Db, opts: { orgId: string; scanId: string; 
 export type TrendPoint = {
   scanId: string;
   createdAt: string;
-  series: Array<{ engine: Engine; runner: Runner; promptsWon: PromptsWon }>;
+  /** True for the earliest scan of this prompt set (everywhere that scan appears). */
+  isBaseline: boolean;
+  series: Array<{ engine: Engine; runner: Runner; promptsWon: PromptsWon; citationRate: RateWithCi }>;
 };
+
+/** Optional campaign KPI target shown as a dashed "Target" line on charts. */
+export type CampaignTarget = {
+  metric: "prompts_won" | "citation_rate" | "share_of_voice";
+  engine: string;
+  value: number;
+  date: string;
+};
+
+export function parseCampaignTarget(raw: unknown): CampaignTarget | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const metric = row.metric;
+  const engine = row.engine;
+  const value = row.value;
+  const date = row.date;
+  if (
+    (metric !== "prompts_won" && metric !== "citation_rate" && metric !== "share_of_voice") ||
+    typeof engine !== "string" ||
+    !engine.trim() ||
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    value > 1 ||
+    typeof date !== "string" ||
+    !date.trim()
+  ) {
+    return null;
+  }
+  return { metric, engine: engine.trim(), value, date: date.trim() };
+}
 
 export type DashboardPromptSet = {
   promptSetId: string;
@@ -434,13 +518,37 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
 
   for (const set of setsToRender) {
     const list = bySet.get(set.id)!;
+    const baselineScanId = list[0]!.id;
     const latest = list[list.length - 1];
     const trendScans = list.slice(-TREND_MAX_SCANS);
     const trend: TrendPoint[] = [];
     let latestRollup: ScanRollup | null = null;
     for (const s of trendScans) {
       const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: s.id });
-      trend.push({ scanId: s.id, createdAt: s.createdAt.toISOString(), series: headlinePromptsWon(loaded.draws) });
+      const won = headlinePromptsWon(loaded.draws);
+      const cited = headlineCitationRates(loaded.draws, loaded.ownedDomains, opts);
+      const byKey = new Map(cited.map((c) => [`${c.engine}|${c.runner}`, c.citationRate]));
+      trend.push({
+        scanId: s.id,
+        createdAt: s.createdAt.toISOString(),
+        isBaseline: s.id === baselineScanId,
+        series: won.map((w) => ({
+          engine: w.engine,
+          runner: w.runner,
+          promptsWon: w.promptsWon,
+          citationRate:
+            byKey.get(`${w.engine}|${w.runner}`) ??
+            ({
+              rate: null,
+              ciLow: null,
+              ciHigh: null,
+              numerator: 0,
+              n: 0,
+              method: "cluster_bootstrap" as const,
+              tooFewDraws: true,
+            } satisfies RateWithCi),
+        })),
+      });
       if (s.id === latest.id) {
         const personaMeta = await loadPersonaMetaForDraws(db, loaded.draws);
         latestRollup = rollupLoaded(loaded, { ...opts, personaMeta });
@@ -465,9 +573,21 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
   const events = engines.length
     ? await db.select().from(modelEvents).where(inArray(modelEvents.engine, engines)).orderBy(desc(modelEvents.occurredOn), asc(modelEvents.engine))
     : [];
+  const annotations = await db
+    .select()
+    .from(campaignAnnotations)
+    .where(eq(campaignAnnotations.campaignId, opts.campaignId))
+    .orderBy(desc(campaignAnnotations.occurredOn));
+
+  const [campaignRow] = await db
+    .select({ target: campaigns.target })
+    .from(campaigns)
+    .where(eq(campaigns.id, opts.campaignId))
+    .limit(1);
+  const target = parseCampaignTarget(campaignRow?.target);
 
   const [orgRow] = await db
-    .select({ name: organizations.name, brandId: brands.id, brandName: brands.name })
+    .select({ name: organizations.name, brandId: brands.id, brandName: brands.name, isDemo: organizations.isDemo })
     .from(organizations)
     .innerJoin(brands, eq(brands.orgId, organizations.id))
     .where(eq(organizations.id, opts.orgId))
@@ -479,30 +599,114 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
   const competitorNames = new Map(competitorRows.map((c) => [c.id, c.name]));
 
   let institutions: InstitutionRank[] = [];
+  let coverageMatrix: ReturnType<typeof intentEngineCoverageMatrix> = [];
+  let regionComparison: ReturnType<typeof regionComparisonCells> = [];
+  let competitorsByIndex: ReturnType<typeof competitorTrendForIndex>[] = [];
+  let peerAverageBenchmark: { chat: number | null; google: number | null } = { chat: null, google: null };
   const latestView = promptSetViews[0];
   if (latestView && orgRow) {
-    const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: latestView.latestScan.id });
-    // Prefer chat-index unbranded overall draws for the ranking panel.
-    const chatDraws = loaded.draws.filter(
-      (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("chat" as SearchIndex),
-    );
-    const googleDraws = loaded.draws.filter(
-      (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("google" as SearchIndex),
-    );
-    const pool = chatDraws.length ? chatDraws : googleDraws;
-    institutions = institutionRanks(pool, {
-      brandId: orgRow.brandId,
-      brandName: orgRow.brandName,
-      competitorNames,
-    });
+    // Load every scan in the latest prompt-set trend for Competitors SoV + coverage matrix.
+    const trendScans = latestView.trend;
+    const loadedByScan: Array<{
+      scanId: string;
+      createdAt: string;
+      isBaseline: boolean;
+      draws: MetricDraw[];
+    }> = [];
+    for (const t of trendScans) {
+      const loaded = await loadScanDraws(db, { orgId: opts.orgId, scanId: t.scanId });
+      loadedByScan.push({
+        scanId: t.scanId,
+        createdAt: t.createdAt,
+        isBaseline: t.isBaseline,
+        draws: loaded.draws,
+      });
+    }
+    const latestLoaded = loadedByScan[loadedByScan.length - 1];
+    if (latestLoaded) {
+      const chatDraws = latestLoaded.draws.filter(
+        (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("chat" as SearchIndex),
+      );
+      const googleDraws = latestLoaded.draws.filter(
+        (d) => !d.branded && !d.personaId && ENGINE_INDEX[d.engine] === ("google" as SearchIndex),
+      );
+      const pool = chatDraws.length ? chatDraws : googleDraws;
+      institutions = institutionRanks(pool, {
+        brandId: orgRow.brandId,
+        brandName: orgRow.brandName,
+        competitorNames,
+      });
+      coverageMatrix = intentEngineCoverageMatrix(latestLoaded.draws);
+      regionComparison = regionComparisonCells(latestLoaded.draws, campaign.regions);
+    }
+    for (const index of ["chat", "google"] as const) {
+      const series = competitorTrendForIndex(loadedByScan, {
+        index,
+        brandId: orgRow.brandId,
+        brandName: orgRow.brandName,
+        competitorNames,
+      });
+      competitorsByIndex.push(series);
+      peerAverageBenchmark[index] = series.peerAverageBenchmark;
+    }
+  }
+
+  // Analyst note on the latest scan of the first prompt-set view (Overview top).
+  let analystNote: {
+    scanId: string;
+    text: string;
+    status: "draft" | "published";
+    authorName: string | null;
+    at: string;
+  } | null = null;
+  if (latestView) {
+    const [noteRow] = await db
+      .select({
+        analystNote: scans.analystNote,
+        analystNoteStatus: scans.analystNoteStatus,
+        analystNoteAt: scans.analystNoteAt,
+        authorId: scans.analystNoteAuthorId,
+      })
+      .from(scans)
+      .where(eq(scans.id, latestView.latestScan.id));
+    if (noteRow?.analystNote && noteRow.analystNoteStatus === "published") {
+      let authorName: string | null = null;
+      if (noteRow.authorId) {
+        const { users } = await import("@/lib/db/pg/schema");
+        const [u] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, noteRow.authorId));
+        authorName = u?.name ?? u?.email ?? null;
+      }
+      analystNote = {
+        scanId: latestView.latestScan.id,
+        text: noteRow.analystNote,
+        status: "published",
+        authorName,
+        at: (noteRow.analystNoteAt ?? new Date()).toISOString(),
+      };
+    } else if (noteRow?.analystNote && noteRow.analystNoteStatus === "draft") {
+      // Draft notes are returned for editors to finish; Overview UI only shows published.
+      analystNote = {
+        scanId: latestView.latestScan.id,
+        text: noteRow.analystNote,
+        status: "draft",
+        authorName: null,
+        at: (noteRow.analystNoteAt ?? new Date()).toISOString(),
+      };
+    }
   }
 
   return {
     campaign: { id: campaign.id, name: campaign.name, topic: campaign.topic, status: campaign.status },
     organization: orgRow
-      ? { name: orgRow.name, brandId: orgRow.brandId, brandName: orgRow.brandName }
-      : { name: "", brandId: "", brandName: "" },
+      ? { name: orgRow.name, brandId: orgRow.brandId, brandName: orgRow.brandName, isDemo: orgRow.isDemo }
+      : { name: "", brandId: "", brandName: "", isDemo: false },
+    target,
+    analystNote,
     institutions,
+    competitorsByIndex,
+    peerAverageBenchmark,
+    coverageMatrix,
+    regionComparison,
     engines: campaign.engines,
     regions: campaign.regions,
     personas: campaign.personas,
@@ -510,6 +714,12 @@ export async function rollupCampaignDashboard(db: Db, opts: { orgId: string; cam
     promptSets: promptSetViews,
     alerts: alertRows,
     modelEvents: events,
+    annotations: annotations.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      occurredOn: a.occurredOn,
+      note: a.note,
+    })),
   };
 }
 

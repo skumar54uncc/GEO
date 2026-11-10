@@ -3,7 +3,8 @@ import { chromium, type Browser } from "playwright";
 import { cookieFor, resetDatabase } from "../helpers";
 import { startNextDev, stopNextDev, type NextDevServer } from "./nextDevServer";
 
-const LEGACY_PATHS = ["/capture", "/serpapi", "/config", "/analyze", "/recommend", "/bots", "/demand", "/legacy"];
+// `/demand` redirects to campaign Demand (P2 B1) and is allowed for viewers.
+const LEGACY_PATHS = ["/capture", "/serpapi", "/config", "/analyze", "/recommend", "/bots", "/legacy"];
 
 describe("viewer cannot reach legacy operator pages", () => {
   let browser: Browser;

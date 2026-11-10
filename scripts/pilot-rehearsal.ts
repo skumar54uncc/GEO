@@ -334,7 +334,7 @@ async function runSleepFault(db: Db, orgId: string, campaignId: string, promptSe
       status: "running",
       approvedAt: staleAt,
       createdAt: staleAt,
-      estimate: { spec: { promptIds: [], routes: [], regionIds: [], draws: 3, canary: false }, cells: [], canaryDraws: 0, totalDraws: 0, totalUsd: 0, refusals: [], estimatedAt: staleAt.toISOString() },
+      estimate: { spec: { promptIds: [], routes: [], regionIds: [], draws: 3, canary: false }, cells: [], canaryDraws: 0, totalDraws: 0, totalUsd: 0, regionCount: 1, usdPerRegion: 0, refusals: [], estimatedAt: staleAt.toISOString() },
     })
     .returning({ id: scans.id });
   const results = await reconcileStalledScans(db, { now: new Date(), hasActiveJob: async () => false });

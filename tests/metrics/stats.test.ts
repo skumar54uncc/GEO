@@ -211,9 +211,18 @@ describe("prompts won", () => {
     expect(wonRuleLabel(3)).toBe("at least 2 of 3 draws");
   });
 
-  it("won rule uses ceil of half for other n and needs a valid draw", () => {
-    expect(isPromptWon(1, 2)).toBe(true);
-    expect(isPromptWon(2, 4)).toBe(true);
+  it("won rule label for n=2 is at least 2 of 2 draws (not 2 of 3)", () => {
+    expect(wonRuleLabel(2)).toBe("at least 2 of 2 draws");
+    expect(wonRuleLabel(2)).not.toContain("of 3");
+    expect(promptsWon([{ mentions: 2, validDraws: 2 }]).rule).toBe("at least 2 of 2 draws");
+  });
+
+  it("won rule uses strict majority floor(n/2)+1 and needs a valid draw", () => {
+    expect(isPromptWon(1, 2)).toBe(false); // n=2 needs 2
+    expect(isPromptWon(2, 2)).toBe(true);
+    expect(isPromptWon(1, 1)).toBe(true);
+    expect(isPromptWon(2, 4)).toBe(false); // n=4 needs 3
+    expect(isPromptWon(3, 4)).toBe(true);
     expect(isPromptWon(2, 5)).toBe(false);
     expect(isPromptWon(3, 5)).toBe(true);
     expect(isPromptWon(0, 0)).toBe(false);

@@ -24,13 +24,21 @@ type Campaign = {
   persona_subset_ok?: boolean;
   prompt_count: number;
   approved_count: number;
+  fixture_approved_count?: number;
   prompt_sets: Array<{ id: string; version: number; sha256: string | null; frozen_at: string | null }>;
 };
 type Options = {
   engines: string[];
   runners: string[];
   default_runner: Record<string, string>;
-  regions: Array<{ id: string; label: string }>;
+  has_site_audit?: boolean;
+  regions: Array<{
+    id: string;
+    label: string;
+    picker_label?: string;
+    location_code?: number | null;
+    catalog_key?: string | null;
+  }>;
   personas: Array<{
     id: string;
     name: string;
@@ -160,8 +168,12 @@ function CampaignForm({
           );
         })}
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2" data-testid="campaign-regions">
         <Label>Regions</Label>
+        <p className="text-xs text-uncc-ink/60">
+          Default is 1 region (Charlotte metro). Each extra region multiplies scan draws and cost. Estimate shows cost per
+          region.
+        </p>
         {options.regions.length ? (
           options.regions.map((r) => (
             <label key={r.id} className="flex items-center gap-2 text-sm">
@@ -169,13 +181,25 @@ function CampaignForm({
                 type="checkbox"
                 checked={draft.region_ids.includes(r.id)}
                 onChange={() => setDraft({ ...draft, region_ids: toggle(draft.region_ids, r.id) })}
+                data-testid={`region-option-${r.catalog_key ?? r.id}`}
               />
-              {r.label}
+              <span>
+                {r.picker_label ?? r.label}
+                {r.location_code != null ? (
+                  <span className="text-uncc-ink/50"> · DFS {r.location_code}</span>
+                ) : null}
+              </span>
             </label>
           ))
         ) : (
-          <p className="text-xs text-uncc-ink/60">No regions yet. Regions arrive with captures and in Phase 3.</p>
+          <p className="text-xs text-uncc-ink/60">No regions yet.</p>
         )}
+        {draft.region_ids.length > 1 ? (
+          <p className="text-xs text-amber-900" data-testid="region-cost-multiplier">
+            {draft.region_ids.length} regions selected → estimate multiplies by {draft.region_ids.length} (cost per region
+            shown at scan/schedule estimate).
+          </p>
+        ) : null}
       </div>
       <div className="space-y-2">
         <Label>Personas</Label>
@@ -215,21 +239,24 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [options, setOptions] = useState<Options | null>(null);
   const [role, setRole] = useState<Role | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [creating, setCreating] = useState<Draft | null>(null);
   const [editing, setEditing] = useState<{ id: string; draft: Draft } | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  const [overrideFor, setOverrideFor] = useState<{ id: string; name: string; reason: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
       const [list, opts, me] = await Promise.all([
         api<{ campaigns: Campaign[] }>(`/api/campaigns${showArchived ? "?archived=1" : ""}`),
         api<Options>("/api/campaigns/options"),
-        api<{ user: { role: Role } | null }>("/api/auth/me"),
+        api<{ user: { role: Role } | null; activeOrganization?: { isDemo?: boolean } | null }>("/api/auth/me"),
       ]);
       setCampaigns(list.campaigns);
       setOptions(opts);
       setRole(me.user?.role ?? null);
+      setIsDemo(Boolean(me.activeOrganization?.isDemo));
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     }
@@ -272,15 +299,30 @@ export default function CampaignsPage() {
       return `Archived “${c.name}”.`;
     });
 
-  const freeze = (c: Campaign) =>
+  const freezeBlockedByFixture = (c: Campaign) =>
+    !isDemo && (c.fixture_approved_count ?? 0) > 0;
+
+  const freeze = (c: Campaign, unbrandedOverrideReason?: string) =>
     run(async () => {
-      const res = await api<{ created: boolean; set: { version: number; sha256: string } }>(
-        `/api/campaigns/${c.id}/freeze`,
-        { method: "POST" },
-      );
-      return res.created
-        ? `Froze version ${res.set.version} (${res.set.sha256.slice(0, 12)}…).`
-        : `No change since version ${res.set.version}; nothing new to freeze.`;
+      if (freezeBlockedByFixture(c)) {
+        throw new Error("Fixture — cannot be frozen");
+      }
+      const res = await fetch(`/api/campaigns/${c.id}/freeze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(unbrandedOverrideReason ? { unbrandedOverrideReason } : {}),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (json.code === "unbranded_share") {
+          setOverrideFor({ id: c.id, name: c.name, reason: "" });
+        }
+        throw new Error(json.error ?? `HTTP ${res.status}`);
+      }
+      setOverrideFor(null);
+      return json.created
+        ? `Froze version ${json.set.version} (${String(json.set.sha256).slice(0, 12)}…).`
+        : `No change since version ${json.set.version}; nothing new to freeze.`;
     });
 
   if (!campaigns || !options) {
@@ -307,7 +349,15 @@ export default function CampaignsPage() {
           </label>
           <OperatorOnly role={role}>
             <Button
-              onClick={() => setCreating(emptyDraft())}
+              onClick={() => {
+                const charlotte =
+                  options?.regions.find((r) => r.catalog_key === "charlotte_metro") ??
+                  options?.regions.find((r) => /charlotte/i.test(r.label));
+                setCreating({
+                  ...emptyDraft(),
+                  region_ids: charlotte ? [charlotte.id] : [],
+                });
+              }}
               disabled={Boolean(creating)}
               data-testid="new-campaign"
             >
@@ -323,12 +373,58 @@ export default function CampaignsPage() {
         </p>
       ) : null}
 
+      {overrideFor ? (
+        <Card data-testid="unbranded-override-card">
+          <CardHeader>
+            <CardTitle>Unbranded share below 70%</CardTitle>
+            <CardDescription>
+              Freezing “{overrideFor.name}” needs an editor reason. The reason is audit-logged.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              value={overrideFor.reason}
+              onChange={(e) => setOverrideFor({ ...overrideFor, reason: e.target.value })}
+              placeholder="Why freeze below the 70% unbranded default?"
+              data-testid="unbranded-override-reason"
+            />
+            <div className="flex gap-2">
+              <Button
+                data-testid="unbranded-override-confirm"
+                disabled={overrideFor.reason.trim().length < 3}
+                onClick={() => {
+                  const c = campaigns?.find((x) => x.id === overrideFor.id);
+                  if (c) freeze(c, overrideFor.reason.trim());
+                }}
+              >
+                Freeze with override
+              </Button>
+              <Button variant="outline" onClick={() => setOverrideFor(null)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {creating ? (
         <Card>
           <CardHeader>
             <CardTitle>New campaign</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {options.has_site_audit === false ? (
+              <p
+                className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+                data-testid="no-audit-banner"
+                role="status"
+              >
+                This organization has no site audit yet. Start with an audit before measuring visibility.{" "}
+                <Link href="/audit" className="font-medium underline">
+                  Open site audit
+                </Link>
+              </p>
+            ) : null}
             <CampaignForm options={options} draft={creating} setDraft={setCreating} />
             <div className="flex gap-2">
               <Button onClick={create}>Create</Button>
@@ -384,15 +480,24 @@ export default function CampaignsPage() {
                   >
                     Edit
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid="freeze-prompt-set"
-                    onClick={() => freeze(c)}
-                    disabled={c.approved_count === 0}
-                  >
-                    Freeze prompt set
-                  </Button>
+                  {freezeBlockedByFixture(c) ? (
+                    <span
+                      className="inline-flex items-center rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-950"
+                      data-testid="fixture-cannot-freeze"
+                    >
+                      Fixture — cannot be frozen
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      data-testid="freeze-prompt-set"
+                      onClick={() => freeze(c)}
+                      disabled={c.approved_count === 0}
+                    >
+                      Freeze prompt set
+                    </Button>
+                  )}
                   {c.status !== "archived" ? (
                     <Button size="sm" variant="ghost" data-testid="archive-campaign" onClick={() => archive(c)}>
                       Archive

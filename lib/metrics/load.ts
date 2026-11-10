@@ -30,6 +30,8 @@ export type MetricDraw = {
   regionHonored: RegionHonored;
   personaId: string | null;
   branded: boolean;
+  /** Prompt intent when stored; null → coverage matrix buckets as untagged. */
+  intent: string | null;
   mentions: DrawMention[];
   citations: Array<{ domain: string; sourceClass: string }>;
   claims: Array<{ verdict: Verdict }>;
@@ -135,7 +137,10 @@ export async function loadScanDraws(db: Db, opts: { orgId?: string; scanId: stri
 
   const promptIds = [...new Set(valid.map((r) => r.promptId))];
   const promptRows = await inChunks(promptIds, (chunk) =>
-    db.select({ id: prompts.id, branded: prompts.branded, personaId: prompts.personaId }).from(prompts).where(inArray(prompts.id, chunk)),
+    db
+      .select({ id: prompts.id, branded: prompts.branded, personaId: prompts.personaId, intent: prompts.intent })
+      .from(prompts)
+      .where(inArray(prompts.id, chunk)),
   );
   const promptById = new Map(promptRows.map((p) => [p.id, p]));
 
@@ -178,6 +183,7 @@ export async function loadScanDraws(db: Db, opts: { orgId?: string; scanId: stri
       regionHonored: r.regionHonored as RegionHonored,
       personaId: prompt?.personaId ?? null,
       branded: prompt?.branded ?? false,
+      intent: prompt?.intent ?? null,
       mentions: mentionsByRun.get(run.id) ?? [],
       citations: citationsByDraw.get(r.id) ?? [],
       claims: claimsByRun.get(run.id) ?? [],

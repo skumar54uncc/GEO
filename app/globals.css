@@ -216,6 +216,28 @@ mark.mention-peer {
   padding: 0 0.1em;
 }
 
+mark.mention-citation {
+  background: var(--tile-blue-bg);
+  border-bottom: 2px solid var(--tile-blue-fg);
+  padding: 0 0.1em;
+}
+
+mark.mention-gap-term {
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  border-bottom: 2px solid var(--brand);
+  font-weight: 600;
+  padding: 0 0.1em;
+}
+
+.answer-hl-tag {
+  font-size: 0.7em;
+  font-weight: 700;
+  margin-right: 0.15em;
+  opacity: 0.85;
+  text-transform: uppercase;
+  vertical-align: baseline;
+}
+
 .sr-only {
   border: 0;
   clip: rect(0, 0, 0, 0);

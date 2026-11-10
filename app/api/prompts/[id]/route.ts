@@ -17,7 +17,9 @@ export const PATCH = withRole<{ id: string }>("editor", async (req, { user, para
   const db = getDb();
   try {
     const before = null;
-    const row = await patchPrompt(db, user.orgId, params.id, parsed.data);
+    const row = await patchPrompt(db, user.orgId, params.id, parsed.data, {
+      approvedById: user.userId,
+    });
     await recordAudit(db, {
       orgId: user.orgId,
       userId: user.userId,

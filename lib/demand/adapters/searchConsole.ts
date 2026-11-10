@@ -7,5 +7,5 @@ export const searchConsoleAdapter = createDemandAdapter({
   label: "Google Search Console",
   provider: "search_console",
   requiredEnv: ["GOOGLE_SEARCH_CONSOLE_PROPERTY"],
-  note: "Needs property access from the web team. Fixture-only in this build; never presents figures as AI search volume.",
+  note: "Not connected (property access pending from the web team). Never presents figures as AI search volume.",
 });

@@ -24,7 +24,12 @@ import { enginePlain, formatScanDate, runnerPlain } from "@/lib/ui/labels";
 
 type AlertRow = { id: string; kind: string; status: string; createdAt: string; payload: { message?: string } | null };
 type ModelEventRow = { id: string; engine: string; occurredOn: string; note: string; sourceUrl: string | null };
-type Trend = { scanId: string; createdAt: string; series: Array<{ engine: string; runner: string; promptsWon: PromptsWon }> };
+type Trend = {
+  scanId: string;
+  createdAt: string;
+  isBaseline?: boolean;
+  series: Array<{ engine: string; runner: string; promptsWon: PromptsWon; citationRate?: RateWithCi }>;
+};
 type PromptSetView = {
   promptSetId: string;
   version: number;
@@ -36,14 +41,44 @@ type PromptSetView = {
   comparisons: SeriesComparison[];
   trend: Trend[];
 };
+type CoverageCell = {
+  intent: string;
+  engine: string;
+  runner: string;
+  label: "strong" | "partial" | "invisible" | "suppressed";
+  kOfN: string | null;
+  won: { rate: number | null; won: number; prompts: number; draws: number; tooFewDraws: boolean; tooFewPrompts?: boolean };
+};
+
+type RegionComparisonCell = {
+  regionId: string;
+  regionLabel: string;
+  engine: string;
+  runner: string;
+  locationSupport: "supported" | "not_supported";
+  honoredMix: { yes: number; unknown: number; no: number; total: number };
+  display: string;
+  displayable: boolean;
+};
+
 type Dashboard = {
   campaign: { id: string; name: string; topic: string; status: string };
+  target?: {
+    metric: "prompts_won" | "citation_rate" | "share_of_voice";
+    engine: string;
+    value: number;
+    date: string;
+  } | null;
+  peerAverageBenchmark?: { chat: number | null; google: number | null };
+  coverageMatrix?: CoverageCell[];
+  regionComparison?: RegionComparisonCell[];
   regions: Array<{ id: string; label: string }>;
   personas: Array<{ id: string; name: string; key?: string | null; group?: string | null }>;
   persona_groups: Array<{ key: string; label: string }>;
   promptSets: PromptSetView[];
   alerts: AlertRow[];
   modelEvents: ModelEventRow[];
+  annotations?: Array<{ id: string; kind: string; occurredOn: string; note: string }>;
 };
 
 const engineLabel = enginePlain;
@@ -340,9 +375,11 @@ function TrendTable({ trend }: { trend: Trend[] }) {
 }
 
 function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard }) {
-  const [regionId, setRegionId] = useState<string>("");
+  // Never default to pooled "all regions" — pick the first campaign region.
+  const [regionId, setRegionId] = useState<string>(() => data.regions[0]?.id ?? "");
   /** "" = overall; "group:<key>" = audience group; "persona:<id>" = specific persona (n≥30 only). */
   const [audienceFilter, setAudienceFilter] = useState<string>("");
+  const [trendMetric, setTrendMetric] = useState<"prompts_won" | "citation_rate">("prompts_won");
   const { showRaw } = useMetricShowRaw();
   const role = useSessionRole();
   const canShowRaw = role === "editor" || role === "admin";
@@ -350,10 +387,17 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
   const detailPersonas = data.personas.filter((p) =>
     cells.some((c) => c.key.personaId === p.id && c.key.personaGroup == null && c.draws >= 30),
   );
-  const pick = (branded: boolean) =>
-    cells.filter((c) => {
+  const pick = (branded: boolean) => {
+    return cells.filter((c) => {
       if (c.key.branded !== branded) return false;
-      if ((c.key.regionId ?? "") !== regionId) return false;
+      // Never pool multiple regions into one number. With 0 linked regions, show overall
+      // (regionId null) cells. With 1+, require a single selected region.
+      if (data.regions.length === 0) {
+        if (c.key.regionId != null) return false;
+      } else {
+        const selected = regionId || data.regions[0]!.id;
+        if (c.key.regionId !== selected) return false;
+      }
       if (audienceFilter.startsWith("group:")) {
         return c.key.personaGroup === audienceFilter.slice(6) && c.key.personaId == null;
       }
@@ -362,6 +406,7 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
       }
       return c.key.personaId == null && c.key.personaGroup == null;
     });
+  };
   const unbranded = pick(false);
   const branded = pick(true);
   const visCell = [...unbranded].sort((a, b) => b.draws - a.draws)[0] ?? null;
@@ -388,8 +433,14 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="space-y-1">
             <Label htmlFor={`region-${view.promptSetId}`}>Region</Label>
-            <select id={`region-${view.promptSetId}`} className="h-9 rounded border border-uncc-rule bg-white px-2 text-sm" value={regionId} onChange={(e) => setRegionId(e.target.value)}>
-              <option value="">All regions (no filter)</option>
+            <select
+              id={`region-${view.promptSetId}`}
+              className="h-9 rounded border border-uncc-rule bg-white px-2 text-sm"
+              value={regionId}
+              onChange={(e) => setRegionId(e.target.value)}
+              data-testid="region-filter"
+            >
+              <option value="">Pick a region (never pooled)</option>
               {data.regions.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.label}
@@ -478,19 +529,87 @@ function PromptSetCard({ view, data }: { view: PromptSetView; data: Dashboard })
         </section>
 
         <section className="space-y-2">
-          <h3 className="font-serif text-base font-semibold text-uncc-ink">Prompts won over scans</h3>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h3 className="font-serif text-base font-semibold text-uncc-ink">
+              {trendMetric === "citation_rate" ? "Citation rate over scans" : "Prompts won over scans"}
+            </h3>
+            <div className="space-y-1">
+              <Label htmlFor={`trend-metric-${view.promptSetId}`}>Trend metric</Label>
+              <select
+                id={`trend-metric-${view.promptSetId}`}
+                className="h-9 rounded border border-uncc-rule bg-white px-2 text-sm"
+                value={trendMetric}
+                onChange={(e) => setTrendMetric(e.target.value as "prompts_won" | "citation_rate")}
+                data-testid="trend-metric"
+              >
+                <option value="prompts_won">Prompts won</option>
+                <option value="citation_rate">Citation rate</option>
+              </select>
+            </div>
+          </div>
           {visCell ? (
             <div className="rounded-[12px] border border-scout-border bg-white p-3">
               <VisibilityChart
                 trend={view.trend}
                 engine={visCell.key.engine}
                 runner={visCell.key.runner}
+                metric={trendMetric}
                 events={data.modelEvents.map((e) => ({ engine: e.engine, occurredOn: e.occurredOn, note: e.note }))}
+                annotations={(data.annotations ?? []).map((a) => ({
+                  occurredOn: a.occurredOn,
+                  note: a.note,
+                  kind: a.kind,
+                }))}
                 showRaw={showRaw}
                 canShowRaw={canShowRaw}
+                targetValue={
+                  data.target &&
+                  data.target.metric === trendMetric &&
+                  (!data.target.engine || data.target.engine === visCell.key.engine)
+                    ? data.target.value
+                    : null
+                }
               />
+              {/* Accessible table twin for Lighthouse / screen readers (wrapper keeps layout size 1×1) */}
+              <div className="sr-only" data-testid="visibility-chart-table">
+                <table>
+                  <caption>
+                    {trendMetric === "citation_rate" ? "Citation rate" : "Prompts won"} by scan for{" "}
+                    {engineLabel(visCell.key.engine)}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Scan date</th>
+                      <th scope="col">Rate</th>
+                      <th scope="col">95% low</th>
+                      <th scope="col">95% high</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {view.trend.map((t) => {
+                      const s = t.series.find(
+                        (x) => x.engine === visCell.key.engine && x.runner === visCell.key.runner,
+                      );
+                      const rate =
+                        trendMetric === "citation_rate" ? s?.citationRate?.rate ?? null : s?.promptsWon?.rate ?? null;
+                      const lo =
+                        trendMetric === "citation_rate" ? s?.citationRate?.ciLow ?? null : s?.promptsWon?.ciLow ?? null;
+                      const hi =
+                        trendMetric === "citation_rate" ? s?.citationRate?.ciHigh ?? null : s?.promptsWon?.ciHigh ?? null;
+                      return (
+                        <tr key={t.scanId}>
+                          <td>{date(t.createdAt)}</td>
+                          <td>{rate == null ? "—" : `${(rate * 100).toFixed(1)}%`}</td>
+                          <td>{lo == null ? "—" : `${(lo * 100).toFixed(1)}%`}</td>
+                          <td>{hi == null ? "—" : `${(hi * 100).toFixed(1)}%`}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
               <p className="mt-2 text-xs text-uncc-ink/60">
-                Chart uses the engine and collection method with the most answers in this table ({engineLabel(visCell.key.engine)} · {runnerLabel(visCell.key.runner)}).
+                Chart uses the engine and collection method with the most answers in this table ({engineLabel(visCell.key.engine)} · {runnerLabel(visCell.key.runner)}). Displayable rule applies.
               </p>
             </div>
           ) : null}
@@ -515,6 +634,11 @@ export default function CampaignDashboardPage() {
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [form, setForm] = useState({ engine: ENGINES[0] as string, occurred_on: "", note: "", source_url: "" });
+  const [annForm, setAnnForm] = useState({
+    kind: "press_release" as "press_release" | "campaign_launch" | "content_launch",
+    occurred_on: "",
+    note: "",
+  });
 
   const load = useCallback(async () => {
     try {
@@ -560,6 +684,31 @@ export default function CampaignDashboardPage() {
     }
   }
 
+  async function addAnnotation() {
+    setMessage(null);
+    try {
+      await api(`/api/campaigns/${id}/annotations`, {
+        method: "POST",
+        body: JSON.stringify(annForm),
+      });
+      setAnnForm({ ...annForm, occurred_on: "", note: "" });
+      setMessage({ tone: "ok", text: "Annotation added." });
+      await load();
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  async function removeAnnotation(annId: string) {
+    setMessage(null);
+    try {
+      await api(`/api/campaigns/${id}/annotations/${annId}`, { method: "DELETE" });
+      await load();
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   if (!data) {
     return message?.tone === "error" ? <ErrorState message={message.text} /> : <LoadingState label="Loading campaign dashboard…" />;
   }
@@ -590,6 +739,105 @@ export default function CampaignDashboardPage() {
         >
           {message.text}
         </p>
+      ) : null}
+
+      {data.coverageMatrix && data.coverageMatrix.length > 0 ? (
+        <Card data-testid="intent-engine-matrix">
+          <CardHeader>
+            <CardTitle>Intent × engine coverage</CardTitle>
+            <CardDescription>
+              Prompts won by intent and engine on the latest scan. Labels: strong (≥60%), partial (20–59%), invisible
+              (&lt;20%). Displayable rule still applies (too few prompts/draws → suppressed).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            {data.coverageMatrix.filter((c) => c.label === "suppressed").length >
+            data.coverageMatrix.length / 2 ? (
+              <p className="mb-3 text-sm text-scout-muted" data-testid="coverage-matrix-suppressed-note">
+                Cells fill in as more prompts are measured (needs 10+ prompts per cell).
+              </p>
+            ) : null}
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-scout-muted">
+                <tr className="border-b border-scout-border">
+                  <th className="px-2 py-2">Intent</th>
+                  <th className="px-2 py-2">Engine · runner</th>
+                  <th className="px-2 py-2">Won</th>
+                  <th className="px-2 py-2">Label</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.coverageMatrix.map((c) => (
+                  <tr key={`${c.intent}|${c.engine}|${c.runner}`} className="border-b border-scout-border">
+                    <td className="px-2 py-2">{c.intent}</td>
+                    <td className="px-2 py-2">
+                      {engineLabel(c.engine)} · {runnerLabel(c.runner)}
+                    </td>
+                    <td className="px-2 py-2">{c.kOfN ?? "—"}</td>
+                    <td className="px-2 py-2">
+                      <span
+                        data-testid={`coverage-label-${c.label}`}
+                        style={{
+                          color:
+                            c.label === "strong"
+                              ? "var(--status-gain-fg)"
+                              : c.label === "partial"
+                                ? "var(--intent-evaluation-fg)"
+                                : c.label === "invisible"
+                                  ? "var(--status-decline-fg)"
+                                  : "var(--text-muted)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {c.label}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {data.regionComparison && data.regionComparison.length > 0 ? (
+        <Card data-testid="region-comparison">
+          <CardHeader>
+            <CardTitle>Region comparison</CardTitle>
+            <CardDescription>
+              One row per region × engine. Uses region_honored yes/unknown only (no is excluded). Displayable rule applies.
+              Regions are never pooled into one number. Engines that ignore location show “region not supported”.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-scout-muted">
+                <tr className="border-b border-scout-border">
+                  <th className="px-2 py-2">Region</th>
+                  <th className="px-2 py-2">Engine · runner</th>
+                  <th className="px-2 py-2">Honored mix</th>
+                  <th className="px-2 py-2">Prompts won</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.regionComparison.map((c) => (
+                  <tr key={`${c.regionId}|${c.engine}|${c.runner}`} className="border-b border-scout-border">
+                    <td className="px-2 py-2">{c.regionLabel}</td>
+                    <td className="px-2 py-2">
+                      {engineLabel(c.engine)} · {runnerLabel(c.runner)}
+                    </td>
+                    <td className="px-2 py-2 text-xs text-scout-muted">
+                      honored {c.honoredMix.yes} / unknown {c.honoredMix.unknown} / no {c.honoredMix.no}
+                    </td>
+                    <td className="px-2 py-2" data-testid={`region-cell-${c.regionId}-${c.engine}-${c.runner}`}>
+                      {c.display}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       ) : null}
 
       {data.promptSets.length === 0 ? (
@@ -657,7 +905,12 @@ export default function CampaignDashboardPage() {
                     </td>
                     {role === "admin" ? (
                       <td>
-                        <Button size="sm" variant="ghost" onClick={() => removeEvent(e.id)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Delete model event ${e.note.slice(0, 40)}`}
+                          onClick={() => removeEvent(e.id)}
+                        >
                           Delete
                         </Button>
                       </td>
@@ -701,6 +954,76 @@ export default function CampaignDashboardPage() {
           ) : (
             <p className="text-xs text-uncc-ink/60">Only admins can add model events.</p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card data-testid="campaign-annotations">
+        <CardHeader>
+          <CardTitle>Campaign annotations</CardTitle>
+          <CardDescription>
+            Press release, campaign launch, and content launch — shown on every Visibility trend chart.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(data.annotations ?? []).length === 0 ? (
+            <p className="text-sm text-uncc-ink/60">No campaign annotations yet.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {(data.annotations ?? []).map((a) => (
+                <li key={a.id} className="flex flex-wrap items-center gap-2">
+                  <Badge tone="muted">{a.kind.replace(/_/g, " ")}</Badge>
+                  <span>{a.occurredOn}</span>
+                  <span>{a.note}</span>
+                  {role === "editor" || role === "admin" ? (
+                    <Button size="sm" variant="ghost" onClick={() => removeAnnotation(a.id)}>
+                      Delete
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          {role === "editor" || role === "admin" ? (
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ann-kind">Kind</Label>
+                <select
+                  id="ann-kind"
+                  className="h-9 w-full rounded border border-uncc-rule bg-white px-2 text-sm"
+                  value={annForm.kind}
+                  onChange={(e) =>
+                    setAnnForm({ ...annForm, kind: e.target.value as typeof annForm.kind })
+                  }
+                >
+                  <option value="press_release">Press release</option>
+                  <option value="campaign_launch">Campaign launch</option>
+                  <option value="content_launch">Content launch</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ann-date">Occurred on</Label>
+                <Input
+                  id="ann-date"
+                  type="date"
+                  value={annForm.occurred_on}
+                  onChange={(e) => setAnnForm({ ...annForm, occurred_on: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ann-note">Note</Label>
+                <Input
+                  id="ann-note"
+                  value={annForm.note}
+                  onChange={(e) => setAnnForm({ ...annForm, note: e.target.value })}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={addAnnotation} disabled={!annForm.occurred_on || !annForm.note.trim()}>
+                  Add annotation
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

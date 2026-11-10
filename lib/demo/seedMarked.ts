@@ -1,10 +1,12 @@
 import { createHash } from "crypto";
 import { eq } from "drizzle-orm";
 import { DEMO_ORG_NAME, DEMO_SEED_MARKER } from "@/lib/contracts";
+import { CORRELATION_LABEL } from "@/lib/contracts/gaps";
 import { ensureCaptureProviders } from "@/lib/capture/accounts";
 import { ROUTES } from "@/lib/capture/registry";
 import { CHARLOTTE_REGION, ensureNamedRegion } from "@/lib/capture/regions";
 import { fidelityFor, type Engine, type Runner } from "@/lib/capture/types";
+import { canonicalizeCitationUrl } from "@/lib/citations/canonical";
 import { deleteAllDataForOrg } from "@/lib/demo/deleteDemoOrgData";
 import type { Db } from "@/lib/db/pg/client";
 import { ensureContentTeamCampaigns } from "@/lib/contentTeam/seed";
@@ -13,6 +15,7 @@ import {
   brands,
   campaigns,
   citations,
+  citedPages,
   claims,
   competitorAliases,
   competitorDomains,
@@ -28,6 +31,7 @@ import {
   scans,
   strategyReports,
 } from "@/lib/db/pg/schema";
+import { seedDemoDemandSignals } from "@/lib/demand/demoSeedSignals";
 import { freezePromptSet } from "@/lib/promptSets";
 
 const DEMO_ORG_SLUG = "demo-university-leadership";
@@ -472,6 +476,8 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
       insertedPromptIds.push(p.id);
     }
 
+    await seedDemoDemandSignals(db, campaignId, spec.pillar);
+
     const { set: frozenSet } = await freezePromptSet(db, org.id, campaignId);
 
     const scanLabels = ["Leadership complete scan 1", "Leadership complete scan 2"] as const;
@@ -569,14 +575,50 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
               isMcNemarSignalEngine,
             });
             for (const c of domains) {
+              const canonical = canonicalizeCitationUrl(c.url) ?? c.url;
+              const pageTitle =
+                c.sourceClass === "owned"
+                  ? `Demo University ${spec.pillar} programs overview`
+                  : c.sourceClass === "competitor"
+                    ? `${c.domain.split(".")[0]} ${spec.pillar} curriculum guide`
+                    : `Higher-ed roundup: ${spec.pillar} in the Southeast`;
+              const h1 = pageTitle;
+              const h2s =
+                c.sourceClass === "owned"
+                  ? [`Outcomes for ${spec.pillar}`, "FAQ for applicants"]
+                  : [`How ${spec.pillar} programs compare`, "Admissions checklist"];
+              await db
+                .insert(citedPages)
+                .values({
+                  canonicalUrl: canonical,
+                  fetchedAt: new Date(),
+                  statusCode: 200,
+                  title: pageTitle,
+                  h1,
+                  h2s,
+                  publishedAt: new Date("2025-09-01T00:00:00Z"),
+                  updatedAt: new Date("2026-01-15T00:00:00Z"),
+                  wordCount: 800,
+                  contentType: c.sourceClass === "owned" ? "program_page" : c.sourceClass === "gov" ? "government_data" : "ranking_list",
+                  fetchStatus: "fetched",
+                  seedMarker: DEMO_SEED_MARKER,
+                  structuredFeatures: {
+                    listicle: { present: c.sourceClass !== "owned", itemCount: c.sourceClass === "owned" ? 0 : 8 },
+                    answerCapsule: { present: false, nearCapsule: false, question: null, answer: null, wordCount: 0 },
+                    statisticsCount: c.sourceClass === "gov" ? 4 : 1,
+                    namedQuotes: c.sourceClass === "editorial" ? [{ name: "Dean", quote: "Regional option." }] : [],
+                  },
+                })
+                .onConflictDoNothing();
               await db.insert(citations).values({
                 drawId: drawRow.id,
                 url: c.url,
+                canonicalUrl: canonical,
                 domain: c.domain,
                 position: c.position,
                 linked: true,
                 sourceClass: c.sourceClass,
-                title: "Demo citation title",
+                title: pageTitle,
               });
             }
 
@@ -687,11 +729,44 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
         evidenceGrade: "B",
         status: "open",
         payload: {
-          headlineTerms: ["Demo University", spec.pillar],
+          headlineTerms: [spec.pillar, "outcomes"],
           format: "program_page",
           suggestedAction: `Update the ${spec.pillar} program page with clearer outcomes and FAQs drawn from lost questions.`,
           sharedAmongCitedPages: "Thin or listicle-style summaries without primary curriculum links",
           sharedAmongCitedPagesN: 12,
+          citedPagesShare: {
+            label: CORRELATION_LABEL,
+            n: 12,
+            headlineTerms: [
+              {
+                term: spec.pillar,
+                n: 9,
+                headlines: [
+                  `${spec.pillar} curriculum guide`,
+                  `Higher-ed roundup: ${spec.pillar} in the Southeast`,
+                ],
+              },
+              {
+                term: "outcomes",
+                n: 6,
+                headlines: [`Outcomes for ${spec.pillar}`],
+              },
+            ],
+            contentTypes: [
+              { label: "ranking list", n: 7 },
+              { label: "program page", n: 3 },
+              { label: "government data", n: 2 },
+            ],
+            faqs: [
+              { label: "What programs exist?", n: 5 },
+              { label: "How do I apply?", n: 4 },
+            ],
+            freshness: { summary: "Most pages updated within the last 12 months", n: 10 },
+            peers: [
+              { label: "Harbor College", n: 4 },
+              { label: "Piedmont Tech", n: 3 },
+            ],
+          },
           note: "Owned pages trail peer listicles on discovery-style questions.",
         },
         evidence: {
@@ -718,6 +793,27 @@ export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaign
           suggestedAction: `Publish a short factsheet that answers comparison questions so assistants can cite primary sources.`,
           sharedAmongCitedPages: "FAQ-style questions repeated across lost prompts",
           sharedAmongCitedPagesN: gapB.length,
+          citedPagesShare: {
+            label: CORRELATION_LABEL,
+            n: gapB.length,
+            headlineTerms: [
+              {
+                term: "compare",
+                n: 4,
+                headlines: [`How ${spec.pillar} programs compare`],
+              },
+            ],
+            contentTypes: [
+              { label: "FAQ content", n: 3 },
+              { label: "news article", n: 2 },
+            ],
+            faqs: [
+              { label: "How does Demo University compare on cost?", n: 3 },
+              { label: "Which schools offer evening options?", n: 2 },
+            ],
+            freshness: { summary: "Mixed ages; several pages older than 18 months", n: gapB.length },
+            peers: [{ label: "Coastal State University", n: 3 }],
+          },
           note: "Third-party pages outrank official answers on head-to-head comparisons.",
         },
         evidence: {

@@ -1,15 +1,20 @@
-import type { PromptsWon } from "@/lib/metrics/types";
-import { displayableFromPromptsWon } from "@/lib/metrics/displayable";
+import type { PromptsWon, RateWithCi } from "@/lib/metrics/types";
+import { displayableFromPromptsWon, displayableFromRate } from "@/lib/metrics/displayable";
+
+export type TrendMetric = "prompts_won" | "citation_rate";
 
 export type TrendSeriesPoint = {
   engine: string;
   runner: string;
   promptsWon: Pick<PromptsWon, "rate" | "ciLow" | "ciHigh" | "won" | "prompts" | "draws" | "tooFewDraws" | "tooFewPrompts">;
+  citationRate?: Pick<RateWithCi, "rate" | "ciLow" | "ciHigh" | "n" | "prompts" | "tooFewDraws" | "tooFewPrompts">;
 };
 
 export type TrendScanPoint = {
   scanId: string;
   createdAt: string;
+  /** First scan of this prompt set. */
+  isBaseline?: boolean;
   series: TrendSeriesPoint[];
 };
 
@@ -28,14 +33,33 @@ export type VisibilityColumn = {
   rawRate: number | null;
 };
 
-/** Pure: one column per trend scan for the selected engine×runner. */
+/** Pure: one column per trend scan for the selected engine×runner and metric. */
 export function visibilityColumnsFromTrend(
   trend: readonly TrendScanPoint[],
   engine: string,
   runner: string,
+  metric: TrendMetric = "prompts_won",
 ): VisibilityColumn[] {
   const base = trend.map((t) => {
     const s = t.series.find((x) => x.engine === engine && x.runner === runner);
+    if (metric === "citation_rate") {
+      const cr = s?.citationRate;
+      const dec = cr ? displayableFromRate(cr) : null;
+      const rate = cr?.rate ?? null;
+      const suppressed = dec != null && dec.kind !== "show";
+      return {
+        scanId: t.scanId,
+        createdAt: t.createdAt,
+        rate,
+        ciLow: cr?.ciLow ?? null,
+        ciHigh: cr?.ciHigh ?? null,
+        won: 0,
+        prompts: cr?.prompts ?? 0,
+        suppressed,
+        suppressionMessage: suppressed && dec ? dec.message : null,
+        rawRate: rate,
+      };
+    }
     const pw = s?.promptsWon;
     const dec = pw ? displayableFromPromptsWon(pw) : null;
     const rate = pw?.rate ?? null;

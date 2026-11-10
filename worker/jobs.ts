@@ -210,4 +210,7 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
   });
 
   await boss.schedule(QUEUES.scheduleTick, "0 * * * *");
+  // On worker start / wake: catch up once (never N missed dues). Hourly cron continues after.
+  await boss.send(QUEUES.scheduleTick, { reason: "worker_start" }, JOB_OPTIONS);
+  log("[worker] schedule.tick queued for start/wake catch-up");
 }

@@ -85,6 +85,7 @@ export const provenanceEnum = pgEnum("provenance", [
   "fanout",
   "synthesized",
   "custom",
+  "fixture",
 ]);
 export const promptStatusEnum = pgEnum("prompt_status", ["draft", "approved", "rejected"]);
 export const demandSourceEnum = pgEnum("demand_source", [
@@ -162,6 +163,7 @@ export const alertKindEnum = pgEnum("alert_kind", [
   "budget_threshold",
   "provider_error_rate",
   "blocked",
+  "owned_citation_stopped",
 ]);
 export const alertStatusEnum = pgEnum("alert_status", ["open", "acknowledged"]);
 export const entityCandidateKindEnum = pgEnum("entity_candidate_kind", [
@@ -593,6 +595,8 @@ export const campaigns = pgTable("campaigns", {
   status: campaignStatusEnum("status").notNull().default("draft"),
   // Campaign scoped config: subtopics, assets, last_location_note, migration markers.
   settings: jsonb("settings").notNull().default(sql`'{}'::jsonb`),
+  /** Optional KPI target: { metric, engine, value, date }. Shown as dashed "Target" on charts. */
+  target: jsonb("target"),
   createdAt: createdAt(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
@@ -702,6 +706,15 @@ export const prompts = pgTable(
     embeddingModel: text("embedding_model"),
     embeddingDimension: integer("embedding_dimension"),
     note: text("note"),
+    /** Editor who authored a custom (or reviewed) prompt. */
+    authorId: uuid("author_id").references(() => users.id),
+    /**
+     * Optional content category (P2 B9 library export). Distinct from the four measurement intents.
+     * When null, export falls back to intent.
+     */
+    category: text("category"),
+    /** User who last moved the prompt to approved. */
+    approvedById: uuid("approved_by_id").references(() => users.id),
     /** CSV prompt_id for neutrals; `{prompt_id}:{persona_key}` for variants. Idempotency key. */
     externalId: text("external_id"),
     /** `prefix` when text was built from draft_prefix + neutral text; null for neutrals. */
@@ -714,6 +727,8 @@ export const prompts = pgTable(
   (t) => [
     index("prompts_campaign").on(t.campaignId),
     index("prompts_campaign_status_persona").on(t.campaignId, t.status, t.personaId),
+    index("prompts_author").on(t.authorId).where(sql`${t.authorId} is not null`),
+    index("prompts_approved_by").on(t.approvedById).where(sql`${t.approvedById} is not null`),
     uniqueIndex("prompts_campaign_external").on(t.campaignId, t.externalId).where(sql`${t.externalId} is not null`),
     check("prompts_embedding_dimension_positive", sql`${t.embeddingDimension} is null or ${t.embeddingDimension} > 0`),
   ],
@@ -813,6 +828,8 @@ export const schedules = pgTable("schedules", {
   promptSetId: uuid("prompt_set_id").notNull().references(() => promptSets.id),
   nextRunAt: ts("next_run_at"),
   budgetCapUsd: numeric("budget_cap_usd"),
+  /** Per-run USD approved at create; tick re-estimates and pauses if new estimate exceeds this by >20%. */
+  approvedEstimateUsd: numeric("approved_estimate_usd"),
   enabled: boolean("enabled").notNull().default(true),
   createdAt: createdAt(),
 });
@@ -839,6 +856,12 @@ export const scans = pgTable(
       .default(sql`'{"first_draws":60,"error_or_blocked_rate":0.2,"cost_over_estimate_rate":0.25}'::jsonb`),
     pausedReason: text("paused_reason"),
     pausedAt: ts("paused_at"),
+    /** Editor-approved note (3–5 sentences) shown atop Overview. Null = nothing shown. */
+    analystNote: text("analyst_note"),
+    analystNoteAuthorId: uuid("analyst_note_author_id").references(() => users.id),
+    analystNoteAt: ts("analyst_note_at"),
+    /** null | draft (AI, labeled Draft) | published (editor-approved). */
+    analystNoteStatus: text("analyst_note_status"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -1068,6 +1091,8 @@ export const citedPages = pgTable(
     embedding: vector("embedding"),
     embeddingModel: text("embedding_model"),
     embeddingDimension: integer("embedding_dimension"),
+    /** Exact `DEMO_SEED_MARKER` when this page was inserted by a demo/fixture seed. */
+    seedMarker: text("seed_marker"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -1075,6 +1100,7 @@ export const citedPages = pgTable(
       "cited_pages_embedding_dimension_positive",
       sql`${t.embeddingDimension} is null or ${t.embeddingDimension} > 0`,
     ),
+    index("cited_pages_seed_marker").on(t.seedMarker).where(sql`${t.seedMarker} is not null`),
   ],
 );
 
@@ -1229,6 +1255,23 @@ export const modelEvents = pgTable("model_events", {
   sourceUrl: text("source_url"),
   createdAt: createdAt(),
 });
+
+/** Manual campaign annotations shown on every Visibility trend chart (Gate 3 row 25). */
+export const campaignAnnotations = pgTable(
+  "campaign_annotations",
+  {
+    id: id(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id),
+    kind: text("kind").notNull(),
+    occurredOn: date("occurred_on").notNull(),
+    note: text("note").notNull(),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("campaign_annotations_campaign_occurred").on(t.campaignId, t.occurredOn)],
+);
 
 export const alerts = pgTable(
   "alerts",

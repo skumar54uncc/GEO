@@ -1,6 +1,8 @@
 # Pilot runbook (operator)
 
-Live pilot for **Energy** content-team **core** prompts only: **30** neutral prompts, **6** primary engines, **3** draws each, **Charlotte** region → about **540** AI answers (plus **6** canary draws, one per engine route). This is also the Phase 5 live gate after funding approval.
+Live pilot for **Energy** content-team **core** prompts only: **30** neutral prompts, **6** primary engines, **3** draws each, **Charlotte** region → about **540** AI answers (plus **6** canary draws, one per engine route). This is also **V1 gate 5** after funding approval. Companion: **`docs/HANDOVER.md`**.
+
+**Code freeze:** tag **`v1.0-rc1`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics`).
 
 **Upper estimate (verified in repo):** `estimateContentTeamSeries` / `buildFundingPage` use `primaryRouteUsdPerDrawByProvider()` and `providerShareForPrompts(30, …)` → **$12.888** upper for 30 prompts (display **$12.89**). Source: `lib/contentTeam/estimate.ts`, `lib/budget/funding.ts`, `lib/budget/providers.ts`. Prices verified on **2026-11-03** per `docs/PROVIDERS.md`.
 
@@ -17,7 +19,7 @@ Live pilot for **Energy** content-team **core** prompts only: **30** neutral pro
 5. **Backup** — Run `npm run db:backup` and confirm a fresh dump under your backup location (see `docs/ARCHITECTURE.md` § hosting).
 6. **Worker + app** — In separate terminals from the project root (ensure `node`, `npm`, and Postgres client tools are on `PATH`):
    - `npm run worker`
-   - `npm run dev` (127.0.0.1 only)
+   - `npm run dev` (bind **127.0.0.1** only; open `http://127.0.0.1:3000`, not `localhost`)
 7. **Keep the Mac awake** — `caffeinate -dimsu` for the expected run duration.
 8. **Canary** — Leave **canary enabled** on the scan (default). A failed canary **drops that engine route** for the scan; do not ignore canary failure alerts.
 9. **Rehearse on fixtures (optional)** — `npm run pilot:rehearse` on **Demo University** (no paid calls). Fix anything that fails before live spend.
@@ -64,24 +66,25 @@ Live pilot for **Energy** content-team **core** prompts only: **30** neutral pro
 | **Manual** | Operator pauses from UI, kills worker, or revokes approval path. Do not auto-retry paid draws. |
 | **Canary failure** | Route removed for this scan; investigate before re-running that engine. |
 
-If paused, record `scanId`, `pausedReason`, and alert payloads before resume or abandon.
+If paused, record `scanId`, `pausedReason`, and alert payloads before resume or abandon. Do **not** auto-retry paid draws. Canary failures drop that engine for the scan — fix before re-including. Worker crash → restart `npm run worker` without re-approving a completed batch. Wrong org / Demo University → stop; demo is never UNC pilot data. See also `docs/HANDOVER.md`.
 
 ---
 
 ## After the run
 
-1. **Payloads** — Spot-check **3** raw payloads per **prompt × engine** (Answer Explorer → raw payload link). Confirm runner, fidelity, and region metadata match the plan.
-2. **`search_used`** — SQL or Answers filter: Claude / Perplexity draws used for metrics should have `search_used = true`.
-3. **Rollup stability** — Run metrics twice; results must match except `rolledAt`:
+1. **20-answer hand check (gate 5)** — Sample **20** Answer Explorer rows across engines. Confirm mention / citation / list position / sentiment match the stored answer + judge (same runner/fidelity series — never average). Log `drawId` pass/fail in the pilot worksheet.
+2. **Payloads** — Spot-check **3** raw payloads per **prompt × engine** (Answer Explorer → raw payload link). Confirm runner, fidelity, and region metadata match the plan.
+3. **`search_used`** — SQL or Answers filter: Claude / Perplexity draws used for metrics should have `search_used = true`.
+4. **Rollup stability** — Run metrics twice; results must match except `rolledAt`:
    - Worker does this on `metrics.rollup` automatically.
    - Operator check: `npx tsx scripts/audit-metrics.ts` on **test** DB shape, or rehearsal script’s rollup compare for fixtures.
-4. **Audit metrics on pilot scan** — For the real pilot `scanId`, compare dashboard numbers to a recomputation policy your stats reviewer signs off (Wave 4 `scripts/audit-metrics.ts` pattern).
-5. **Cost vs estimate** — Budget page: `cost_ledger` / scan actual vs `estimate.totalUsd` (target within stop-loss band).
-6. **Gold labels** — Pull **50** random draws: **Settings → Gold-label sample**, or  
+5. **Audit metrics on pilot scan** — For the real pilot `scanId`, compare dashboard numbers to a recomputation policy your stats reviewer signs off (Wave 4 `scripts/audit-metrics.ts` pattern).
+6. **Cost vs estimate** — Budget page: `cost_ledger` / scan actual vs `estimate.totalUsd` (target within stop-loss band).
+7. **Gold labels** — Pull **50** random draws: **Settings → Gold-label sample**, or  
    `npx tsx scripts/export-gold-label-sample.ts --scanId <pilot-scan-uuid>`  
    Hand-label in your worksheet; store in `gold_labels` when labeling UI exists.
-7. **Cited pages** — Per `docs/EVALS.md`, hand-check **20** cited pages from this scan (source class, listicle, schema, freshness).
-8. **Leadership exports** — Overview + Campaign dashboard PDF/CSV, **Budget & Funding** PDF (`/api/budget/pdf`), gap/strategy exports as needed. Label real UNC Charlotte data with scan date and **n**; never export Demo University without the demo banner.
+8. **Cited pages** — Per `docs/EVALS.md`, hand-check **20** cited pages from this scan (source class, listicle, schema, freshness).
+9. **Leadership exports** — Overview + Visibility leadership PDF (`/api/campaigns/[id]/leadership-pdf`), **Budget & Funding** PDF (`/api/budget/pdf`), gap/strategy exports as needed. Label real UNC Charlotte data with scan date and **n**; never export Demo University without the demo banner.
 
 ---
 

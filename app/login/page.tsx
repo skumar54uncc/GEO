@@ -33,7 +33,31 @@ function LoginForm() {
       return;
     }
     const next = params.get("next");
-    router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      router.push(next);
+      router.refresh();
+      return;
+    }
+    const role = json.user?.role as "viewer" | "editor" | "admin" | undefined;
+    let adminHome: "overview" | "visibility" | null = null;
+    try {
+      const pref = window.localStorage.getItem("scout_admin_home");
+      if (pref === "overview" || pref === "visibility") adminHome = pref;
+    } catch {
+      /* ignore */
+    }
+    let campaignId: string | null = null;
+    if (role === "editor" || (role === "admin" && adminHome === "visibility")) {
+      try {
+        const camps = await fetch("/api/campaigns", { cache: "no-store" });
+        const campJson = await camps.json();
+        campaignId = campJson.campaigns?.[0]?.id ?? null;
+      } catch {
+        campaignId = null;
+      }
+    }
+    const { defaultLandingPath } = await import("@/lib/auth/landing");
+    router.push(defaultLandingPath(role ?? "viewer", { adminHome, campaignId }));
     router.refresh();
   }
 

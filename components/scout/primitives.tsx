@@ -55,15 +55,16 @@ export function StatusBadge({
   );
 }
 
-export function IntentPill({ intent }: { intent: "comparison" | "discovery" | "evaluation" | "decision" | string }) {
+export function IntentPill({ intent }: { intent: "comparison" | "discovery" | "evaluation" | "decision" | "untagged" | string }) {
   const map: Record<string, CSSProperties> = {
     comparison: { background: "var(--intent-comparison-bg)", color: "var(--intent-comparison-fg)" },
     discovery: { background: "var(--intent-discovery-bg)", color: "var(--intent-discovery-fg)" },
     evaluation: { background: "var(--intent-evaluation-bg)", color: "var(--intent-evaluation-fg)" },
     decision: { background: "var(--intent-decision-bg)", color: "var(--intent-decision-fg)" },
+    untagged: { background: "var(--status-noise-bg)", color: "var(--status-noise-fg)" },
   };
-  const style = map[intent] ?? map.comparison;
-  const label = intent.charAt(0).toUpperCase() + intent.slice(1);
+  const style = map[intent] ?? map.untagged;
+  const label = intent === "untagged" ? "Untagged" : intent.charAt(0).toUpperCase() + intent.slice(1);
   return (
     <span className="inline-block rounded-scout-pill px-3 py-1 text-xs font-medium" style={style}>
       {label}

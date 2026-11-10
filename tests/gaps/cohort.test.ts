@@ -23,6 +23,7 @@ function draw(o: {
     regionHonored: "yes",
     personaId: null,
     branded: o.branded ?? false,
+    intent: null,
     mentions: o.brand
       ? [{ entityType: "brand", entityId: BRAND, spanStart: 0, listPosition: null }]
       : [],
@@ -32,7 +33,7 @@ function draw(o: {
 }
 
 describe("gap lost cohort", () => {
-  it("marks lost when brand mentions are below ceil(valid/2); n=3 needs fewer than 2", () => {
+  it("marks lost when brand mentions are below floor(valid/2)+1; n=3 needs fewer than 2", () => {
     // 1 of 3 mentions → lost; 2 of 3 → won
     const draws = [
       draw({ prompt: "lost-1", brand: true }),

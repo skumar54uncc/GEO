@@ -444,14 +444,23 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
       await page.goto("/overview");
       const orgSelect = page.getByTestId("org-switcher");
       await expectVisible(orgSelect);
+      // Org switch POSTs then window.location.assign("/") — do not read the response body after
+      // navigation starts (Playwright drops it). Wait for navigation + explicit banner visibility.
       await Promise.all([
-        page.waitForResponse((r) => r.url().includes("/api/auth/org") && r.request().method() === "POST"),
+        page.waitForResponse((r) => r.url().includes("/api/auth/org") && r.request().method() === "POST" && r.ok()),
+        page.waitForURL((url) => url.pathname === "/" || url.pathname === "/overview"),
         orgSelect.selectOption(demoOrg.id),
       ]);
-      await expectVisible(page.getByTestId("demo-data-banner"), 30_000);
+      const demoBanner = page.getByTestId("demo-data-banner");
+      await expectVisible(demoBanner, 45_000);
+      // role=status is a live region — match by text content, not accessible name.
+      await expectVisible(page.getByRole("status").filter({ hasText: DEMO_DATA_BANNER }), 15_000);
+      expect((await demoBanner.textContent())?.trim()).toBe(DEMO_DATA_BANNER);
+      await expectVisible(page.getByTestId("org-switcher"));
+      expect(await page.getByTestId("org-switcher").inputValue()).toBe(demoOrg.id);
 
       await page.goto("/budget");
-      await expectVisible(page.getByTestId("demo-data-banner"));
+      await expectVisible(page.getByTestId("demo-data-banner"), 45_000);
 
       const pdfDemo = await page.request.get("/api/budget/pdf");
       expect(await pdfDemo.text()).toContain(DEMO_DATA_BANNER);

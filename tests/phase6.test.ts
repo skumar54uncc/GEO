@@ -10,6 +10,7 @@ import {
   brands,
   campaigns,
   citations,
+  citedPages,
   claims,
   draws,
   fanoutQueries,
@@ -18,9 +19,11 @@ import {
   organizations,
   prompts,
   providerAccounts,
+  recommendations,
   regions,
   scans,
 } from "@/lib/db/pg/schema";
+import { CORRELATION_LABEL } from "@/lib/contracts/gaps";
 import { cookieFor, req, resetDatabase } from "./helpers";
 
 const json = (response: Response) => response.json() as Promise<Record<string, any>>;
@@ -83,6 +86,24 @@ describe("Phase 6 answer explorer", () => {
       spanEnd: answer.indexOf(" leads") + " leads".length,
       verdict: "unverifiable",
     });
+    await db.insert(citedPages).values({
+      canonicalUrl: "https://example.edu/source",
+      fetchedAt: new Date(),
+      statusCode: 200,
+      title: "UNC Charlotte Energy ranking guide",
+      h1: "Energy programs at a glance",
+      h2s: ["Outcomes", "FAQ"],
+      contentType: "ranking_list",
+      fetchStatus: "fetched",
+      publishedAt: new Date("2025-06-01T00:00:00Z"),
+      updatedAt: new Date("2026-01-01T00:00:00Z"),
+      structuredFeatures: {
+        listicle: { present: true, itemCount: 10 },
+        answerCapsule: { present: false },
+        statisticsCount: 2,
+        namedQuotes: [{ name: "Dean", quote: "x" }],
+      },
+    });
     await db.insert(citations).values({
       drawId: draw.id,
       url: "https://example.edu/source",
@@ -91,6 +112,17 @@ describe("Phase 6 answer explorer", () => {
       position: 1,
       linked: true,
       sourceClass: "editorial",
+    });
+    await db.insert(recommendations).values({
+      campaignId: context.campaignId,
+      kind: "gap",
+      leverType: "on_page",
+      owner: "Web",
+      evidenceGrade: "B",
+      status: "open",
+      payload: { headlineTerms: ["Energy", "UNC Charlotte"], format: "program_page" },
+      evidence: { rows: [{ source: "fixture", detail: "x" }] },
+      targetPromptIds: [prompt.id],
     });
     await db.insert(fanoutQueries).values({ drawId: draw.id, query: "best universities", source: "provider_field" });
 
@@ -109,6 +141,17 @@ describe("Phase 6 answer explorer", () => {
     });
     expect(body.mentions[0].span.startUtf8Byte).toBeGreaterThan(body.mentions[0].span.startUtf16);
     expect(body.fanoutQueries).toEqual([{ query: "best universities", source: "provider_field" }]);
+    expect(body.citations[0].page).toMatchObject({
+      contentType: "ranking_list",
+      features: { listicle: true, statisticsCount: 2, namedQuotes: 1 },
+    });
+    expect(body.citations[0].page.titleHtml).toContain("mention-gap-term");
+    expect(body.citations[0].page.titleHtml).toContain("Energy");
+    expect(body.citations[0].page.h1Html).toContain("Energy");
+    expect(body.gapTerms).toEqual(expect.arrayContaining(["Energy"]));
+    expect(body.gapTerms).not.toContain("UNC Charlotte"); // brand name excluded from gap highlights
+    expect(body.citations[0].page.freshness).toEqual({ label: "2026-01-01", source: "updated" });
+    expect(CORRELATION_LABEL).toBe("correlation, not cause");
 
     const emoji = answer.indexOf("🎓");
     expect(safeSpan(answer, emoji + 1, emoji + 2)).toBeNull();

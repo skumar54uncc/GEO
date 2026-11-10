@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as generateRoute } from "@/app/api/campaigns/[id]/prompts/generate/route";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
-import { brandAliases, personas, prompts, providerAccounts } from "@/lib/db/pg/schema";
+import { brandAliases, campaigns, personas, prompts, providerAccounts } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
+import { ensureCanonicalPersonas } from "@/lib/personas/seed";
 import { brandedShare, isBrandedPrompt, MIN_UNBRANDED_SHARE } from "@/lib/prompts/branded";
 import { dedupeAgainstCampaign } from "@/lib/prompts/dedupe";
 import { cosineSimilarity, disabledEmbedder, fixtureEmbedder } from "@/lib/prompts/embeddings";
@@ -121,7 +122,7 @@ describe("prompt generation", () => {
     };
 
     await expect(runPromptGenerate(db, { orgId: ctx.orgId, request, transport })).rejects.toBeInstanceOf(
-      PromptGenerateUnavailableError,
+      PromptGenerateApprovalError,
     );
     expect(transport).not.toHaveBeenCalled();
 
@@ -316,5 +317,107 @@ describe("prompt generation", () => {
     fetchSpy.mockRestore();
 
     await expect(freezePromptSet(db, ctx.orgId, ctx.campaignId)).rejects.toThrow(/No approved prompts/);
+  });
+
+  it("builtin fixture pack inserts drafts for 3–5 personas and rejects bad counts", async () => {
+    const db = getDb();
+    const ctx = await legacyContext(db);
+    await ensureProvider(ctx.orgId);
+    await ensureCanonicalPersonas(db);
+    const cookie = await cookieFor("editor-gen@charlotte.edu", "editor");
+    const params = { params: { id: ctx.campaignId } };
+    const menu = await db.select({ id: personas.id }).from(personas).limit(3);
+    expect(menu).toHaveLength(3);
+    const request = { personaIds: menu.map((p) => p.id), intents: ["discovery" as const] };
+    const estimateResponse = await generateRoute(
+      req(`/api/campaigns/${ctx.campaignId}/prompts/generate`, {
+        method: "POST",
+        cookie,
+        body: { action: "estimate", request },
+      }),
+      params,
+    );
+    const { estimate, fixture_label } = (await estimateResponse.json()) as {
+      estimate: { paramsHash: string; units: number };
+      fixture_label: string;
+    };
+    expect(fixture_label).toBe("fixture");
+
+    const tooFew = await generateRoute(
+      req(`/api/campaigns/${ctx.campaignId}/prompts/generate`, {
+        method: "POST",
+        cookie,
+        body: {
+          action: "run",
+          request: { personaIds: [menu[0]!.id], intents: ["discovery"] },
+          useBuiltinFixture: true,
+          approval: {
+            paramsHash: estimatePromptGenerate({ campaignId: ctx.campaignId, personaIds: [menu[0]!.id], intents: ["discovery"] }).paramsHash,
+            units: 1,
+            priceUsd: null,
+            acknowledgedUnknownPrice: true,
+          },
+        },
+      }),
+      params,
+    );
+    expect(tooFew.status).toBe(400);
+
+    const ok = await generateRoute(
+      req(`/api/campaigns/${ctx.campaignId}/prompts/generate`, {
+        method: "POST",
+        cookie,
+        body: {
+          action: "run",
+          request,
+          useBuiltinFixture: true,
+          approval: {
+            paramsHash: estimate.paramsHash,
+            units: estimate.units,
+            priceUsd: null,
+            acknowledgedUnknownPrice: true,
+          },
+        },
+      }),
+      params,
+    );
+    expect(ok.status).toBe(200);
+    const body = await ok.json();
+    expect(body.fixture_label).toBe("fixture");
+    expect(body.prompts.length).toBeGreaterThanOrEqual(3);
+    expect(body.prompts.every((p: { status: string }) => p.status === "draft")).toBe(true);
+  });
+});
+
+describe("custom prompt", () => {
+  beforeEach(resetDatabase);
+
+  it("creates a draft with intent, persona, and branded flag", async () => {
+    const db = getDb();
+    const ctx = await legacyContext(db);
+    // Legacy Energy campaign blocks custom edits — use a non-legacy campaign.
+    const [campaign] = await db
+      .insert(campaigns)
+      .values({ orgId: ctx.orgId, brandId: ctx.brandId, name: "Custom prompt campaign", topic: "AI", status: "active" })
+      .returning();
+    const cookie = await cookieFor("editor-custom@charlotte.edu", "editor");
+    const { POST: promptsPost } = await import("@/app/api/campaigns/[id]/prompts/route");
+    const res = await promptsPost(
+      req(`/api/campaigns/${campaign.id}/prompts`, {
+        method: "POST",
+        cookie,
+        body: {
+          action: "create_custom",
+          text: "What should I check before applying to a data science master's?",
+          intent: "decision",
+          persona_id: null,
+          branded: false,
+        },
+      }),
+      { params: { id: campaign.id } },
+    );
+    expect(res.status).toBe(201);
+    const { prompt } = (await res.json()) as { prompt: { status: string; provenance: string; intent: string } };
+    expect(prompt).toMatchObject({ status: "draft", provenance: "custom", intent: "decision" });
   });
 });

@@ -1,13 +1,16 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { recordAudit, withRole } from "@/lib/auth";
 import { getDb } from "@/lib/db/pg/client";
-import { campaigns } from "@/lib/db/pg/schema";
+import { campaigns, personas } from "@/lib/db/pg/schema";
+import { WriterModelConfigError } from "@/lib/fireworks";
+import { buildBuiltinFixture } from "@/lib/prompts/fixturePack";
 import {
   estimatePromptGenerate,
   generateFixtureSchema,
   generateRequestSchema,
+  liveGenerationConnected,
   PromptGenerateApprovalError,
   PromptGenerateUnavailableError,
   PromptGenerateValidationError,
@@ -29,6 +32,10 @@ const bodySchema = z.object({
     })
     .optional(),
   fixture: generateFixtureSchema.optional(),
+  /** When true (and no explicit fixture / live), build the brand-safe builtin pack. UI shows a fixture label. */
+  useBuiltinFixture: z.boolean().optional(),
+  /** Live Fireworks writer path. Requires key + CONTENT_MODEL ≠ JUDGE_MODEL. */
+  useLive: z.boolean().optional(),
 });
 
 export const POST = withRole<{ id: string }>("editor", async (req, { user, params }) => {
@@ -50,14 +57,58 @@ export const POST = withRole<{ id: string }>("editor", async (req, { user, param
     ...(parsed.data.request ?? {}),
   });
   const estimate = estimatePromptGenerate(request);
-  if (parsed.data.action === "estimate") return NextResponse.json({ estimate });
+  if (parsed.data.action === "estimate") {
+    return NextResponse.json({
+      estimate,
+      mode: estimate.mode,
+      liveConnected: estimate.liveConnected,
+      fixture_label: "fixture",
+      note: estimate.liveConnected
+        ? "Live generation available (Fireworks). Fixture pack remains available and labeled."
+        : "Live generation not connected. Fixture pack is available and labeled.",
+    });
+  }
 
   try {
+    let fixture = parsed.data.fixture;
+    const useLive = Boolean(parsed.data.useLive) && !fixture;
+
+    if (!fixture && !useLive && parsed.data.useBuiltinFixture) {
+      const personaIds = request.personaIds ?? [];
+      if (personaIds.length < 3 || personaIds.length > 5) {
+        return NextResponse.json({ error: "Pick 3 to 5 personas for generation.", estimate }, { status: 400 });
+      }
+      const intents = request.intents?.length ? request.intents : (["discovery", "comparison", "evaluation", "decision"] as const);
+      const rows = await db
+        .select({
+          id: personas.id,
+          key: personas.key,
+          draftPrefix: personas.draftPrefix,
+        })
+        .from(personas)
+        .where(inArray(personas.id, personaIds));
+      if (rows.length !== personaIds.length) {
+        return NextResponse.json({ error: "One or more personas were not found.", estimate }, { status: 400 });
+      }
+      fixture = buildBuiltinFixture({
+        personas: rows.map((r) => ({ id: r.id, key: r.key, opening: r.draftPrefix })),
+        intents: [...intents],
+      });
+    }
+
+    if (useLive && !liveGenerationConnected()) {
+      return NextResponse.json(
+        { error: "not connected", estimate, liveConnected: false, fixture_label: "fixture" },
+        { status: 503 },
+      );
+    }
+
     const result = await runPromptGenerate(db, {
       orgId: user.orgId,
       request,
       approval: parsed.data.approval,
-      fixture: parsed.data.fixture,
+      fixture,
+      useLive,
     });
     await recordAudit(db, {
       orgId: user.orgId,
@@ -67,13 +118,25 @@ export const POST = withRole<{ id: string }>("editor", async (req, { user, param
       entityId: params.id,
       after: {
         count: result.prompts.length,
+        similar: result.similar,
         dropped: result.dropped,
         dedupeStatus: result.dedupeStatus,
         paramsHash: result.paramsHash,
+        mode: result.mode,
+        writerModel: result.writerModel,
+        fixture: Boolean(parsed.data.useBuiltinFixture || parsed.data.fixture),
+        live: useLive,
       },
     });
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...result,
+      fixture_label: result.mode === "fixture_only" ? "fixture" : null,
+      liveConnected: liveGenerationConnected(),
+    });
   } catch (error) {
+    if (error instanceof WriterModelConfigError) {
+      return NextResponse.json({ error: error.message, estimate }, { status: 503 });
+    }
     if (error instanceof PromptGenerateUnavailableError) {
       return NextResponse.json({ error: error.message, estimate }, { status: 503 });
     }
@@ -81,6 +144,9 @@ export const POST = withRole<{ id: string }>("editor", async (req, { user, param
       return NextResponse.json({ error: error.message, estimate }, { status: 409 });
     }
     if (error instanceof PromptGenerateValidationError) {
+      return NextResponse.json({ error: error.message, estimate }, { status: 400 });
+    }
+    if (error instanceof Error && /Pick 3 to 5 personas/.test(error.message)) {
       return NextResponse.json({ error: error.message, estimate }, { status: 400 });
     }
     throw error;

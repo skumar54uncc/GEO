@@ -4,7 +4,7 @@ import { NotFoundError, ValidationError } from "./campaigns";
 import { approveScan, computeScanEstimate, planScan, type ScanEstimate } from "./capture/batch";
 import { batchSpec } from "./capture/service";
 import type { Db } from "./db/pg/client";
-import { alerts, campaigns, promptSets, providerAccounts, scans, schedules } from "./db/pg/schema";
+import { alerts, campaigns, organizations, promptSets, providerAccounts, scans, schedules } from "./db/pg/schema";
 import { QUEUES } from "./queues";
 
 export type Cadence = (typeof schedules.$inferSelect)["cadence"];
@@ -331,7 +331,7 @@ export type TickResult = {
   scheduleId: string;
   periodKey: string | null;
   scanId: string | null;
-  action: "started" | "awaiting_approval" | "paused_reestimate" | "skipped_existing" | "error";
+  action: "started" | "awaiting_approval" | "paused_reestimate" | "skipped_existing" | "disabled_archived" | "error";
   detail: string | null;
   /** True when this run is a single catch-up after the laptop/worker missed one or more dues. */
   late?: boolean;
@@ -403,13 +403,14 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
   const now = opts.now ?? new Date();
   const log = opts.log ?? (() => {});
   const due = await db
-    .select({ s: schedules, orgId: campaigns.orgId })
+    .select({ s: schedules, orgId: campaigns.orgId, archivedAt: organizations.archivedAt })
     .from(schedules)
     .innerJoin(campaigns, eq(campaigns.id, schedules.campaignId))
+    .innerJoin(organizations, eq(organizations.id, campaigns.orgId))
     .where(and(eq(schedules.enabled, true), isNotNull(schedules.nextRunAt), lte(schedules.nextRunAt, now)))
     .orderBy(asc(schedules.nextRunAt));
   const results: TickResult[] = [];
-  for (const { s, orgId } of due) {
+  for (const { s, orgId, archivedAt } of due) {
     if (s.cadence === "manual" || !s.nextRunAt) continue;
     const originalDueAt = s.nextRunAt;
     const late = isLateCatchUp(s.cadence, originalDueAt, now);
@@ -426,6 +427,11 @@ export async function tickSchedules(db: Db, opts: { now?: Date; sendJob: SendJob
       results.push(full);
       log(`[schedule.tick] ${s.id} ${period}: ${full.action}${late ? " late" : ""}${full.detail ? ` (${full.detail})` : ""}`);
     };
+    if (archivedAt) {
+      await db.update(schedules).set({ enabled: false }).where(eq(schedules.id, s.id));
+      done({ scanId: null, action: "disabled_archived", detail: "org archived" });
+      continue;
+    }
     try {
       const [existing] = await db.select({ id: scans.id }).from(scans).where(and(eq(scans.scheduleId, s.id), eq(scans.periodKey, period)));
       if (existing) {

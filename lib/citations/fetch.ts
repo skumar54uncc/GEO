@@ -12,7 +12,7 @@ import { extractCitationFeatures, inferContentType } from "./features";
 const MAX_PAGE_BYTES = 5 * 1024 * 1024;
 const MIN_HOST_DELAY_MS = 1_000;
 
-export type CitationFetchData = { canonical_url: string };
+export type CitationFetchData = { canonical_url: string; scan_id?: string; org_id?: string };
 export type JobSender = { send(queue: string, data: CitationFetchData, options: object): Promise<string | null> };
 export type CitationFetchDeps = {
   fetch?: (url: string, options: FetchOptions) => Promise<FetchResult>;
@@ -127,6 +127,7 @@ export async function enqueueCitationFetches(
   queue: string,
   drawIds: string[],
   jobOptions: object,
+  meta?: { scanId: string; orgId: string },
 ): Promise<{ queued: number; skipped: number }> {
   if (!drawIds.length) return { queued: 0, skipped: 0 };
   const rows = await db
@@ -154,7 +155,14 @@ export async function enqueueCitationFetches(
       continue;
     }
     try {
-      const jobId = await boss.send(queue, { canonical_url: canonical }, jobOptions);
+      const jobId = await boss.send(
+        queue,
+        {
+          canonical_url: canonical,
+          ...(meta ? { scan_id: meta.scanId, org_id: meta.orgId } : {}),
+        },
+        jobOptions,
+      );
       if (!jobId) throw new Error("queue did not return a job id");
       queued++;
     } catch (error) {

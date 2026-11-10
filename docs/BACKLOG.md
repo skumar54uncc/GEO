@@ -34,6 +34,7 @@ Confirm with `git diff v1.0-rc1 -- lib/capture lib/judge lib/metrics` before any
 | F10 | Gate `demand/connections` admin-only | Optional hardening | 2026-11-10 | Shailesh |
 | F19 | Structured worker logs | Observability hygiene | 2026-11-10 | Shailesh |
 | — | `provider_cache` for site sources (`lib/site/providerCall.ts`) has no TTL and no `scanId` | Site audit provider rows never refresh on their own; UI should show the fetch date | 2026-11-10 | Shailesh |
+| — | **Purge plan for archived demo orgs** | Each demo reseed soft-archives the prior org and keeps its full dataset (draws, audit_log, citations, …). Need a deliberate purge that (1) never uses `session_replication_role`, (2) never DELETE/UPDATE immutable tables (`draws`, `raw_payloads`, `prompt_set_items`, `audit_log`), (3) either keeps tombstone orgs forever or moves immutable rows under an explicit retention policy with FK-safe steps only. Until then: disk growth after repeated `seedFullDemoOrg` is expected. | 2026-11-10 | Shailesh |
 
 ## Ideas
 

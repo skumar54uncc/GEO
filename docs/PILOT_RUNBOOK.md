@@ -32,7 +32,7 @@ Capture and judging are separate (`runScan` in `lib/capture/batch.ts` does not c
 2. **Prompt set** — Content team has approved the **30 Energy core** neutrals. In Scout: Campaign **Energy** → Prompts → confirm status **approved** (no draft-only pilot).
 3. **Freeze `energy-core-v1`** — After approval, freeze **core only** with label `energy-core-v1`. Record the prompt-set **SHA-256** shown in the UI: `(fill after freeze)`.
 4. **No other scan** — Do not start another paid scan or schedule tick until this pilot finishes or is explicitly paused.
-5. **Backup** — Run `npm run db:backup` and confirm a fresh dump under your backup location (see `docs/ARCHITECTURE.md` § hosting).
+5. **Backup** — Run `npm run db:backup` (refuses if FK orphans exist), then `npm run db:verify-backup -- backups/<bundle>` and confirm **PASS** (see `docs/BACKUPS.md`).
 6. **Worker + app** — In separate terminals from the project root (ensure `node`, `npm`, and Postgres.app client tools are on `PATH` or discoverable via `scripts/env.ts`):
    - `npm run worker`
    - `npm run dev` (bind **127.0.0.1** only; prefer `http://127.0.0.1:3000` — `localhost` also signs in)

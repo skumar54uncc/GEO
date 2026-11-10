@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-11-10: R6 — archived orgs never run work
+
+- `tickSchedules` disables due schedules on archived orgs (`detail: org archived`).
+- `assertScanOrg` refuses archived orgs (scan/judge/retry/fanout/citation).
+- `approveScan` refuses archived orgs. BACKLOG: demo archive purge plan (no FK/immutability bypass).
+
+## 2026-11-10: R5 — deleteAllDataForOrg refuses non-demo orgs
+
+- Soft-archive only when `organizations.is_demo` (or already archived). UNC Charlotte / production orgs throw and are unchanged.
+
+## 2026-11-10: R4 — backup orphan gate + verify-backup
+
+- `db:backup` runs FK orphan scan before writing the bundle.
+- `npm run db:verify-backup -- <bundle>` restores to a temp DB, compares row counts, drops temp, prints PASS/FAIL.
+- `docs/BACKUPS.md` + `docs/PILOT_RUNBOOK.md` require verify after every backup.
+
+## 2026-11-10: R3 — org delete soft-archives; no FK bypass
+
+- `deleteAllDataForOrg` archives + renames slug (keeps `audit_log` FKs). Removed `session_replication_role` from demo teardown and admin fixture cleanup (cleanup refuses draw DELETEs).
+
+## 2026-11-10: R2 — organization tombstones for orphan audit_log FKs
+
+- Migration `0017_org_tombstones`: `organizations.archived_at` + insert archived placeholders for orphaned `audit_log.org_id` (no audit_log UPDATE/DELETE).
+- Archived orgs filtered from session org list. Repair helper: `lib/db/pg/orgTombstones.ts`.
+
+## 2026-11-10: R1 — restore FK orphan root cause
+
+- `db:restore` fails when `audit_log.org_id` points at deleted orgs (demo teardown used `session_replication_role=replica` and never removed audit rows).
+- Root cause + live counts: `docs/R1_ORPHAN_FK.md`. Scanner: `lib/db/pg/orphanFks.ts`.
+
 ## 2026-11-10: Wave 7C — Fireworks spend, model retirement, judge bake-off
 
 - **C1–C2:** Ledger records real Fireworks usage tokens (`usage_estimated` when missing); `max_tokens: 8192`; `finish_reason: length` is an error.

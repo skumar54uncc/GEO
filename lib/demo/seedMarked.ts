@@ -400,7 +400,7 @@ function promptTextFor(campaignName: (typeof CAMPAIGN_ORDER)[number], _pillar: s
 
 /**
  * Full leadership-review dataset for Demo University: campaigns, frozen sets, 2 complete scans per campaign,
- * 30×3×6 draws each, judges, citations, gap recommendations, strategy, ledger. Idempotent via `deleteAllDataForOrg`.
+ * 30×3×6 draws each, judges, citations, gap recommendations, strategy, ledger. Idempotent via soft-archive (`deleteAllDataForOrg`).
  */
 export async function seedFullDemoOrg(db: Db): Promise<{ orgId: string; campaignIds: string[] }> {
   const [bySlug] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.slug, DEMO_ORG_SLUG));

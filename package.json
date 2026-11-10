@@ -15,6 +15,7 @@
     "db:migrate": "tsx scripts/db.ts migrate",
     "db:generate": "drizzle-kit generate",
     "db:backup": "tsx scripts/db.ts backup",
+    "db:verify-backup": "tsx scripts/db.ts verify-backup",
     "db:restore": "tsx scripts/db.ts restore",
     "db:nightly:install": "tsx scripts/db.ts nightly-install",
     "db:nightly:run": "tsx scripts/db.ts backup",

@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@/lib/db/pg/client";
 import { campaigns, draws, prompts, scans } from "@/lib/db/pg/schema";
-import { ROUTES, type Engine } from "@/lib/capture/registry";
+import { ROUTES } from "@/lib/capture/registry";
+import type { Engine } from "@/lib/capture/types";
 import { loadAliases, matchAliases } from "@/lib/judge/aliases";
 
 export const SAMPLE_LABEL_HEADER =

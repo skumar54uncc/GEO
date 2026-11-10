@@ -262,7 +262,7 @@ As built in Phase 3 (2026-11-03, approved in `docs/PROVIDERS.md` section 7; rout
 |---|---|---|---|---|
 | ChatGPT | ui_provider, DataForSEO LLM Scraper | api_search, OpenAI | api_parametric, DataForSEO LLM Responses | |
 | Gemini | ui_provider, DataForSEO LLM Scraper | api_search, Gemini grounding | api_parametric, DataForSEO LLM Responses | |
-| Perplexity | api_search, DataForSEO LLM Responses (`sonar`; medium, not UI). Bright Data UI deferred (campus block) | api_search, Perplexity Agent API | api_parametric, DataForSEO LLM Responses | |
+| Perplexity | api_search, DataForSEO LLM Responses (`sonar`; medium, not UI). Bright Data banned by campus IT | api_search, Perplexity Agent API | api_parametric, DataForSEO LLM Responses | |
 | Claude | api_search, DataForSEO LLM Responses (`web_search` true, country + city; medium, not UI) | api_search, Anthropic (calibration only) | api_parametric, DataForSEO LLM Responses | |
 | Google AI Overview | serp_provider, DataForSEO organic with `load_async_ai_overview` | none | | SerpAPI (free tier), local SERP |
 | Google AI Mode | serp_provider, DataForSEO AI Mode | none | | SerpAPI (free tier), local SERP |

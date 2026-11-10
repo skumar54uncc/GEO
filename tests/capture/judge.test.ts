@@ -4,7 +4,7 @@ import { listPosition, matchAliases, prominenceAt, type AliasEntry } from "@/lib
 import { JUDGE_V2_PROMPT_VERSION, judgeDraw, spanOf, validateJudge, type ChatFn } from "@/lib/judge/v2";
 import { legacyContext } from "@/lib/db/pg/bootstrap";
 import { getDb } from "@/lib/db/pg/client";
-import { claims, draws, judgeRuns, mentions, prompts, scans } from "@/lib/db/pg/schema";
+import { claims, costLedger, draws, judgeRuns, mentions, prompts, scans } from "@/lib/db/pg/schema";
 import { CHARLOTTE_REGION, ensureNamedRegion } from "@/lib/capture/regions";
 import { ensurePhase2Providers } from "@/lib/site/providerCall";
 import { resetDatabase } from "../helpers";
@@ -176,5 +176,57 @@ describe("judgeDraw", () => {
     expect(run.judgeModel).toBe("deterministic");
     expect(run.sentiment).toBe("none");
     expect(await db.select().from(mentions)).toHaveLength(0);
+  });
+
+  it("mocked usage writes exact prompt+completion tokens to cost_ledger", async () => {
+    const { db, orgId, drawId } = await seedDraw(answer);
+    const promptTokens = 412;
+    const completionTokens = 97;
+    const chat: ChatFn = async () => ({
+      ok: true,
+      text: JSON.stringify({
+        entities: [
+          { key: "brand", sentiment: "positive", sentiment_quote: "has a strong power program" },
+          { key: "NC State", sentiment: "neutral", sentiment_quote: null },
+        ],
+        claims: [],
+        named_sources: [],
+        possible_mentions: [],
+      }),
+      error: null,
+      promptTokens,
+      completionTokens,
+      hitTokenCeiling: false,
+    });
+    const res = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat, model: "test-judge" });
+    expect(res.ok).toBe(true);
+    const rows = await db.select().from(costLedger).where(eq(costLedger.drawId, drawId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ provider: "fireworks", engine: "judge_v2", ok: true });
+    expect(Number(rows[0].units)).toBe(promptTokens + completionTokens);
+  });
+
+  it("token ceiling is an error and does not repair", async () => {
+    const { db, orgId, drawId } = await seedDraw(answer);
+    let n = 0;
+    const chat: ChatFn = async () => (
+      n++,
+      {
+        ok: false,
+        text: "{",
+        error: "Response hit max_tokens ceiling (8192); not retried.",
+        promptTokens: 100,
+        completionTokens: 8192,
+        hitTokenCeiling: true,
+      }
+    );
+    const res = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat, model: "test-judge" });
+    expect(n).toBe(1);
+    expect(res.ok).toBe(false);
+    expect(res.repairUsed).toBe(false);
+    const rows = await db.select().from(costLedger).where(eq(costLedger.drawId, drawId));
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].units)).toBe(100 + 8192);
+    expect(rows[0].ok).toBe(false);
   });
 });

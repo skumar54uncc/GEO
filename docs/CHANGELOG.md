@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-10: R1 — restore FK orphan root cause
+
+- `db:restore` fails when `audit_log.org_id` points at deleted orgs (demo teardown used `session_replication_role=replica` and never removed audit rows).
+- Root cause + live counts: `docs/R1_ORPHAN_FK.md`. Scanner: `lib/db/pg/orphanFks.ts`.
+
 ## 2026-11-10: Wave 7C — Fireworks spend, model retirement, judge bake-off
 
 - **C1–C2:** Ledger records real Fireworks usage tokens (`usage_estimated` when missing); `max_tokens: 8192`; `finish_reason: length` is an error.

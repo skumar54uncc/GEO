@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10: R5 — deleteAllDataForOrg refuses non-demo orgs
+
+- Soft-archive only when `organizations.is_demo` (or already archived). UNC Charlotte / production orgs throw and are unchanged.
+
 ## 2026-11-10: R4 — backup orphan gate + verify-backup
 
 - `db:backup` runs FK orphan scan before writing the bundle.

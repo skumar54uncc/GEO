@@ -13,6 +13,7 @@ import { PageTitle, ScoutCard, Segmented } from "@/components/scout/primitives";
 import { fidelityFor } from "@/lib/capture/types";
 import type { CompetitorIndexSeries } from "@/lib/metrics/competitorsTrend";
 import type { CellRollup } from "@/lib/metrics/rollup";
+import { safeHref } from "@/lib/url/safeHref";
 import { enginePlain, formatScanDate, runnerPlain } from "@/lib/ui/labels";
 
 type Dashboard = {
@@ -89,7 +90,7 @@ export default function CompetitorsPage() {
     <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-scout-muted">
-          <Link href={`/campaigns/${campaignId}/dashboard`} className="underline">
+          <Link href={safeHref(`/campaigns/${campaignId}/dashboard`) ?? "/campaigns"} className="underline">
             Campaign
           </Link>{" "}
           · Competitors

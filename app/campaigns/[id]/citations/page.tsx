@@ -9,6 +9,7 @@ import { PageTitle } from "@/components/scout/primitives";
 import { fidelityFor } from "@/lib/capture/types";
 import { ENGINE_INDEX } from "@/lib/metrics/indexes";
 import { enginePlain, runnerPlain, searchIndexPlain, sourceClassPlain } from "@/lib/ui/labels";
+import { safeHref } from "@/lib/url/safeHref";
 
 const ENGINES = ["chatgpt", "claude", "gemini", "perplexity", "google_aio", "google_ai_mode"] as const;
 const RUNNERS = ["ui_provider", "serp_provider", "api_search", "api_parametric", "manual_paste"] as const;
@@ -67,7 +68,7 @@ export default function CitationsPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs uppercase tracking-wide text-scout-muted">
-          <Link href={`/campaigns/${campaignId}/dashboard`} className="font-medium text-scout-brand underline">
+          <Link href={safeHref(`/campaigns/${campaignId}/dashboard`) ?? "/campaigns"} className="font-medium text-scout-brand underline">
             Campaign
           </Link>{" "}
           · Citations &amp; off-site

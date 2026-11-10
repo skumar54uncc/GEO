@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SafeLink } from "@/components/site/client";
 import type { ContentBrief } from "@/lib/content";
 
 export default function RecommendPage() {
@@ -86,9 +87,9 @@ export default function RecommendPage() {
             <p className="mt-1 text-sm leading-6">{b.lead_fact.text}</p>
             <p className="mt-1 text-xs">
               Source:{" "}
-              <a className="text-uncc-green underline" href={b.lead_fact.source_url} target="_blank" rel="noreferrer">
+              <SafeLink href={b.lead_fact.source_url} className="text-uncc-green underline">
                 {b.lead_fact.source_label}
-              </a>
+              </SafeLink>
             </p>
             <p className="mt-3 text-xs uppercase tracking-wide text-uncc-ink/50">Opening paragraph (handoff)</p>
             <p className="mt-1 text-sm leading-6">{b.lead_paragraph}</p>

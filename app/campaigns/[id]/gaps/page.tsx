@@ -8,9 +8,11 @@ import { useMetricShowRaw } from "@/components/metrics/ShowRawContext";
 import { ShowRawToggle } from "@/components/metrics/ShowRawToggle";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
 import { useSessionRole } from "@/components/SessionRoleContext";
+import { SafeLink } from "@/components/site/client";
 import { PageTitle } from "@/components/scout/primitives";
 import { Badge } from "@/components/ui/card";
 import { displayableCitedPagesShare } from "@/lib/metrics/displayable";
+import { safeHref } from "@/lib/url/safeHref";
 
 type GapRow = {
   id: string;
@@ -174,7 +176,7 @@ export default function GapsPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs uppercase tracking-wide text-scout-muted">
-          <Link href={`/campaigns/${campaignId}/dashboard`} className="font-medium text-scout-brand underline">
+          <Link href={safeHref(`/campaigns/${campaignId}/dashboard`) ?? "/campaigns"} className="font-medium text-scout-brand underline">
             Campaign
           </Link>{" "}
           · Gaps &amp; recommendations
@@ -261,9 +263,9 @@ export default function GapsPage() {
                         {e.url ? (
                           <>
                             {" "}
-                            <a className="underline" href={e.url} target="_blank" rel="noreferrer">
+                            <SafeLink href={e.url} className="underline">
                               source
-                            </a>
+                            </SafeLink>
                           </>
                         ) : null}
                       </li>

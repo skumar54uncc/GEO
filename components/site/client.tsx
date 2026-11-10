@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/card";
+import { safeHref } from "@/lib/url/safeHref";
 
 export async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
@@ -99,11 +100,24 @@ export function Message({ msg }: { msg: { tone: "ok" | "error"; text: string } |
 }
 
 /** Untrusted page values (URLs, extracted text) are shown as text only. */
-export function SafeLink({ href, children }: { href: string; children?: React.ReactNode }) {
-  const ok = /^https?:\/\//i.test(href);
+export function SafeLink({
+  href,
+  children,
+  className = "break-all text-uncc-green underline-offset-2 hover:underline",
+}: {
+  href: string;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  const ok = safeHref(href);
   if (!ok) return <span className="break-all">{children ?? href}</span>;
+  const external = /^https?:\/\//i.test(ok);
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-uncc-green underline-offset-2 hover:underline">
+    <a
+      href={ok}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer nofollow" } : {})}
+      className={className}
+    >
       {children ?? href}
     </a>
   );

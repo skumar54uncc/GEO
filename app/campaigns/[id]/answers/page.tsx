@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChartCaption, HowMeasured } from "@/components/HowMeasured";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { SafeLink } from "@/components/site/client";
 import { PageTitle } from "@/components/scout/primitives";
+import { safeHref } from "@/lib/url/safeHref";
 import { Badge } from "@/components/ui/card";
 import {
   FEATURES_DETECTED_LABEL,
@@ -218,7 +220,7 @@ export default function AnswersPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs uppercase tracking-wide text-scout-muted">
-          <Link href={`/campaigns/${campaignId}/dashboard`} className="font-medium text-scout-brand underline">
+          <Link href={safeHref(`/campaigns/${campaignId}/dashboard`) ?? "/campaigns"} className="font-medium text-scout-brand underline">
             Campaign
           </Link>{" "}
           · Answers
@@ -465,9 +467,9 @@ export default function AnswersPage() {
                           {selected.citations.map((c) => (
                             <li key={c.url} className="rounded border border-uncc-rule/60 bg-white p-2.5" data-testid="citation-headline">
                               <p>
-                                <a className="underline" href={c.url} target="_blank" rel="noreferrer">
+                                <SafeLink href={c.url} className="underline">
                                   {c.domain}
-                                </a>{" "}
+                                </SafeLink>{" "}
                                 <span className="text-xs text-uncc-ink/60">({c.sourceClass})</span>
                                 {c.page?.contentType ? (
                                   <span className="ml-1 text-xs text-uncc-ink/60">· {c.page.contentType.replace(/_/g, " ")}</span>

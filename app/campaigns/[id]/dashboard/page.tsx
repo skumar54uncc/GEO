@@ -9,6 +9,7 @@ import { ShowRawToggle } from "@/components/metrics/ShowRawToggle";
 import { useMetricShowRaw } from "@/components/metrics/ShowRawContext";
 import { useSessionRole } from "@/components/SessionRoleContext";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { SafeLink } from "@/components/site/client";
 import { PageTitle } from "@/components/scout/primitives";
 import { VisibilityChart } from "@/components/scout/VisibilityChart";
 import { Button } from "@/components/ui/button";
@@ -896,9 +897,9 @@ export default function CampaignDashboardPage() {
                     <td className="pr-3">{e.note}</td>
                     <td className="pr-3">
                       {e.sourceUrl ? (
-                        <a href={e.sourceUrl} className="text-uncc-green underline" target="_blank" rel="noreferrer">
+                        <SafeLink href={e.sourceUrl} className="text-uncc-green underline">
                           link
-                        </a>
+                        </SafeLink>
                       ) : (
                         "none"
                       )}

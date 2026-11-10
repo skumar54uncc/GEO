@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { HowMeasured } from "@/components/HowMeasured";
 import { EmptyState, ErrorState, LoadingState } from "@/components/PageStates";
+import { SafeLink } from "@/components/site/client";
 import { PageTitle, ScoutCard } from "@/components/scout/primitives";
 import { Badge } from "@/components/ui/card";
 
@@ -268,9 +269,9 @@ export default function BudgetPage() {
                 <td>{v.price}</td>
                 <td className="max-w-xs text-uncc-ink/80">{v.scope}</td>
                 <td>
-                  <a className="underline" href={v.sourceUrl} target="_blank" rel="noreferrer">
+                  <SafeLink href={v.sourceUrl} className="underline">
                     source
-                  </a>{" "}
+                  </SafeLink>{" "}
                   <span className="text-xs text-uncc-ink/60">({v.sourceDate})</span>
                 </td>
               </tr>

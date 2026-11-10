@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { checkBudget } from "@/lib/cost/guard";
+import { checkBudget, recordCall } from "@/lib/cost/guard";
 import type { Db } from "@/lib/db/pg/client";
 import { campaigns, demandSignals, personas, prompts } from "@/lib/db/pg/schema";
 import { contentModel, fireworksChat, judgeModel, WriterModelConfigError } from "@/lib/fireworks";
+import { ledgerUnitsFromUsage } from "@/lib/judge/v2";
 import { loadAliases } from "@/lib/judge/aliases";
 import { brandedShare, isBrandedPrompt } from "@/lib/prompts/branded";
 import { dedupeAgainstCampaign } from "@/lib/prompts/dedupe";
@@ -274,9 +275,12 @@ async function resolveCandidatesFromFixture(
 
 /**
  * Live Fireworks writer: generates draft prompts as JSON. Writer model must differ from judge.
+ * Records real usage tokens in cost_ledger (estimate only for the pre-call budget check upstream).
  */
 export async function generateLiveFixture(
   opts: {
+    db: Db;
+    orgId: string;
     topic: string;
     personas: Array<{ id: string; key: string | null; opening: string | null }>;
     intents: Intent[];
@@ -300,8 +304,19 @@ Intents: ${opts.intents.join(", ")}
 Personas:
 ${personaLines}`;
 
+  const estimatedUnits = Math.ceil((system.length + user.length) / 4) + 800;
   const chat = opts.chat ?? fireworksChat;
   const res = await chat({ model: writer, system, user, temperature: 0.2, json: true });
+  const usage = ledgerUnitsFromUsage(res.promptTokens, res.completionTokens);
+  await recordCall(opts.db, {
+    orgId: opts.orgId,
+    provider: "fireworks",
+    units: usage ?? estimatedUnits,
+    ok: res.ok,
+    engine: "prompt_generate",
+    error: res.error,
+    usageEstimated: usage === null,
+  });
   if (!res.ok) {
     throw new PromptGenerateUnavailableError(res.error ?? "Live generation failed.");
   }
@@ -395,6 +410,8 @@ export async function runPromptGenerate(
       throw new PromptGenerateValidationError("One or more personas were not found.");
     }
     fixture = await generateLiveFixture({
+      db: input.db,
+      orgId: input.orgId,
       topic: campaign.topic,
       personas: rows.map((r) => ({ id: r.id, key: r.key, opening: r.draftPrefix })),
       intents,

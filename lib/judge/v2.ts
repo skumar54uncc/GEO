@@ -163,17 +163,17 @@ export async function judgeDraw(
     if (!budget.allowed) return { judgeRunId: null, ok: false, repairUsed: false, error: `Refused by cost guard: ${budget.reason}` };
 
     const first = await chat({ system, user });
-    const firstLedger =
-      ledgerUnitsFromUsage(first.promptTokens, first.completionTokens) ?? estimatedUnits;
+    const firstUsage = ledgerUnitsFromUsage(first.promptTokens, first.completionTokens);
     await recordCall(db, {
       orgId: opts.orgId,
       provider: "fireworks",
-      units: firstLedger,
+      units: firstUsage ?? estimatedUnits,
       ok: first.ok && !first.hitTokenCeiling,
       engine: "judge_v2",
       drawId,
       scanId: draw.scanId,
       error: first.error,
+      usageEstimated: firstUsage === null,
     });
     const outputs: Array<{ step: string; text: string; error: string | null }> = [
       { step: "first", text: first.text, error: first.error },
@@ -191,17 +191,17 @@ export async function judgeDraw(
           system,
           user: `${user}\n\nYour previous output was invalid:\n${check.errors.map((e) => `- ${e}`).join("\n")}\n\nPrevious output:\n${first.text}\n\nReturn the corrected JSON only.`,
         });
-        const repairLedger =
-          ledgerUnitsFromUsage(repair.promptTokens, repair.completionTokens) ?? estimatedUnits;
+        const repairUsage = ledgerUnitsFromUsage(repair.promptTokens, repair.completionTokens);
         await recordCall(db, {
           orgId: opts.orgId,
           provider: "fireworks",
-          units: repairLedger,
+          units: repairUsage ?? estimatedUnits,
           ok: repair.ok && !repair.hitTokenCeiling,
           engine: "judge_v2_repair",
           drawId,
           scanId: draw.scanId,
           error: repair.error,
+          usageEstimated: repairUsage === null,
         });
         outputs.push({ step: "repair", text: repair.text, error: repair.error });
         if (repair.hitTokenCeiling) {

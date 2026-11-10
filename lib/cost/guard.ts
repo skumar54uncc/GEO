@@ -17,6 +17,8 @@ export type LedgerEntry = {
   /** Actual USD from the provider's response. Undefined: units times the account's unit price. Null: unknown. */
   usd?: number | null;
   at?: Date;
+  /** True when `units` is the chars/4 estimate because provider usage was missing. */
+  usageEstimated?: boolean;
 };
 
 export type BudgetCheck = { allowed: boolean; reason: string | null };
@@ -121,6 +123,7 @@ export async function recordCall(db: Db, entry: LedgerEntry): Promise<void> {
     scanId: entry.scanId ?? null,
     drawId: entry.drawId ?? null,
     at: entry.at ?? new Date(),
+    usageEstimated: entry.usageEstimated ?? false,
   });
   if (usd !== null && usd > 0 && account) {
     await db

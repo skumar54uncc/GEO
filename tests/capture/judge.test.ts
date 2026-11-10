@@ -202,8 +202,34 @@ describe("judgeDraw", () => {
     expect(res.ok).toBe(true);
     const rows = await db.select().from(costLedger).where(eq(costLedger.drawId, drawId));
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ provider: "fireworks", engine: "judge_v2", ok: true });
+    expect(rows[0]).toMatchObject({ provider: "fireworks", engine: "judge_v2", ok: true, usageEstimated: false });
     expect(Number(rows[0].units)).toBe(promptTokens + completionTokens);
+  });
+
+  it("missing usage records the chars/4 estimate with usage_estimated true", async () => {
+    const { db, orgId, drawId } = await seedDraw(answer);
+    const chat: ChatFn = async () => ({
+      ok: true,
+      text: JSON.stringify({
+        entities: [
+          { key: "brand", sentiment: "positive", sentiment_quote: "has a strong power program" },
+          { key: "NC State", sentiment: "neutral", sentiment_quote: null },
+        ],
+        claims: [],
+        named_sources: [],
+        possible_mentions: [],
+      }),
+      error: null,
+      promptTokens: null,
+      completionTokens: null,
+      hitTokenCeiling: false,
+    });
+    const res = await judgeDraw(db, drawId, { orgId, aliases: UNCC, chat, model: "test-judge" });
+    expect(res.ok).toBe(true);
+    const rows = await db.select().from(costLedger).where(eq(costLedger.drawId, drawId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].usageEstimated).toBe(true);
+    expect(Number(rows[0].units)).toBeGreaterThan(800);
   });
 
   it("token ceiling is an error and does not repair", async () => {

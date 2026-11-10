@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-10: R6 — archived orgs never run work
+
+- `tickSchedules` disables due schedules on archived orgs (`detail: org archived`).
+- `assertScanOrg` refuses archived orgs (scan/judge/retry/fanout/citation).
+- `approveScan` refuses archived orgs. BACKLOG: demo archive purge plan (no FK/immutability bypass).
+
 ## 2026-11-10: R5 — deleteAllDataForOrg refuses non-demo orgs
 
 - Soft-archive only when `organizations.is_demo` (or already archived). UNC Charlotte / production orgs throw and are unchanged.

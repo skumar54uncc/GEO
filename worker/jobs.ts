@@ -7,7 +7,7 @@ import { planFanout, runFanout } from "@/lib/capture/fanout";
 import { judgeScan } from "@/lib/capture/service";
 import { enqueueCitationFetches, processCitationFetch, type CitationFetchData } from "@/lib/citations/fetch";
 import { getDb } from "@/lib/db/pg/client";
-import { campaigns, crawlRuns, draws, scans } from "@/lib/db/pg/schema";
+import { campaigns, crawlRuns, draws, organizations, scans } from "@/lib/db/pg/schema";
 import { loadAliases } from "@/lib/judge/aliases";
 import { maybeEnqueueJudgeAfterCapture } from "@/lib/judge/autorun";
 import { rollupScan } from "@/lib/metrics/rollup";
@@ -45,12 +45,14 @@ export type AlertsEvaluateData = { scan_id: string; org_id: string };
  */
 export async function assertScanOrg(db: ReturnType<typeof getDb>, scanId: string, claimedOrgId: string): Promise<string> {
   const [row] = await db
-    .select({ orgId: campaigns.orgId })
+    .select({ orgId: campaigns.orgId, archivedAt: organizations.archivedAt })
     .from(scans)
     .innerJoin(campaigns, eq(campaigns.id, scans.campaignId))
+    .innerJoin(organizations, eq(organizations.id, campaigns.orgId))
     .where(eq(scans.id, scanId));
   if (!row) throw new Error(`Scan ${scanId} not found`);
   if (row.orgId !== claimedOrgId) throw new Error(`org_id mismatch for scan ${scanId}: payload ${claimedOrgId}, scan belongs to ${row.orgId}`);
+  if (row.archivedAt) throw new Error(`Organization ${row.orgId} is archived`);
   return row.orgId;
 }
 
@@ -190,7 +192,14 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
     const res = await judgeScan(db, orgId, job.data.scan_id, log);
     log(`[worker] judge.run ${job.data.scan_id}: ${res.judged} judged, ${res.failed} failed`);
     const drawRows = await db.select({ id: draws.id }).from(draws).where(eq(draws.scanId, job.data.scan_id));
-    const citationJobs = await enqueueCitationFetches(db, boss, QUEUES.citationFetch, drawRows.map((row) => row.id), JOB_OPTIONS);
+    const citationJobs = await enqueueCitationFetches(
+      db,
+      boss,
+      QUEUES.citationFetch,
+      drawRows.map((row) => row.id),
+      JOB_OPTIONS,
+      { scanId: job.data.scan_id, orgId },
+    );
     log(`[worker] citation.fetch queued: ${citationJobs.queued}, cached or invalid: ${citationJobs.skipped}`);
     // Judging is done: roll up metrics, then check alerts. Neither calls a paid provider.
     await boss.send(QUEUES.metricsRollup, { scan_id: job.data.scan_id, org_id: orgId } satisfies MetricsRollupData, JOB_OPTIONS);
@@ -199,7 +208,11 @@ export async function registerJobs(boss: PgBoss, log: (msg: string) => void = co
   });
 
   await boss.work<CitationFetchData>(QUEUES.citationFetch, async ([job]) => {
-    const result = await processCitationFetch(getDb(), job.data.canonical_url);
+    const db = getDb();
+    if (job.data.scan_id && job.data.org_id) {
+      await assertScanOrg(db, job.data.scan_id, job.data.org_id);
+    }
+    const result = await processCitationFetch(db, job.data.canonical_url);
     log(`[worker] citation.fetch ${job.data.canonical_url}: ${result.status}`);
     return result;
   });

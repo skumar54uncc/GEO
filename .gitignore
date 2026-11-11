@@ -3,6 +3,8 @@ node_modules
 out
 .env
 .env.local
+# Local staging for unused files pending human delete. Never commit.
+_to_delete/
 # Stakeholder source files (PDF/CSV). Public repo — never commit.
 inputs/
 # Phase 9 review screenshots may show draft prompts, budget figures, and real answers.

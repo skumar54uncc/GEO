@@ -10,6 +10,8 @@ import { seedFullDemoOrg } from "@/lib/demo/seedMarked";
 import { closeDb, getDb } from "@/lib/db/pg/client";
 import { campaigns, memberships, organizations, scans, users } from "@/lib/db/pg/schema";
 import { leadershipPdfBytes } from "@/lib/exports/leadershipPdf";
+import { leadershipPdfInputFromCells, type PdfCell } from "@/lib/exports/leadershipPdfInput";
+import { extractPdfStrings } from "@/lib/exports/simplePdf";
 import { rollupCampaignDashboard } from "@/lib/metrics/rollup";
 import { setAnalystNote } from "@/lib/scans/analystNote";
 import { loadEnv } from "./env";
@@ -52,11 +54,15 @@ async function main() {
 
   const email = "p1d-pdf-sample@charlotte.edu";
   let [user] = await db.select().from(users).where(eq(users.email, email));
-  if (!user) [user] = await db.insert(users).values({ email, name: "P1d PDF" }).returning();
+  if (!user) [user] = await db.insert(users).values({ email, name: "Editor" }).returning();
+  else if (user.name !== "Editor") {
+    [user] = await db.update(users).set({ name: "Editor" }).where(eq(users.id, user.id)).returning();
+  }
   await db
     .insert(memberships)
     .values({ orgId: demo.id, userId: user.id, role: "editor" })
     .onConflictDoUpdate({ target: [memberships.orgId, memberships.userId], set: { role: "editor" } });
+
 
   const [latestScan] = await db
     .select({ id: scans.id })
@@ -69,76 +75,85 @@ async function main() {
       orgId: demo.id,
       scanId: latestScan.id,
       authorId: user.id,
-      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Share of voice improved slightly on ChatGPT versus the prior scan. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
+      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
       status: "published",
     });
   }
 
   const dash = await rollupCampaignDashboard(db, { orgId: demo.id, campaignId: energy.id });
   const view = dash.promptSets[0] ?? null;
-  const cells =
-    view?.rollup.cells.filter(
-      (c) => !c.key.branded && c.key.personaId == null && c.key.personaGroup == null && c.key.regionId == null,
-    ) ?? [];
-  const primary = cells[0] ?? null;
-  const comparison = primary
-    ? view?.comparisons.find(
-        (c) => c.series.engine === primary.key.engine && c.series.runner === primary.key.runner && !c.series.branded,
+  const cells: PdfCell[] =
+    view?.rollup.cells
+      .filter(
+        (c) => !c.key.branded && c.key.personaId == null && c.key.personaGroup == null && c.key.regionId == null,
       )
-    : null;
-  const baselineScanIds = (view?.trend ?? []).filter((t) => t.isBaseline).map((t) => t.scanId);
-  const latestTrend = view?.trend[view.trend.length - 1];
-  const bytes = leadershipPdfBytes({
+      .map((c) => ({
+        engine: c.key.engine,
+        runner: c.key.runner,
+        won: c.promptsWon?.won ?? null,
+        prompts: c.promptsWon?.prompts ?? null,
+        rate: c.promptsWon?.rate ?? null,
+        ciLow: c.promptsWon?.ciLow ?? null,
+        ciHigh: c.promptsWon?.ciHigh ?? null,
+        draws: c.draws,
+      })) ?? [];
+
+  const input = leadershipPdfInputFromCells({
     organization: { name: dash.organization.name, isDemo: true },
     campaign: { name: dash.campaign.name, topic: dash.campaign.topic },
-    methodologyUrl: "http://127.0.0.1:3000/how-we-measure",
-    headline: primary
-      ? {
-          engine: primary.key.engine,
-          runner: primary.key.runner,
-          won: primary.promptsWon?.won ?? null,
-          prompts: primary.promptsWon?.prompts ?? null,
-          rate: primary.promptsWon?.rate ?? null,
-          ciLow: primary.promptsWon?.ciLow ?? null,
-          ciHigh: primary.promptsWon?.ciHigh ?? null,
-          draws: primary.draws,
-        }
-      : null,
-    trendLabel: comparison?.label ?? null,
-    engines: cells.map((c) => ({
-      engine: c.key.engine,
-      runner: c.key.runner,
-      rate: c.promptsWon?.rate ?? null,
-      draws: c.draws,
-    })),
+    cells,
+    target: dash.target,
+    trendLabel: null,
+    previousScanDate: view?.previousScan?.createdAt.slice(0, 10) ?? null,
     analystNote:
       dash.analystNote?.status === "published"
-        ? { text: dash.analystNote.text, authorName: dash.analystNote.authorName, at: dash.analystNote.at }
+        ? {
+            text: dash.analystNote.text,
+            authorName: dash.analystNote.authorName,
+            at: dash.analystNote.at,
+            status: "published",
+          }
         : null,
-    baselineScanIds,
-    target: dash.target,
+    baselineDate: (view?.trend ?? []).find((t) => t.isBaseline)?.createdAt.slice(0, 10) ?? null,
     latestScan: view
       ? {
-          id: view.latestScan.id,
           createdAt: view.latestScan.createdAt,
-          isBaseline: Boolean(latestTrend?.isBaseline && latestTrend.scanId === view.latestScan.id),
+          isBaseline: Boolean(
+            view.trend[view.trend.length - 1]?.isBaseline &&
+              view.trend[view.trend.length - 1]?.scanId === view.latestScan.id,
+          ),
         }
       : null,
+    includeAccuracy: false,
   });
+  if (input.headline) {
+    input.trendLabel =
+      view?.comparisons.find(
+        (c) =>
+          c.series.engine === input.headline!.engine &&
+          c.series.runner === input.headline!.runner &&
+          !c.series.branded,
+      )?.label ?? null;
+  }
 
+  const bytes = leadershipPdfBytes(input);
   const outDir = path.join(process.cwd(), "docs", "phase9-screenshots");
   fs.mkdirSync(outDir, { recursive: true });
   const out = path.join(outDir, "p1d-leadership-demo.pdf");
   fs.writeFileSync(out, Buffer.from(bytes));
-  const text = Buffer.from(bytes).toString("latin1");
+  const extracted = extractPdfStrings(bytes);
+  fs.writeFileSync(path.join(outDir, "p1d-leadership-demo.txt"), extracted);
   console.log("wrote", out, "bytes", bytes.length);
+  console.log(
+    "runners",
+    input.engines.map((e) => `${e.engine}:${e.runner}`),
+  );
   console.log("checks", {
-    pdfHeader: text.startsWith("%PDF-"),
-    demo: text.includes("DEMO DATA"),
-    baseline: text.includes("Baseline"),
-    target: text.includes("Target"),
-    analyst: text.includes("Analyst note"),
-    ci: /CI/.test(text),
+    pdfHeader: Buffer.from(bytes).subarray(0, 5).toString() === "%PDF-",
+    demo: extracted.includes("DEMO DATA"),
+    banner: extracted.includes("Demo data. Fictional university"),
+    consumerApp: extracted.includes("Captured from the consumer app"),
+    noLocalhost: !extracted.includes("127.0.0.1") && !extracted.includes("localhost"),
   });
   await closeDb();
 }

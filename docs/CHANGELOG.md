@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-11-11: M5 — CI journeys fail hard if Chromium cannot launch
+
+- `launchChromiumOrFailInCi` throws a clear CI error; journeys use it so missing browsers fail the job instead of soft-skipping.
+
+## 2026-11-11: M4 — funding brief planning total and $250 ceiling
+
+- Planning total $165–$528/mo; vendor compare uses that range; steady-state decision is a $250/mo ceiling.
+
+## 2026-11-11: M3 — leadership PDF layout polish
+
+- Demo banner gap above Scout title; binoculars mark from brand geometry; analyst byline stays with the note.
+- No em/en dashes in PDF strings; trend reads "Trend compared with <date>: …"; units once under Engines.
+
+## 2026-11-11: M2 — leadership PDF headline is target primary series
+
+- `pickHeadlineCell` uses `target.engine` + `ROUTES` primary runner, not `cells[0]`.
+
+## 2026-11-11: M1 — leadership PDF fidelity follows ROUTES primary
+
+- Demo Energy cells already use `ROUTES[engine].primary` via `seedMarked.ts` `routeForEngine` (chatgpt/gemini = `ui_provider`).
+- PDF input filters to primary runners only; calibration/parametric series never listed.
+- Shared builder: `lib/exports/leadershipPdfInput.ts`.
+
+## 2026-11-11: L3 — funding brief leadership rewrite
+
+- Top of `docs/FUNDING_BRIEF.md` is a one-page leadership ask ($75 cash, capture + judging planning range).
+- Steady state never calls $150.22 the total; judge call upper bound 6,294/mo with bake-off price planning rows.
+- Operator appendix holds code paths, caps, and formulas.
+
+## 2026-11-11: L2 — leadership PDF readability
+
+- Headline with won count, likely range, and METRICS.md won definition; units as "N prompts, 3 answers each".
+- Per-engine rows with CI whisker bars; Charlotte Green / Niner Gold brand; methodology box inside the PDF.
+- Analyst notes: drafts stay out; direction words rejected when McNemar is within noise (`assertAnalystNoteFitsTrend`).
+- Accuracy omitted until the 20-answer hand check; displayable rules for too-few / no measurements.
+
+## 2026-11-11: L1 — leadership PDF encoding and labels
+
+- Embed Inter TTF (Identity-H); CI reads "39% to 73%"; demo watermark fits; top demo banner.
+- No localhost methodology URL; plain engine/runner labels; baseline by date not UUID.
+
+## 2026-11-11: L0 — freeze docs at v1.0-rc3
+
+- HANDOVER.md, PILOT_RUNBOOK.md (incl. drift check), V1_EXIT.md point at `v1.0-rc3`.
+
 ## 2026-11-10: R6 — archived orgs never run work
 
 - `tickSchedules` disables due schedules on archived orgs (`detail: org archived`).

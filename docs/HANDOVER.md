@@ -1,10 +1,10 @@
-# Handover — Scout / GEO (`v1.0-rc2`)
+# Handover — Scout / GEO (`v1.0-rc3`)
 
-Product: in-house AI search visibility for **UNC Charlotte**. Tag **`v1.0-rc2`** is the pilot code freeze. **V1 exit:** see `docs/V1_EXIT.md` — gates **1–4 done**; **5–6** blocked on funding and leadership review.
+Product: in-house AI search visibility for **UNC Charlotte**. Tag **`v1.0-rc3`** is the pilot code freeze. **V1 exit:** see `docs/V1_EXIT.md` — gates **1–4 done**; **5–6** blocked on funding and leadership review.
 
 ## Code freeze
 
-From **`v1.0-rc2`**: only **bug fixes** on `main`. Everything else → `docs/BACKLOG.md`.
+From **`v1.0-rc3`**: only **bug fixes** on `main`. Everything else → `docs/BACKLOG.md`.
 
 Until the Energy pilot ends, treat these as frozen (bug fixes only):
 
@@ -14,7 +14,7 @@ Until the Energy pilot ends, treat these as frozen (bug fixes only):
 | Judging | `lib/judge/` |
 | Metrics | `lib/metrics/` |
 
-Check drift: `git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`
+Check drift: `git diff v1.0-rc3 -- lib/capture lib/judge lib/metrics`
 
 ## How to start (local)
 

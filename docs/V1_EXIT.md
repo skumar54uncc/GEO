@@ -13,6 +13,6 @@ A gate is green only when its evidence is recorded below (or linked). Gate 3 req
 | 5 | Paid pilot run (Energy core) + 20 answers hand-checked against dashboard numbers | **blocked** | Funding + prompt freeze approval |
 | 6 | Leadership review of real UNC Charlotte numbers | **blocked** | Depends on gate 5 |
 
-**V1: 4 of 6** (gates 1–4 done; 5–6 blocked on funding / leadership review). Tag: **`v1.0-rc2`**.
+**V1: 4 of 6** (gates 1–4 done; 5–6 blocked on funding / leadership review). Tag: **`v1.0-rc3`**.
 
 Update the status line and this table whenever a gate flips. New product ideas go in `docs/BACKLOG.md`, not into v1 scope.

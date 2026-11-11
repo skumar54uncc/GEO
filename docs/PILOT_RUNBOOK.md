@@ -2,7 +2,7 @@
 
 Live pilot for **Energy** content-team **core** prompts only: **30** neutral prompts, **6** primary engines, **3** draws each, **Charlotte** region → about **540** AI answers (plus **6** canary draws, one per engine route). This is also **V1 gate 5** after funding approval. Companion: **`docs/HANDOVER.md`**.
 
-**Code freeze:** tag **`v1.0-rc2`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc2 -- lib/capture lib/judge lib/metrics`).
+**Code freeze:** tag **`v1.0-rc3`**. Only bug fixes on `main` until the pilot ends; new work → `docs/BACKLOG.md`. Capture / judge / metrics trees stay unchanged from the tag except bug fixes (`git diff v1.0-rc3 -- lib/capture lib/judge lib/metrics`).
 
 **Local database:** this runbook assumes **Postgres.app** on the Mac (not Docker). `scripts/env.ts` `pgBinary()` looks for Postgres.app under `~/Applications` and `/Applications`, then `PG_BIN`, then `PATH`. Use `npm run db:migrate` / `npm run db:backup` so client tools resolve the same way.
 

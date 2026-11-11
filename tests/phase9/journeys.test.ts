@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { chromium, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
+import type { Browser, BrowserContext, Locator, Page } from "playwright";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { POST as createCampaignRoute } from "@/app/api/campaigns/route";
 import { GET as optionsRoute } from "@/app/api/campaigns/options/route";
@@ -23,6 +23,7 @@ import { estimateWriter, runWriter, WRITER_PROVIDER } from "@/lib/recommendation
 import { runStrategyPipeline } from "@/lib/strategy";
 import { addDraw, newScan, seed as metricsSeed } from "../metrics/dbFixtures";
 import { cookieFor, req, resetDatabase, userIdFor } from "../helpers";
+import { launchChromiumOrFailInCi } from "./chromiumGuard";
 import { startNextDev, stopNextDev, type NextDevServer } from "./nextDevServer";
 import { seedSiteAudit, stopSiteFixture, type SiteAuditSeed } from "./siteAuditSeed";
 
@@ -94,7 +95,12 @@ describe("Phase 9 Playwright journeys (Wave 3)", () => {
 
   beforeAll(async () => {
     server = await startNextDev();
-    browser = await chromium.launch();
+    // CI=true: launch failure fails the job (does not soft-skip journeys).
+    browser = await launchChromiumOrFailInCi();
+  });
+
+  it("CI requires Chromium (guard: fail, not skip)", () => {
+    if (process.env.CI) expect(browser).not.toBeNull();
   });
 
   afterAll(async () => {

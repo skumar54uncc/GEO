@@ -1,33 +1,64 @@
 /**
- * Minimal PDF writer (PDF 1.4) for leadership exports.
- * Supports multi-page text + a fixed watermark drawn on every page.
+ * Leadership PDF writer (PDF 1.4) with embedded Inter (TrueType / Identity-H).
+ * Supports text, Charlotte Green bars with CI whiskers, demo watermark + banner, footer.
  */
+
+import { interRegular, interSemiBold, stringWidthPdfUnits, type LoadedTtf } from "@/lib/exports/ttfFont";
 
 export type PdfTextBlock = {
   title?: string;
   lines: string[];
+  /** Optional horizontal bar: rate 0–1 with optional CI whisker. */
+  bar?: { rate: number | null; ciLow: number | null; ciHigh: number | null };
 };
 
-const PAGE_W = 612; // US Letter
+export type PdfBuildOpts = {
+  blocks: PdfTextBlock[];
+  watermark?: string | null;
+  /** Top banner (demo only). */
+  banner?: string | null;
+  brand?: string;
+  footerDate?: string;
+  /** Charlotte Green headings/bars; Niner Gold decoration only. */
+  headingRgb?: [number, number, number];
+  accentRgb?: [number, number, number];
+};
+
+const PAGE_W = 612;
 const PAGE_H = 792;
 const MARGIN = 48;
 const LINE_H = 14;
-const TITLE_SIZE = 16;
-const BODY_SIZE = 11;
-const WATERMARK_SIZE = 48;
+const TITLE_SIZE = 15;
+const BODY_SIZE = 10;
+const BANNER_SIZE = 9;
+const FOOTER_SIZE = 8;
+const CHARLOTTE_GREEN: [number, number, number] = [0 / 255, 80 / 255, 53 / 255];
+const NINER_GOLD: [number, number, number] = [164 / 255, 150 / 255, 101 / 255];
 
-function pdfEscape(s: string): string {
+function pdfEscapeLiteral(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-function wrapLine(text: string, maxChars: number): string[] {
+/** UTF-16BE hex string for Identity-H Tj (CIDs = Unicode code units, no BOM). */
+function utf16Hex(text: string): string {
+  const body = Buffer.from(text, "utf16le");
+  const be = Buffer.alloc(body.length);
+  for (let i = 0; i < body.length; i += 2) {
+    be[i] = body[i + 1]!;
+    be[i + 1] = body[i]!;
+  }
+  return `<${be.toString("hex")}>`;
+}
+
+function wrapLine(font: LoadedTtf, text: string, fontSize: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   if (!words.length) return [""];
   const lines: string[] = [];
   let cur = words[0]!;
   for (let i = 1; i < words.length; i++) {
     const w = words[i]!;
-    if (`${cur} ${w}`.length <= maxChars) cur = `${cur} ${w}`;
+    const trial = `${cur} ${w}`;
+    if (stringWidthPdfUnits(font, trial, fontSize) <= maxWidth) cur = trial;
     else {
       lines.push(cur);
       cur = w;
@@ -39,118 +70,341 @@ function wrapLine(text: string, maxChars: number): string[] {
 
 type PageOps = string[];
 
-function watermarkOps(label: string): string {
-  const t = pdfEscape(label);
-  // Centered, rotated ~-30 degrees, low gray.
+function rgbOp(rgb: [number, number, number]): string {
+  return `${rgb[0].toFixed(3)} ${rgb[1].toFixed(3)} ${rgb[2].toFixed(3)} rg`;
+}
+
+function textOp(fontRef: string, size: number, x: number, y: number, text: string, fill: string): string {
+  return ["BT", fill, `/${fontRef} ${size} Tf`, `${x.toFixed(1)} ${y.toFixed(1)} Td`, `${utf16Hex(text)} Tj`, "ET"].join("\n");
+}
+
+/** Watermark scaled so the full string fits inside the page at ~-30°. */
+function watermarkOps(label: string, font: LoadedTtf): string {
+  const angle = (-30 * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // Max size so rotated width/height stay inside margins.
+  const maxW = PAGE_W - 2 * MARGIN;
+  const maxH = PAGE_H - 2 * MARGIN;
+  let size = 36;
+  while (size > 10) {
+    const w = stringWidthPdfUnits(font, label, size);
+    const rotW = Math.abs(w * cos) + Math.abs(size * sin);
+    const rotH = Math.abs(w * sin) + Math.abs(size * cos);
+    if (rotW <= maxW && rotH <= maxH) break;
+    size -= 1;
+  }
+  const cx = PAGE_W / 2;
+  const cy = PAGE_H / 2;
   return [
     "q",
-    "0.85 g",
-    "1 0 0 1 180 360 cm",
-    "0.866 -0.5 0.5 0.866 0 0 cm",
+    "0.82 g",
+    `${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${cx.toFixed(1)} ${cy.toFixed(1)} cm`,
     "BT",
-    `/F1 ${WATERMARK_SIZE} Tf`,
-    `0 0 Td (${t}) Tj`,
+    `/F1 ${size} Tf`,
+    `${(-stringWidthPdfUnits(font, label, size) / 2).toFixed(1)} ${(-size / 3).toFixed(1)} Td`,
+    `${utf16Hex(label)} Tj`,
     "ET",
     "Q",
   ].join("\n");
 }
 
-function layoutPages(blocks: PdfTextBlock[], watermark: string | null): PageOps[] {
-  const maxChars = 88;
+function barOps(
+  x: number,
+  y: number,
+  width: number,
+  rate: number | null,
+  ciLow: number | null,
+  ciHigh: number | null,
+  green: [number, number, number],
+  gold: [number, number, number],
+): string {
+  const h = 8;
+  const ops: string[] = [];
+  // Track
+  ops.push("q", "0.92 g", `${x} ${y} ${width} ${h} re f`, "Q");
+  // Gold track edge (decoration only)
+  ops.push("q", rgbOp(gold), `${x} ${y} ${width} 0.6 re f`, "Q");
+  if (rate != null && rate >= 0) {
+    const rw = Math.max(0, Math.min(1, rate)) * width;
+    ops.push("q", rgbOp(green), `${x} ${y} ${rw.toFixed(1)} ${h} re f`, "Q");
+  }
+  if (ciLow != null && ciHigh != null) {
+    const x0 = x + Math.max(0, Math.min(1, ciLow)) * width;
+    const x1 = x + Math.max(0, Math.min(1, ciHigh)) * width;
+    const mid = y + h / 2;
+    ops.push(
+      "q",
+      "0.2 g",
+      "1 w",
+      `${x0.toFixed(1)} ${mid.toFixed(1)} m ${x1.toFixed(1)} ${mid.toFixed(1)} l S`,
+      `${x0.toFixed(1)} ${(mid - 3).toFixed(1)} m ${x0.toFixed(1)} ${(mid + 3).toFixed(1)} l S`,
+      `${x1.toFixed(1)} ${(mid - 3).toFixed(1)} m ${x1.toFixed(1)} ${(mid + 3).toFixed(1)} l S`,
+      "Q",
+    );
+  }
+  return ops.join("\n");
+}
+
+function layoutPages(opts: PdfBuildOpts, regular: LoadedTtf, bold: LoadedTtf): PageOps[] {
+  const headingRgb = opts.headingRgb ?? CHARLOTTE_GREEN;
+  const accentRgb = opts.accentRgb ?? NINER_GOLD;
+  const maxTextW = PAGE_W - 2 * MARGIN;
   const pages: PageOps[] = [];
   let ops: string[] = [];
   let y = PAGE_H - MARGIN;
+  let pageIndex = 0;
 
-  const flush = () => {
-    if (watermark) ops.unshift(watermarkOps(watermark));
-    pages.push(ops);
+  const startPage = () => {
     ops = [];
     y = PAGE_H - MARGIN;
+    if (opts.watermark) ops.push(watermarkOps(opts.watermark, regular));
+    if (opts.banner) {
+      const bannerLines = wrapLine(regular, opts.banner, BANNER_SIZE, maxTextW);
+      ops.push("q", "0.96 0.94 0.88 rg", `${MARGIN - 8} ${y - bannerLines.length * 12 - 6} ${maxTextW + 16} ${bannerLines.length * 12 + 12} re f`, "Q");
+      for (const line of bannerLines) {
+        ops.push(textOp("F2", BANNER_SIZE, MARGIN, y - 4, line, "0 g"));
+        y -= 12;
+      }
+      y -= 10;
+    }
+    if (opts.brand) {
+      ops.push(textOp("F2", 18, MARGIN, y, opts.brand, rgbOp(headingRgb)));
+      y -= 22;
+      // Gold underline decoration (not text)
+      ops.push("q", rgbOp(accentRgb), `${MARGIN} ${y + 8} 80 2 re f`, "Q");
+      y -= 6;
+    }
+  };
+
+  const footer = (pageOps: string[], pageNum: number, total: number) => {
+    const date = opts.footerDate ?? new Date().toISOString().slice(0, 10);
+    const left = `Scout · ${date}`;
+    const right = `Page ${pageNum} of ${total}`;
+    pageOps.push(textOp("F1", FOOTER_SIZE, MARGIN, 28, left, "0.35 g"));
+    const rw = stringWidthPdfUnits(regular, right, FOOTER_SIZE);
+    pageOps.push(textOp("F1", FOOTER_SIZE, PAGE_W - MARGIN - rw, 28, right, "0.35 g"));
+  };
+
+  const flush = () => {
+    pages.push(ops);
+    pageIndex++;
+    startPage();
   };
 
   const ensure = (need: number) => {
-    if (y - need < MARGIN) flush();
+    if (y - need < MARGIN + 36) flush();
   };
 
-  for (const block of blocks) {
+  startPage();
+
+  for (const block of opts.blocks) {
     if (block.title) {
-      ensure(LINE_H * 2);
-      ops.push("BT", `/F1 ${TITLE_SIZE} Tf`, `0 g`, `${MARGIN} ${y} Td (${pdfEscape(block.title)}) Tj`, "ET");
-      y -= TITLE_SIZE + 8;
+      ensure(LINE_H * 3);
+      ops.push(textOp("F2", TITLE_SIZE, MARGIN, y, block.title, rgbOp(headingRgb)));
+      y -= TITLE_SIZE + 6;
     }
     for (const raw of block.lines) {
-      for (const line of wrapLine(raw, maxChars)) {
+      for (const line of wrapLine(regular, raw, BODY_SIZE, maxTextW)) {
         ensure(LINE_H);
-        ops.push("BT", `/F1 ${BODY_SIZE} Tf`, `0 g`, `${MARGIN} ${y} Td (${pdfEscape(line)}) Tj`, "ET");
+        ops.push(textOp("F1", BODY_SIZE, MARGIN, y, line, "0 g"));
         y -= LINE_H;
       }
     }
-    y -= 8;
+    if (block.bar) {
+      ensure(20);
+      ops.push(barOps(MARGIN, y - 4, maxTextW * 0.7, block.bar.rate, block.bar.ciLow, block.bar.ciHigh, headingRgb, accentRgb));
+      y -= 18;
+    }
+    y -= 6;
   }
-  if (ops.length || pages.length === 0) flush();
+
+  if (ops.length || pages.length === 0) {
+    pages.push(ops);
+  }
+
+  // Add footers with known page count
+  const total = pages.length;
+  for (let i = 0; i < pages.length; i++) {
+    footer(pages[i]!, i + 1, total);
+  }
   return pages;
 }
 
-function encodePdf(pages: PageOps[]): Uint8Array {
-  const objects: string[] = [];
-  const add = (body: string) => {
+type FontPack = {
+  type0Id: number;
+  fontFileId: number;
+  fontBytes: Buffer;
+  cidMapId: number;
+  cidToGid: Buffer;
+};
+
+function registerFont(add: (body: string) => number, font: LoadedTtf): FontPack {
+  const fontFileId = add("FONTFILE_PLACEHOLDER");
+  const descriptorId = add(
+    `<< /Type /FontDescriptor /FontName /${font.postScriptName} /Flags 32 /FontBBox [${font.bbox.join(" ")}] /ItalicAngle ${font.italicAngle} /Ascent ${font.ascent} /Descent ${font.descent} /CapHeight ${Math.abs(font.ascent)} /StemV 80 /FontFile2 ${fontFileId} 0 R >>`,
+  );
+  const cidToGid = Buffer.alloc(65536 * 2);
+  for (const [cp, gid] of font.cmap) {
+    if (cp > 0xffff) continue;
+    cidToGid.writeUInt16BE(gid & 0xffff, cp * 2);
+  }
+  const cidMapId = add("CIDMAP_PLACEHOLDER");
+  const dw = Math.round(((font.advances.get(0) ?? font.unitsPerEm) * 1000) / font.unitsPerEm);
+  const wParts: string[] = [];
+  for (let cp = 32; cp < 256; cp++) {
+    const gid = font.cmap.get(cp);
+    if (gid == null) continue;
+    wParts.push(`${cp} [${Math.round(((font.advances.get(gid) ?? 0) * 1000) / font.unitsPerEm)}]`);
+  }
+  for (const cp of [0x2022, 0x2013, 0x2014, 0x00a0]) {
+    const gid = font.cmap.get(cp);
+    if (gid == null) continue;
+    wParts.push(`${cp} [${Math.round(((font.advances.get(gid) ?? 0) * 1000) / font.unitsPerEm)}]`);
+  }
+  const cidFontId = add(
+    `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${font.postScriptName} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descriptorId} 0 R /DW ${dw} /W [ ${wParts.join(" ")} ] /CIDToGIDMap ${cidMapId} 0 R >>`,
+  );
+  const bf: string[] = [];
+  for (let cp = 32; cp < 256; cp++) {
+    if (!font.cmap.has(cp)) continue;
+    bf.push(`<${cp.toString(16).padStart(4, "0")}> <${cp.toString(16).padStart(4, "0")}>`);
+  }
+  for (const cp of [0x2022, 0x2013, 0x2014]) {
+    if (!font.cmap.has(cp)) continue;
+    bf.push(`<${cp.toString(16).padStart(4, "0")}> <${cp.toString(16).padStart(4, "0")}>`);
+  }
+  const cmapStream = `/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+${bf.length} beginbfchar
+${bf.join("\n")}
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end`;
+  const toUnicodeId = add(`<< /Length ${Buffer.byteLength(cmapStream, "utf8")} >>\nstream\n${cmapStream}\nendstream`);
+  const type0Id = add(
+    `<< /Type /Font /Subtype /Type0 /BaseFont /${font.postScriptName} /Encoding /Identity-H /DescendantFonts [${cidFontId} 0 R] /ToUnicode ${toUnicodeId} 0 R >>`,
+  );
+  return { type0Id, fontFileId, fontBytes: font.bytes, cidMapId, cidToGid };
+}
+
+function encodePdf(pages: PageOps[], regular: LoadedTtf, bold: LoadedTtf): Uint8Array {
+  const objects: Array<string | Buffer> = [];
+  const add = (body: string | Buffer) => {
     objects.push(body);
-    return objects.length; // 1-based object id
+    return objects.length;
   };
 
-  const fontId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  const reg = registerFont(add, regular);
+  const bol = registerFont(add, bold);
+
+  // Fill placeholders with real streams
+  objects[reg.fontFileId - 1] = Buffer.concat([
+    Buffer.from(`<< /Length ${reg.fontBytes.length} /Length1 ${reg.fontBytes.length} >>\nstream\n`),
+    reg.fontBytes,
+    Buffer.from("\nendstream"),
+  ]);
+  objects[reg.cidMapId - 1] = Buffer.concat([
+    Buffer.from(`<< /Length ${reg.cidToGid.length} >>\nstream\n`),
+    reg.cidToGid,
+    Buffer.from("\nendstream"),
+  ]);
+  objects[bol.fontFileId - 1] = Buffer.concat([
+    Buffer.from(`<< /Length ${bol.fontBytes.length} /Length1 ${bol.fontBytes.length} >>\nstream\n`),
+    bol.fontBytes,
+    Buffer.from("\nendstream"),
+  ]);
+  objects[bol.cidMapId - 1] = Buffer.concat([
+    Buffer.from(`<< /Length ${bol.cidToGid.length} >>\nstream\n`),
+    bol.cidToGid,
+    Buffer.from("\nendstream"),
+  ]);
 
   const contentIds: number[] = [];
   for (const ops of pages) {
-    const stream = ops.join("\n");
+    const stream = Buffer.from(ops.join("\n"), "utf8");
     contentIds.push(
-      add(`<< /Length ${Buffer.byteLength(stream, "utf8")} >>\nstream\n${stream}\nendstream`),
+      add(Buffer.concat([Buffer.from(`<< /Length ${stream.length} >>\nstream\n`), stream, Buffer.from("\nendstream")])),
     );
   }
 
   const pageIds: number[] = [];
   for (const contentId of contentIds) {
-    pageIds.push(
-      add(
-        `<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`,
-      ),
-    );
+    pageIds.push(add("PAGE_PLACEHOLDER"));
   }
-
   const kids = pageIds.map((id) => `${id} 0 R`).join(" ");
   const pagesId = add(`<< /Type /Pages /Kids [ ${kids} ] /Count ${pageIds.length} >>`);
-
-  // Patch Parent refs (object bodies stored as strings — rebuild page objects with real parent).
   for (let i = 0; i < pageIds.length; i++) {
     const id = pageIds[i]!;
     const contentId = contentIds[i]!;
     objects[id - 1] =
-      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`;
+      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${reg.type0Id} 0 R /F2 ${bol.type0Id} 0 R >> >> >>`;
   }
-
   const catalogId = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
 
-  let out = "%PDF-1.4\n";
+  const chunks: Buffer[] = [Buffer.from("%PDF-1.4\n")];
   const offsets: number[] = [0];
+  let offset = chunks[0]!.length;
   for (let i = 0; i < objects.length; i++) {
-    offsets.push(Buffer.byteLength(out, "utf8"));
-    out += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+    offsets.push(offset);
+    const body = objects[i]!;
+    const header = Buffer.from(`${i + 1} 0 obj\n`);
+    const footer = Buffer.from("\nendobj\n");
+    const bodyBuf = typeof body === "string" ? Buffer.from(body, "utf8") : body;
+    chunks.push(header, bodyBuf, footer);
+    offset += header.length + bodyBuf.length + footer.length;
   }
-  const xrefStart = Buffer.byteLength(out, "utf8");
-  out += `xref\n0 ${objects.length + 1}\n`;
-  out += "0000000000 65535 f \n";
+  const xrefStart = offset;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
   for (let i = 1; i <= objects.length; i++) {
-    out += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+    xref += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
   }
-  out += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
-  return new Uint8Array(Buffer.from(out, "utf8"));
+  xref += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+  chunks.push(Buffer.from(xref, "utf8"));
+  return new Uint8Array(Buffer.concat(chunks));
 }
 
-/** Build a multi-page PDF. Watermark (e.g. DEMO DATA) is painted on every page. */
-export function buildSimplePdf(opts: {
-  blocks: PdfTextBlock[];
-  watermark?: string | null;
-}): Uint8Array {
-  const pages = layoutPages(opts.blocks, opts.watermark ?? null);
-  return encodePdf(pages);
+/** Build a multi-page PDF with embedded Inter. */
+export function buildSimplePdf(opts: PdfBuildOpts): Uint8Array {
+  const regular = interRegular();
+  const bold = interSemiBold();
+  const pages = layoutPages(opts, regular, bold);
+  return encodePdf(pages, regular, bold);
 }
+
+/** Exported for tests: decode Identity-H `<hex> Tj` strings only (ignore font binary). */
+export function extractPdfStrings(bytes: Uint8Array): string {
+  const raw = Buffer.from(bytes).toString("latin1");
+  const parts: string[] = [];
+  const re = /<([0-9a-fA-F]+)>\s*Tj/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw))) {
+    const hex = m[1]!;
+    if (hex.length < 4 || hex.length % 2) continue;
+    try {
+      const buf = Buffer.from(hex, "hex");
+      if (buf.length % 2 !== 0) continue;
+      const copy = Buffer.from(buf);
+      for (let i = 0; i < copy.length; i += 2) {
+        const a = copy[i]!;
+        copy[i] = copy[i + 1]!;
+        copy[i + 1] = a;
+      }
+      parts.push(copy.toString("utf16le"));
+    } catch {
+      /* ignore */
+    }
+  }
+  return parts.join("\n");
+}
+
+export { pdfEscapeLiteral, CHARLOTTE_GREEN, NINER_GOLD };

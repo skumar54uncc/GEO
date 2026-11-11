@@ -9,6 +9,7 @@ import { DEMO_ORG_NAME } from "@/lib/contracts/exports";
 import { seedFullDemoOrg } from "@/lib/demo/seedMarked";
 import { closeDb, getDb } from "@/lib/db/pg/client";
 import { campaigns, memberships, organizations, scans, users } from "@/lib/db/pg/schema";
+import { extractPdfStrings } from "@/lib/exports/simplePdf";
 import { leadershipPdfBytes } from "@/lib/exports/leadershipPdf";
 import { rollupCampaignDashboard } from "@/lib/metrics/rollup";
 import { setAnalystNote } from "@/lib/scans/analystNote";
@@ -52,7 +53,7 @@ async function main() {
 
   const email = "p1d-pdf-sample@charlotte.edu";
   let [user] = await db.select().from(users).where(eq(users.email, email));
-  if (!user) [user] = await db.insert(users).values({ email, name: "P1d PDF" }).returning();
+  if (!user) [user] = await db.insert(users).values({ email, name: "Editor" }).returning();
   await db
     .insert(memberships)
     .values({ orgId: demo.id, userId: user.id, role: "editor" })
@@ -69,7 +70,7 @@ async function main() {
       orgId: demo.id,
       scanId: latestScan.id,
       authorId: user.id,
-      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Share of voice improved slightly on ChatGPT versus the prior scan. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
+      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
       status: "published",
     });
   }
@@ -86,12 +87,11 @@ async function main() {
         (c) => c.series.engine === primary.key.engine && c.series.runner === primary.key.runner && !c.series.branded,
       )
     : null;
-  const baselineScanIds = (view?.trend ?? []).filter((t) => t.isBaseline).map((t) => t.scanId);
+  const baselineTrend = (view?.trend ?? []).find((t) => t.isBaseline);
   const latestTrend = view?.trend[view.trend.length - 1];
   const bytes = leadershipPdfBytes({
     organization: { name: dash.organization.name, isDemo: true },
     campaign: { name: dash.campaign.name, topic: dash.campaign.topic },
-    methodologyUrl: "http://127.0.0.1:3000/how-we-measure",
     headline: primary
       ? {
           engine: primary.key.engine,
@@ -108,37 +108,49 @@ async function main() {
     engines: cells.map((c) => ({
       engine: c.key.engine,
       runner: c.key.runner,
+      won: c.promptsWon?.won ?? null,
+      prompts: c.promptsWon?.prompts ?? null,
       rate: c.promptsWon?.rate ?? null,
+      ciLow: c.promptsWon?.ciLow ?? null,
+      ciHigh: c.promptsWon?.ciHigh ?? null,
       draws: c.draws,
     })),
     analystNote:
       dash.analystNote?.status === "published"
-        ? { text: dash.analystNote.text, authorName: dash.analystNote.authorName, at: dash.analystNote.at }
+        ? {
+            text: dash.analystNote.text,
+            authorName: dash.analystNote.authorName,
+            at: dash.analystNote.at,
+            status: "published",
+          }
         : null,
-    baselineScanIds,
+    baselineDate: baselineTrend ? baselineTrend.createdAt.slice(0, 10) : null,
     target: dash.target,
     latestScan: view
       ? {
-          id: view.latestScan.id,
           createdAt: view.latestScan.createdAt,
           isBaseline: Boolean(latestTrend?.isBaseline && latestTrend.scanId === view.latestScan.id),
         }
       : null,
+    includeAccuracy: false,
   });
 
   const outDir = path.join(process.cwd(), "docs", "phase9-screenshots");
   fs.mkdirSync(outDir, { recursive: true });
   const out = path.join(outDir, "p1d-leadership-demo.pdf");
   fs.writeFileSync(out, Buffer.from(bytes));
-  const text = Buffer.from(bytes).toString("latin1");
+  const extracted = extractPdfStrings(bytes);
+  fs.writeFileSync(path.join(outDir, "p1d-leadership-demo.txt"), extracted);
   console.log("wrote", out, "bytes", bytes.length);
   console.log("checks", {
-    pdfHeader: text.startsWith("%PDF-"),
-    demo: text.includes("DEMO DATA"),
-    baseline: text.includes("Baseline"),
-    target: text.includes("Target"),
-    analyst: text.includes("Analyst note"),
-    ci: /CI/.test(text),
+    pdfHeader: Buffer.from(bytes).subarray(0, 5).toString() === "%PDF-",
+    demo: extracted.includes("DEMO DATA"),
+    banner: extracted.includes("Demo data. Fictional university"),
+    baseline: extracted.includes("Baseline"),
+    target: extracted.includes("Target"),
+    analyst: extracted.includes("Analyst note"),
+    ciTo: /to \d+%/.test(extracted) || extracted.includes("% to %") || /\d+% to \d+%/.test(extracted),
+    noLocalhost: !extracted.includes("127.0.0.1") && !extracted.includes("localhost"),
   });
   await closeDb();
 }

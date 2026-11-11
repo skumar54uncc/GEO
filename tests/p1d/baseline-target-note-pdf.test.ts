@@ -142,7 +142,6 @@ describe("P1d baseline + target + analyst note + leadership PDF", () => {
     const input = {
       organization: { name: "Demo University", isDemo: true },
       campaign: { name: "Energy", topic: "Energy" },
-      methodologyUrl: "https://example.test/how-we-measure",
       headline: {
         engine: "chatgpt",
         runner: "ui_provider",
@@ -151,37 +150,54 @@ describe("P1d baseline + target + analyst note + leadership PDF", () => {
         rate: 0.4,
         ciLow: 0.2,
         ciHigh: 0.6,
-        draws: 20,
+        draws: 30,
       },
       trendLabel: "within noise",
-      engines: [{ engine: "chatgpt", runner: "ui_provider", rate: 0.4, draws: 20 }],
+      engines: [
+        {
+          engine: "chatgpt",
+          runner: "ui_provider",
+          won: 4,
+          prompts: 10,
+          rate: 0.4,
+          ciLow: 0.2,
+          ciHigh: 0.6,
+          draws: 30,
+        },
+      ],
       analystNote: {
         text: "One. Two. Three. Four.",
         authorName: "Editor",
         at: "2026-11-01T00:00:00.000Z",
+        status: "published" as const,
       },
-      baselineScanIds: ["scan-baseline"],
+      baselineDate: "2026-01-01",
       target: { metric: "prompts_won" as const, engine: "chatgpt", value: 0.55, date: "2026-12-01" },
-      latestScan: { id: "scan-baseline", createdAt: "2026-01-01T00:00:00.000Z", isBaseline: true },
+      latestScan: { createdAt: "2026-01-01T00:00:00.000Z", isBaseline: true },
     };
     const html = leadershipPdfHtml(input);
     expect(html).toContain("Baseline");
     expect(html).toContain("Target");
-    expect(html).toContain("20%–60% CI");
+    expect(html).toContain("20% to 60%");
     expect(html).toContain("Analyst note");
+    expect(html).not.toContain("127.0.0.1");
+    expect(html).not.toContain("localhost");
 
+    const { extractPdfStrings } = await import("@/lib/exports/simplePdf");
     const bytes = leadershipPdfBytes(input);
-    const asText = Buffer.from(bytes).toString("latin1");
-    expect(asText.startsWith("%PDF-")).toBe(true);
+    const asText = extractPdfStrings(bytes);
+    expect(Buffer.from(bytes).subarray(0, 5).toString("utf8")).toBe("%PDF-");
     expect(asText).toContain(DEMO_DATA_BANNER);
     expect(asText).toContain("Baseline");
     expect(asText).toContain("Target");
-    expect(asText).toContain("20%");
-    expect(asText).toContain("60%");
-    expect(asText).toContain("CI");
+    expect(asText).toContain("20% to 60%");
     expect(asText).toContain("Analyst note");
     expect(asText).toContain("One. Two. Three. Four.");
-    // Watermark appears in every page content stream (one or more pages).
+    expect(asText).not.toMatch(/[´Ã�]/);
+    expect(asText).not.toContain("127.0.0.1");
+    expect(asText).not.toContain("localhost");
+    expect(asText).not.toContain("prompts_won");
+    expect(asText).not.toContain("ui_provider");
     const watermarkHits = asText.split(DEMO_DATA_BANNER).length - 1;
     expect(watermarkHits).toBeGreaterThanOrEqual(1);
 
@@ -201,6 +217,8 @@ describe("P1d baseline + target + analyst note + leadership PDF", () => {
     expect(res.headers.get("content-type")).toMatch(/application\/pdf/);
     const buf = Buffer.from(await res.arrayBuffer());
     expect(buf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
-    expect(buf.toString("latin1")).toContain(DEMO_DATA_BANNER);
+    const { extractPdfStrings: extract } = await import("@/lib/exports/simplePdf");
+    expect(extract(buf)).toContain(DEMO_DATA_BANNER);
   });
 });
+

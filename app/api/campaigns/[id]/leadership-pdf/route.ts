@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Logged-in Overview + Visibility leadership PDF. Closes COVERAGE row 28. */
-export const GET = withRole<{ id: string }>("viewer", async (req, { user, params }) => {
+export const GET = withRole<{ id: string }>("viewer", async (_req, { user, params }) => {
   if (!z.string().uuid().safeParse(params.id).success) {
     return NextResponse.json({ error: "Invalid campaign id" }, { status: 400 });
   }
@@ -28,16 +28,16 @@ export const GET = withRole<{ id: string }>("viewer", async (req, { user, params
           (c) => c.series.engine === primary.key.engine && c.series.runner === primary.key.runner && !c.series.branded,
         )
       : null;
-    const baselineScanIds = (view?.trend ?? []).filter((t) => t.isBaseline).map((t) => t.scanId);
+    const baselineTrend = (view?.trend ?? []).find((t) => t.isBaseline);
     const latestTrend = view?.trend[view.trend.length - 1];
-    const origin = new URL(req.url).origin;
+    const noMeasurementsYet = !dash.organization.isDemo && cells.every((c) => c.draws === 0);
+
     const bytes = leadershipPdfBytes({
       organization: {
         name: dash.organization.name,
         isDemo: Boolean(dash.organization.isDemo),
       },
       campaign: { name: dash.campaign.name, topic: dash.campaign.topic },
-      methodologyUrl: `${origin}/how-we-measure`,
       headline: primary
         ? {
             engine: primary.key.engine,
@@ -54,7 +54,11 @@ export const GET = withRole<{ id: string }>("viewer", async (req, { user, params
       engines: cells.map((c) => ({
         engine: c.key.engine,
         runner: c.key.runner,
+        won: c.promptsWon?.won ?? null,
+        prompts: c.promptsWon?.prompts ?? null,
         rate: c.promptsWon?.rate ?? null,
+        ciLow: c.promptsWon?.ciLow ?? null,
+        ciHigh: c.promptsWon?.ciHigh ?? null,
         draws: c.draws,
       })),
       analystNote:
@@ -63,17 +67,20 @@ export const GET = withRole<{ id: string }>("viewer", async (req, { user, params
               text: dash.analystNote.text,
               authorName: dash.analystNote.authorName,
               at: dash.analystNote.at,
+              status: "published",
             }
           : null,
-      baselineScanIds,
+      baselineDate: baselineTrend ? baselineTrend.createdAt.slice(0, 10) : null,
       target: dash.target,
       latestScan: view
         ? {
-            id: view.latestScan.id,
             createdAt: view.latestScan.createdAt,
             isBaseline: Boolean(latestTrend?.isBaseline && latestTrend.scanId === view.latestScan.id),
           }
         : null,
+      // Accuracy stays out of the PDF until the 20-answer hand check.
+      includeAccuracy: false,
+      noMeasurementsYet,
     });
     return new NextResponse(Buffer.from(bytes), {
       status: 200,

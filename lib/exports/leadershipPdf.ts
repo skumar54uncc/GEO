@@ -77,19 +77,26 @@ function trendLine(label: string | null, previousScanDate: string | null | undef
   return `Trend: ${label}`;
 }
 
+const BAR_LEGEND = "Dark bar: share of prompts won. Thin line: likely range. Full bar: 100%.";
+
 /** Build leadership PDF content blocks (Overview + Visibility). */
 export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   const blocks: PdfTextBlock[] = [];
+  const overviewLines = [
+    `${data.organization.name} · ${data.campaign.name}${data.campaign.topic ? ` · ${data.campaign.topic}` : ""}`,
+  ];
+  const scanDate = data.latestScan?.createdAt?.slice(0, 10);
+  if (scanDate) {
+    overviewLines.push(`Results from the scan on ${scanDate}.`);
+  }
   blocks.push({
     title: "Overview and Visibility",
-    lines: [
-      `${data.organization.name} · ${data.campaign.name}${data.campaign.topic ? ` · ${data.campaign.topic}` : ""}`,
-    ],
+    lines: overviewLines,
   });
 
   if (data.noMeasurementsYet) {
     blocks.push({ lines: ["No measurements yet"] });
-    blocks.push({ title: "How we measure", lines: METHODOLOGY_LINES });
+    blocks.push({ title: "How we measure", keepTogether: true, lines: METHODOLOGY_LINES });
     return blocks;
   }
 
@@ -151,7 +158,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
     engineLines.push({ title: "Engines", lines: ["No engine cells."] });
   } else {
     const unitPrompts = data.engines[0]?.prompts ?? data.headline?.prompts ?? 30;
-    engineLines.push({ title: "Engines", lines: [promptUnitLabel(unitPrompts)] });
+    engineLines.push({ title: "Engines", lines: [promptUnitLabel(unitPrompts), BAR_LEGEND] });
     for (const e of data.engines) {
       const disp = displayable({
         prompts: e.prompts ?? null,
@@ -199,6 +206,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
 
   blocks.push({
     title: "How we measure",
+    keepTogether: true,
     lines: METHODOLOGY_LINES,
   });
 

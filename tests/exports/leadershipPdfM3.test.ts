@@ -60,11 +60,23 @@ describe("M3: leadership PDF layout and copy", () => {
     const enginesIdx = blocks.findIndex((b) => b.title === "Engines");
     expect(enginesIdx).toBeGreaterThanOrEqual(0);
     expect(blocks[enginesIdx]!.lines[0]).toBe("30 prompts, 3 answers each");
+    expect(blocks[enginesIdx]!.lines[1]).toBe(
+      "Dark bar: share of prompts won. Thin line: likely range. Full bar: 100%.",
+    );
 
-    const text = extractPdfStrings(leadershipPdfBytes(sample));
+    const how = blocks.find((b) => b.title === "How we measure");
+    expect(how?.keepTogether).toBe(true);
+
+    const overview = blocks.find((b) => b.title === "Overview and Visibility");
+    expect(overview?.lines.some((l) => l === "Results from the scan on 2026-01-15.")).toBe(true);
+
+    const bytes = leadershipPdfBytes(sample);
+    const text = extractPdfStrings(bytes);
     const flat = text.replace(/\n/g, " ");
     expect(text).not.toMatch(/[—–]/);
     expect(text).not.toMatch(/ - /);
+    expect(Buffer.from(bytes).toString("latin1")).toContain("0.91 g");
+    expect(Buffer.from(bytes).toString("latin1")).not.toMatch(/\b0\.82 g\b/);
     expect(flat).toContain("These are never averaged together.");
     expect(flat).toContain("Target: 55% of prompts won on ChatGPT by 2026-12-01.");
     expect(flat).toContain(

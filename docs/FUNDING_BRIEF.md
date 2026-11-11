@@ -1,7 +1,7 @@
 # Funding brief (leadership)
 
 **Audience:** Lauren and executive sponsors  
-**Product:** Scout - "Scouting what AI says about us"  
+**Product:** Scout ("Scouting what AI says about us")  
 **As of:** 2026-11-11  
 **Decision requested by:** 2026-11-20
 
@@ -77,7 +77,9 @@ Sources captured 2026-10-14:
 | Evertune Pro | $800/mo | Plan page scale |
 | Profound Enterprise | custom | Enterprise |
 
-In-house planning total is **$165/mo to $528/mo** (capture plus judging), versus roughly $3,000 to $10,000/yr for vendor tools at comparable scope.
+In-house: about $2,000 to $6,300 per year (capture plus judging), versus about $3,000 to $10,000 per year for vendor tools.
+
+Cost per answer (our inference from list prices): Scout at the $250/mo ceiling covers 6,294 answers per month across 6 engines (about $0.04 per answer). AthenaHQ Starter lists about 3,600 responses for $295/mo (about $0.08 per answer).
 
 In-house figures exclude staff time and hosting, which run on one laptop today.
 
@@ -87,7 +89,7 @@ In-house figures exclude staff time and hosting, which run on one laptop today.
 
 1. **Procurement / UI capture.** Bright Data is banned by campus IT and is not used. True UI scrapers for Perplexity remain unavailable on campus; we use API search instead (medium fidelity).
 2. **Model retirement.** AI vendors retire models. Our judge model was retired in October 2026. Scout now checks that a model is available before every scan.
-3. **Backups.** Backups now verify by restoring into a test database. Tested on 2026-11-10.
+3. **Backups.** Backups now verify by restoring into a test database. Tested on 2026-11-11.
 4. **Ownership.** A named owner is needed for maintenance if staffing changes.
 5. **Accuracy.** Accuracy figures are provisional until the hand check.
 6. **Medium-fidelity Claude / Perplexity.** API-with-search series are comparable run-to-run but are not labeled as consumer UI.
@@ -99,6 +101,8 @@ In-house figures exclude staff time and hosting, which run on one laptop today.
 Approve the **$75 cash** (DataForSEO $50 + Fireworks $25) and the **pilot** (capture up to $12.89 plus judging within the $25 cap).
 
 Approve steady state up to **$250/mo**. The judge model is chosen in the pilot to fit under it.
+
+Scout's provider caps stop spending at the approved ceiling. Nothing runs over it.
 
 Go / no-go on the live pilot by **2026-11-20**.
 

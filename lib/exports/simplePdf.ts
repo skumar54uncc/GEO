@@ -100,9 +100,10 @@ function watermarkOps(label: string, font: LoadedTtf): string {
   }
   const cx = PAGE_W / 2;
   const cy = PAGE_H / 2;
+  // ~half the prior ink strength (was 0.82 g ≈ 18% black; 0.91 g ≈ 9% black). Still clearly visible.
   return [
     "q",
-    "0.82 g",
+    "0.91 g",
     `${cos.toFixed(4)} ${sin.toFixed(4)} ${(-sin).toFixed(4)} ${cos.toFixed(4)} ${cx.toFixed(1)} ${cy.toFixed(1)} cm`,
     "BT",
     `/F1 ${size} Tf`,
@@ -253,19 +254,21 @@ function layoutPages(opts: PdfBuildOpts, regular: LoadedTtf, bold: LoadedTtf): P
     const wrapped = block.lines.flatMap((raw) => wrapLine(regular, raw, BODY_SIZE, maxTextW));
     const blockNeed =
       (block.title ? TITLE_SIZE + 6 : 0) + wrapped.length * LINE_H + (block.bar ? 20 : 0) + 6;
-    if (block.keepTogether) ensure(blockNeed);
+    // Never orphan a section heading: titled blocks (and keepTogether) move as one unit.
+    const together = Boolean(block.keepTogether || block.title);
+    if (together) ensure(blockNeed);
     if (block.title) {
-      ensure(LINE_H * 3);
+      if (!together) ensure(LINE_H * 3);
       ops.push(textOp("F2", TITLE_SIZE, MARGIN, y, block.title, rgbOp(headingRgb)));
       y -= TITLE_SIZE + 6;
     }
     for (const line of wrapped) {
-      if (!block.keepTogether) ensure(LINE_H);
+      if (!together) ensure(LINE_H);
       ops.push(textOp("F1", BODY_SIZE, MARGIN, y, line, "0 g"));
       y -= LINE_H;
     }
     if (block.bar) {
-      if (!block.keepTogether) ensure(20);
+      if (!together) ensure(20);
       ops.push(barOps(MARGIN, y - 4, maxTextW * 0.7, block.bar.rate, block.bar.ciLow, block.bar.ciHigh, headingRgb, accentRgb));
       y -= 18;
     }

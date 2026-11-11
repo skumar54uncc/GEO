@@ -55,10 +55,14 @@ async function main() {
   const email = "p1d-pdf-sample@charlotte.edu";
   let [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user) [user] = await db.insert(users).values({ email, name: "Editor" }).returning();
+  else if (user.name !== "Editor") {
+    [user] = await db.update(users).set({ name: "Editor" }).where(eq(users.id, user.id)).returning();
+  }
   await db
     .insert(memberships)
     .values({ orgId: demo.id, userId: user.id, role: "editor" })
     .onConflictDoUpdate({ target: [memberships.orgId, memberships.userId], set: { role: "editor" } });
+
 
   const [latestScan] = await db
     .select({ id: scans.id })

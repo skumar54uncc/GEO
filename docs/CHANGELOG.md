@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11: M4 — funding brief planning total and $250 ceiling
+
+- Planning total $165–$528/mo; vendor compare uses that range; steady-state decision is a $250/mo ceiling.
+
 ## 2026-11-11: M3 — leadership PDF layout polish
 
 - Demo banner gap above Scout title; binoculars mark from brand geometry; analyst byline stays with the note.

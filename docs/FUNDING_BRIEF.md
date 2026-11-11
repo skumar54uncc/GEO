@@ -1,7 +1,7 @@
 # Funding brief (leadership)
 
 **Audience:** Lauren and executive sponsors  
-**Product:** Scout — “Scouting what AI says about us”  
+**Product:** Scout - "Scouting what AI says about us"  
 **As of:** 2026-11-11  
 **Decision requested by:** 2026-11-20
 
@@ -59,9 +59,9 @@ Planning USD uses Fireworks serverless prices (source: docs.fireworks.ai/serverl
 | GLM 5.3 ($1.40 / $4.40 per 1M) | $59.16/mo | $274.42/mo |
 | DeepSeek V4.1 Flash ($0.30 / $1.20 per 1M) | $15.11/mo | $71.75/mo |
 
-**Steady-state total to plan against:** capture **$150.22/mo** plus judging (range above). Never treat $150.22 as the total.
+**Planning total:** capture $150.22/mo plus judging = **$165/mo** (Flash typical) to **$528/mo** (Qwen upper). Never treat $150.22 as the total.
 
-Yearly capture alone: $1,802.60. Judging adds the range above × 12 after the pilot measures the real rate.
+Yearly capture alone: $1,802.60. Judging adds the range above x 12 after the pilot measures the real rate.
 
 ---
 
@@ -72,12 +72,12 @@ Sources captured 2026-10-14:
 | Vendor | Stated price | Scope (as listed) |
 |--------|--------------|---------------------|
 | Scrunch Core | $250/mo | 125 prompts, 4 engines, 1 country, 1 persona |
-| AthenaHQ Starter | $295/mo | ~3,600 responses / mo at 100×6×3×2 scans |
+| AthenaHQ Starter | $295/mo | ~3,600 responses / mo at 100x6x3x2 scans |
 | Goodie Core | $295/mo | 110 prompts, 5 engines |
 | Evertune Pro | $800/mo | Plan page scale |
 | Profound Enterprise | custom | Enterprise |
 
-In-house planning: capture $150.22/mo plus judging (range), versus roughly $3,000–$10,000/yr for vendor tools at comparable scope.
+In-house planning total is **$165/mo to $528/mo** (capture plus judging), versus roughly $3,000 to $10,000/yr for vendor tools at comparable scope.
 
 In-house figures exclude staff time and hosting, which run on one laptop today.
 
@@ -96,7 +96,9 @@ In-house figures exclude staff time and hosting, which run on one laptop today.
 
 ## Decision requested
 
-Approve the **$75 cash** (DataForSEO $50 + Fireworks $25), the **pilot** (capture up to $12.89 plus judging within the $25 cap), and a **steady-state budget of capture plus measured judging**.
+Approve the **$75 cash** (DataForSEO $50 + Fireworks $25) and the **pilot** (capture up to $12.89 plus judging within the $25 cap).
+
+Approve steady state up to **$250/mo**. The judge model is chosen in the pilot to fit under it.
 
 Go / no-go on the live pilot by **2026-11-20**.
 

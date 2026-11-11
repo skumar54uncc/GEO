@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11: M5 — CI journeys fail hard if Chromium cannot launch
+
+- `launchChromiumOrFailInCi` throws a clear CI error; journeys use it so missing browsers fail the job instead of soft-skipping.
+
 ## 2026-11-11: M4 — funding brief planning total and $250 ceiling
 
 - Planning total $165–$528/mo; vendor compare uses that range; steady-state decision is a $250/mo ceiling.

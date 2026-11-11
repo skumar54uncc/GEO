@@ -73,7 +73,7 @@ describe("P1d baseline + target + analyst note + leadership PDF", () => {
       orgId: c.orgId,
       scanId: s1,
       authorId: author.id,
-      text: "Visibility held steady on chat engines this month. Citation coverage still lags peers on owned domains. Share of voice improved slightly on ChatGPT. Next scan should confirm whether the content brief moved the needle.",
+      text: "Visibility held steady on chat engines this month. Citation coverage still lags peers on owned domains. Owned-domain citation gaps remain the clearest issue. Next scan should confirm whether the content brief moved the needle.",
       status: "published",
     });
     expect(published.analystNoteStatus).toBe("published");

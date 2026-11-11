@@ -73,7 +73,7 @@ async function main() {
       orgId: demo.id,
       scanId: latestScan.id,
       authorId: user.id,
-      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Share of voice improved slightly on ChatGPT versus the prior scan. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
+      text: "Chat engines held steady this cycle for Energy. Citation coverage on owned domains remains the clearest gap. Leadership should treat the first frozen-set scan as Baseline when reading the trend.",
       status: "published",
     });
   }

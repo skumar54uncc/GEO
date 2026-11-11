@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-11: L2 — leadership PDF readability
+
+- Headline with won count, likely range, and METRICS.md won definition; units as "N prompts, 3 answers each".
+- Per-engine rows with CI whisker bars; Charlotte Green / Niner Gold brand; methodology box inside the PDF.
+- Analyst notes: drafts stay out; direction words rejected when McNemar is within noise (`assertAnalystNoteFitsTrend`).
+- Accuracy omitted until the 20-answer hand check; displayable rules for too-few / no measurements.
+
+## 2026-11-11: L1 — leadership PDF encoding and labels
+
+- Embed Inter TTF (Identity-H); CI reads "39% to 73%"; demo watermark fits; top demo banner.
+- No localhost methodology URL; plain engine/runner labels; baseline by date not UUID.
+
+## 2026-11-11: L0 — freeze docs at v1.0-rc3
+
+- HANDOVER.md, PILOT_RUNBOOK.md (incl. drift check), V1_EXIT.md point at `v1.0-rc3`.
+
 ## 2026-11-10: R6 — archived orgs never run work
 
 - `tickSchedules` disables due schedules on archived orgs (`detail: org archived`).

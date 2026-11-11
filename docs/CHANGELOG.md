@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11: L3 — funding brief leadership rewrite
+
+- Top of `docs/FUNDING_BRIEF.md` is a one-page leadership ask ($75 cash, capture + judging planning range).
+- Steady state never calls $150.22 the total; judge call upper bound 6,294/mo with bake-off price planning rows.
+- Operator appendix holds code paths, caps, and formulas.
+
 ## 2026-11-11: L2 — leadership PDF readability
 
 - Headline with won count, likely range, and METRICS.md won definition; units as "N prompts, 3 answers each".

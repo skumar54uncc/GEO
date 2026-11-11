@@ -8,8 +8,10 @@ import { interRegular, interSemiBold, stringWidthPdfUnits, type LoadedTtf } from
 export type PdfTextBlock = {
   title?: string;
   lines: string[];
-  /** Optional horizontal bar: rate 0–1 with optional CI whisker. */
+  /** Optional horizontal bar: rate 0-1 with optional CI whisker. */
   bar?: { rate: number | null; ciLow: number | null; ciHigh: number | null };
+  /** Keep title + lines + byline on one page (analyst note). */
+  keepTogether?: boolean;
 };
 
 export type PdfBuildOpts = {
@@ -18,6 +20,8 @@ export type PdfBuildOpts = {
   /** Top banner (demo only). */
   banner?: string | null;
   brand?: string;
+  /** Draw Scout binoculars mark from public/brand geometry next to the brand word. */
+  brandLogo?: boolean;
   footerDate?: string;
   /** Charlotte Green headings/bars; Niner Gold decoration only. */
   headingRgb?: [number, number, number];
@@ -109,6 +113,44 @@ function watermarkOps(label: string, font: LoadedTtf): string {
   ].join("\n");
 }
 
+/** Scout binoculars mark (geometry from public/brand/mark.svg), origin at lower-left of 64×64 box. */
+function scoutLogoOps(x: number, y: number, size: number, green: [number, number, number], gold: [number, number, number]): string {
+  const s = size / 64;
+  const tx = (px: number, py: number) => `${(x + px * s).toFixed(2)} ${(y + py * s).toFixed(2)}`;
+  const circle = (cx: number, cy: number, r: number) => {
+    const k = 0.5522847498 * r;
+    const c0 = tx(cx + r, cy);
+    return [
+      `${tx(cx + r, cy)} m`,
+      `${tx(cx + r, cy + k)} ${tx(cx + k, cy + r)} ${tx(cx, cy + r)} c`,
+      `${tx(cx - k, cy + r)} ${tx(cx - r, cy + k)} ${tx(cx - r, cy)} c`,
+      `${tx(cx - r, cy - k)} ${tx(cx - k, cy - r)} ${tx(cx, cy - r)} c`,
+      `${tx(cx + k, cy - r)} ${tx(cx + r, cy - k)} ${c0} c`,
+    ].join(" ");
+  };
+  const rect = (px: number, py: number, w: number, h: number) =>
+    `${(x + px * s).toFixed(2)} ${(y + py * s).toFixed(2)} ${(w * s).toFixed(2)} ${(h * s).toFixed(2)} re`;
+  return [
+    "q",
+    rgbOp(green),
+    `${rect(11, 38, 14, 14)} f`,
+    `${rect(39, 38, 14, 14)} f`,
+    `${rect(24, 30, 16, 10)} f`,
+    `${circle(18, 25, 14)} f`,
+    `${circle(46, 25, 14)} f`,
+    "1 1 1 rg",
+    `${circle(18, 25, 8.5)} f`,
+    `${circle(46, 25, 8.5)} f`,
+    rgbOp(gold),
+    `${circle(18, 25, 5)} f`,
+    `${circle(46, 25, 5)} f`,
+    "1 1 1 rg",
+    `${circle(20.2, 27.4, 1.7)} f`,
+    `${circle(48.2, 27.4, 1.7)} f`,
+    "Q",
+  ].join("\n");
+}
+
 function barOps(
   x: number,
   y: number,
@@ -161,19 +203,28 @@ function layoutPages(opts: PdfBuildOpts, regular: LoadedTtf, bold: LoadedTtf): P
     if (opts.watermark) ops.push(watermarkOps(opts.watermark, regular));
     if (opts.banner) {
       const bannerLines = wrapLine(regular, opts.banner, BANNER_SIZE, maxTextW);
-      ops.push("q", "0.96 0.94 0.88 rg", `${MARGIN - 8} ${y - bannerLines.length * 12 - 6} ${maxTextW + 16} ${bannerLines.length * 12 + 12} re f`, "Q");
+      const bannerH = bannerLines.length * 12 + 14;
+      // Banner band stays above the brand title with a clear gap (no overlap).
+      ops.push("q", "0.96 0.94 0.88 rg", `${MARGIN - 8} ${y - bannerH} ${maxTextW + 16} ${bannerH} re f`, "Q");
+      let by = y - 10;
       for (const line of bannerLines) {
-        ops.push(textOp("F2", BANNER_SIZE, MARGIN, y - 4, line, "0 g"));
-        y -= 12;
+        ops.push(textOp("F2", BANNER_SIZE, MARGIN, by, line, "0 g"));
+        by -= 12;
       }
-      y -= 10;
+      y = y - bannerH - 16;
     }
     if (opts.brand) {
-      ops.push(textOp("F2", 18, MARGIN, y, opts.brand, rgbOp(headingRgb)));
-      y -= 22;
+      const logoSize = 22;
+      if (opts.brandLogo !== false) {
+        ops.push(scoutLogoOps(MARGIN, y - 4, logoSize, headingRgb, accentRgb));
+        ops.push(textOp("F2", 18, MARGIN + logoSize + 8, y, opts.brand, rgbOp(headingRgb)));
+      } else {
+        ops.push(textOp("F2", 18, MARGIN, y, opts.brand, rgbOp(headingRgb)));
+      }
+      y -= 26;
       // Gold underline decoration (not text)
-      ops.push("q", rgbOp(accentRgb), `${MARGIN} ${y + 8} 80 2 re f`, "Q");
-      y -= 6;
+      ops.push("q", rgbOp(accentRgb), `${MARGIN} ${y + 10} 80 2 re f`, "Q");
+      y -= 10;
     }
   };
 
@@ -199,20 +250,22 @@ function layoutPages(opts: PdfBuildOpts, regular: LoadedTtf, bold: LoadedTtf): P
   startPage();
 
   for (const block of opts.blocks) {
+    const wrapped = block.lines.flatMap((raw) => wrapLine(regular, raw, BODY_SIZE, maxTextW));
+    const blockNeed =
+      (block.title ? TITLE_SIZE + 6 : 0) + wrapped.length * LINE_H + (block.bar ? 20 : 0) + 6;
+    if (block.keepTogether) ensure(blockNeed);
     if (block.title) {
       ensure(LINE_H * 3);
       ops.push(textOp("F2", TITLE_SIZE, MARGIN, y, block.title, rgbOp(headingRgb)));
       y -= TITLE_SIZE + 6;
     }
-    for (const raw of block.lines) {
-      for (const line of wrapLine(regular, raw, BODY_SIZE, maxTextW)) {
-        ensure(LINE_H);
-        ops.push(textOp("F1", BODY_SIZE, MARGIN, y, line, "0 g"));
-        y -= LINE_H;
-      }
+    for (const line of wrapped) {
+      if (!block.keepTogether) ensure(LINE_H);
+      ops.push(textOp("F1", BODY_SIZE, MARGIN, y, line, "0 g"));
+      y -= LINE_H;
     }
     if (block.bar) {
-      ensure(20);
+      if (!block.keepTogether) ensure(20);
       ops.push(barOps(MARGIN, y - 4, maxTextW * 0.7, block.bar.rate, block.bar.ciLow, block.bar.ciHigh, headingRgb, accentRgb));
       y -= 18;
     }

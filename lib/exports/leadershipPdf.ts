@@ -58,12 +58,23 @@ const METHODOLOGY_LINES = [
   "We collect 3 answers per prompt on each engine.",
   WON_DEFINITION,
   "Likely range: with 30 prompts, the true rate is probably in this range.",
-  "Fidelity: consumer app capture, API with web search (medium), or Google results capture — never averaged together.",
+  "Fidelity: consumer app capture, API with web search (medium), or Google results capture - never averaged together.",
 ];
+
+/** Leadership PDFs use ASCII hyphen/colon only (no em or en dashes). */
+export function stripEmDashes(s: string): string {
+  return s.replace(/[—–]/g, "-");
+}
 
 function formatTarget(metric: string): string {
   if (metric === "prompts_won") return "prompts won";
   return metric.replace(/_/g, " ");
+}
+
+function trendLine(label: string | null, previousScanDate: string | null | undefined): string | null {
+  if (!label) return null;
+  if (previousScanDate) return `Trend compared with ${previousScanDate}: ${label}`;
+  return `Trend: ${label}`;
 }
 
 /** Build leadership PDF content blocks (Overview + Visibility). */
@@ -85,7 +96,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   if (data.latestScan?.isBaseline || data.baselineDate) {
     const date = data.baselineDate ?? data.latestScan?.createdAt.slice(0, 10) ?? "";
     if (data.latestScan?.isBaseline) {
-      blocks.push({ lines: [`Baseline — first scan of this prompt set (${date}).`] });
+      blocks.push({ lines: [`Baseline: first scan of this prompt set (${date}).`] });
     } else if (data.baselineDate) {
       blocks.push({ lines: [`Baseline for this prompt set: ${date}.`] });
     }
@@ -94,7 +105,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   if (data.target) {
     blocks.push({
       lines: [
-        `Target — ${formatTarget(data.target.metric)} on ${engineLabel(data.target.engine)}: ${pctWhole(data.target.value)} by ${data.target.date}.`,
+        `Target: ${formatTarget(data.target.metric)} on ${engineLabel(data.target.engine)}: ${pctWhole(data.target.value)} by ${data.target.date}.`,
       ],
     });
   }
@@ -116,15 +127,10 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
       const range = ciRange(data.headline.ciLow, data.headline.ciHigh);
       const rate = pctWhole(data.headline.rate);
       const head = `${data.organization.name.includes("Demo") ? data.organization.name : "UNC Charlotte"} won ${won} of ${prompts} prompts on ${eng} (${rate}).${range ? ` Likely range: ${range}.` : ""}`;
+      const trend = trendLine(data.trendLabel, data.previousScanDate);
       blocks.push({
         title: "Headline",
-        lines: [
-          head,
-          WON_DEFINITION,
-          promptUnitLabel(prompts, prompts > 0 ? Math.round(data.headline.draws / prompts) || 3 : 3),
-          ...(data.trendLabel ? [`Trend: ${data.trendLabel}`] : []),
-          fidelityLabel(data.headline.runner),
-        ],
+        lines: [head, WON_DEFINITION, ...(trend ? [trend] : []), fidelityLabel(data.headline.runner)],
         bar: {
           rate: data.headline.rate,
           ciLow: data.headline.ciLow,
@@ -140,7 +146,8 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   if (!data.engines.length) {
     engineLines.push({ title: "Engines", lines: ["No engine cells."] });
   } else {
-    engineLines.push({ title: "Engines", lines: [] });
+    const unitPrompts = data.engines[0]?.prompts ?? data.headline?.prompts ?? 30;
+    engineLines.push({ title: "Engines", lines: [promptUnitLabel(unitPrompts)] });
     for (const e of data.engines) {
       const disp = displayable({
         prompts: e.prompts ?? null,
@@ -158,7 +165,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
       const range = ciRange(e.ciLow, e.ciHigh);
       const line =
         won != null
-          ? `${engineLabel(e.engine)}: ${won} of ${prompts} prompts (${pctWhole(e.rate)})${range ? `; likely range ${range}` : ""}. ${fidelityLabel(e.runner)}. ${promptUnitLabel(prompts)}.`
+          ? `${engineLabel(e.engine)}: ${won} of ${prompts} prompts (${pctWhole(e.rate)})${range ? `; likely range ${range}` : ""}. ${fidelityLabel(e.runner)}.`
           : `${engineLabel(e.engine)}: ${pctWhole(e.rate)}${range ? `; likely range ${range}` : ""}. ${fidelityLabel(e.runner)}.`;
       engineLines.push({
         lines: [line],
@@ -171,6 +178,7 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   if (data.analystNote && analystNoteAllowedForPdf(data.analystNote.text, data.trendLabel, data.analystNote.status ?? "published")) {
     blocks.push({
       title: "Analyst note",
+      keepTogether: true,
       lines: [
         data.analystNote.text,
         `${data.analystNote.authorName ?? "editor"} · ${data.analystNote.at.slice(0, 10)}`,
@@ -190,7 +198,11 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
     lines: METHODOLOGY_LINES,
   });
 
-  return blocks;
+  return blocks.map((b) => ({
+    ...b,
+    title: b.title ? stripEmDashes(b.title) : b.title,
+    lines: b.lines.map(stripEmDashes),
+  }));
 }
 
 /**
@@ -202,6 +214,7 @@ export function leadershipPdfBytes(data: LeadershipPdfInput): Uint8Array {
     watermark: data.organization.isDemo ? DEMO_DATA_BANNER : null,
     banner: data.organization.isDemo ? DEMO_PDF_BANNER : null,
     brand: "Scout",
+    brandLogo: true,
     footerDate: new Date().toISOString().slice(0, 10),
   });
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11: M3 — leadership PDF layout polish
+
+- Demo banner gap above Scout title; binoculars mark from brand geometry; analyst byline stays with the note.
+- No em/en dashes in PDF strings; trend reads "Trend compared with <date>: …"; units once under Engines.
+
+## 2026-11-11: M2 — leadership PDF headline is target primary series
+
+- `pickHeadlineCell` uses `target.engine` + `ROUTES` primary runner, not `cells[0]`.
+
 ## 2026-11-11: M1 — leadership PDF fidelity follows ROUTES primary
 
 - Demo Energy cells already use `ROUTES[engine].primary` via `seedMarked.ts` `routeForEngine` (chatgpt/gemini = `ui_provider`).

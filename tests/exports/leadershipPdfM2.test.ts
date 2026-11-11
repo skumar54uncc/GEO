@@ -59,7 +59,7 @@ describe("M2: headline is target engine primary series", () => {
     expect(input.headline?.engine).toBe("chatgpt");
     expect(input.headline?.runner).toBe("ui_provider");
     const text = extractPdfStrings(leadershipPdfBytes(input));
-    expect(text).toContain("won 17 of 30 prompts on ChatGPT");
+    expect(text).toContain("won 17 of 30 prompts on ChatGPT (captured from the consumer app), 57%");
     expect(text).not.toContain("won 20 of 30 prompts on Claude");
   });
 });

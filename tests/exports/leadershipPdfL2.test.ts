@@ -54,10 +54,11 @@ const base = {
 describe("L2: leadership PDF readability", () => {
   it("headline names won count, likely range, and METRICS won definition", () => {
     const text = extractPdfStrings(leadershipPdfBytes(base));
-    expect(text).toContain("won 17 of 30 prompts on ChatGPT (57%)");
-    expect(text).toContain("Likely range: 39% to 73%");
+    const flat = text.replace(/\n/g, " ");
+    expect(flat).toContain("won 17 of 30 prompts on ChatGPT (captured from the consumer app), 57%");
+    expect(flat).toContain("Likely range: 39% to 73%");
     // Definition may wrap across PDF lines; compare flattened text.
-    expect(text.replace(/\n/g, " ")).toContain(WON_DEFINITION);
+    expect(flat).toContain(WON_DEFINITION);
     expect(text).toContain("30 prompts, 3 answers each");
   });
 

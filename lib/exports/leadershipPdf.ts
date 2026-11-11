@@ -58,12 +58,12 @@ const METHODOLOGY_LINES = [
   "We collect 3 answers per prompt on each engine.",
   WON_DEFINITION,
   "Likely range: with 30 prompts, the true rate is probably in this range.",
-  "Fidelity: consumer app capture, API with web search (medium), or Google results capture - never averaged together.",
+  "Fidelity: consumer app capture, API with web search (medium), or Google results capture. These are never averaged together.",
 ];
 
-/** Leadership PDFs use ASCII hyphen/colon only (no em or en dashes). */
+/** Leadership PDFs: no em/en dashes, and no space-hyphen-space used as a separator. */
 export function stripEmDashes(s: string): string {
-  return s.replace(/[—–]/g, "-");
+  return s.replace(/[—–]/g, "-").replace(/ - /g, ". ");
 }
 
 function formatTarget(metric: string): string {
@@ -103,11 +103,12 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
   }
 
   if (data.target) {
-    blocks.push({
-      lines: [
-        `Target: ${formatTarget(data.target.metric)} on ${engineLabel(data.target.engine)}: ${pctWhole(data.target.value)} by ${data.target.date}.`,
-      ],
-    });
+    const eng = engineLabel(data.target.engine);
+    const line =
+      data.target.metric === "prompts_won"
+        ? `Target: ${pctWhole(data.target.value)} of prompts won on ${eng} by ${data.target.date}.`
+        : `Target: ${formatTarget(data.target.metric)} on ${eng}: ${pctWhole(data.target.value)} by ${data.target.date}.`;
+    blocks.push({ lines: [line] });
   }
 
   if (data.headline) {
@@ -126,11 +127,14 @@ export function leadershipPdfBlocks(data: LeadershipPdfInput): PdfTextBlock[] {
       const eng = engineLabel(data.headline.engine);
       const range = ciRange(data.headline.ciLow, data.headline.ciHigh);
       const rate = pctWhole(data.headline.rate);
-      const head = `${data.organization.name.includes("Demo") ? data.organization.name : "UNC Charlotte"} won ${won} of ${prompts} prompts on ${eng} (${rate}).${range ? ` Likely range: ${range}.` : ""}`;
+      const fid = fidelityLabel(data.headline.runner);
+      const fidParen = fid.charAt(0).toLowerCase() + fid.slice(1);
+      const orgName = data.organization.name.includes("Demo") ? data.organization.name : "UNC Charlotte";
+      const head = `${orgName} won ${won} of ${prompts} prompts on ${eng} (${fidParen}), ${rate}.${range ? ` Likely range: ${range}.` : ""}`;
       const trend = trendLine(data.trendLabel, data.previousScanDate);
       blocks.push({
         title: "Headline",
-        lines: [head, WON_DEFINITION, ...(trend ? [trend] : []), fidelityLabel(data.headline.runner)],
+        lines: [head, WON_DEFINITION, ...(trend ? [trend] : [])],
         bar: {
           rate: data.headline.rate,
           ciLow: data.headline.ciLow,

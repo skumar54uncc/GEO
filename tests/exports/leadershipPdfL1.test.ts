@@ -11,7 +11,7 @@ describe("L1: leadership PDF encoding and labels", () => {
       campaign: { name: "Energy", topic: "Energy research" },
       headline: {
         engine: "chatgpt",
-        runner: "api_search",
+        runner: "ui_provider",
         won: 17,
         prompts: 30,
         rate: 0.57,
@@ -21,6 +21,16 @@ describe("L1: leadership PDF encoding and labels", () => {
       },
       trendLabel: "within noise",
       engines: [
+        {
+          engine: "chatgpt",
+          runner: "ui_provider",
+          won: 17,
+          prompts: 30,
+          rate: 0.57,
+          ciLow: 0.39,
+          ciHigh: 0.73,
+          draws: 90,
+        },
         {
           engine: "claude",
           runner: "api_search",
@@ -52,9 +62,11 @@ describe("L1: leadership PDF encoding and labels", () => {
     expect(text).toContain(DEMO_PDF_BANNER);
     expect(DEMO_DATA_BANNER.length).toBeGreaterThan(10);
     expect(text).toContain("ChatGPT");
+    expect(text).toContain("Captured from the consumer app");
     expect(text).toContain("API with web search (medium fidelity)");
     expect(text).toContain("Claude");
     expect(text).not.toContain("api_search");
+    expect(text).not.toContain("ui_provider");
     expect(text).not.toContain("prompts_won");
     expect(text).not.toContain("P1d PDF");
     expect(text).toContain("2026-01-15");

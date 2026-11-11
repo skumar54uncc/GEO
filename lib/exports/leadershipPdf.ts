@@ -29,6 +29,8 @@ export type LeadershipPdfInput = {
     draws: number;
   } | null;
   trendLabel: string | null;
+  /** Prior comparable scan date (YYYY-MM-DD) for the trend line. */
+  previousScanDate?: string | null;
   engines: Array<{
     engine: string;
     runner: string;

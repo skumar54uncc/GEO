@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11: M1 — leadership PDF fidelity follows ROUTES primary
+
+- Demo Energy cells already use `ROUTES[engine].primary` via `seedMarked.ts` `routeForEngine` (chatgpt/gemini = `ui_provider`).
+- PDF input filters to primary runners only; calibration/parametric series never listed.
+- Shared builder: `lib/exports/leadershipPdfInput.ts`.
+
 ## 2026-11-11: L3 — funding brief leadership rewrite
 
 - Top of `docs/FUNDING_BRIEF.md` is a one-page leadership ask ($75 cash, capture + judging planning range).

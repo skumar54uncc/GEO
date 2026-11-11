@@ -8,7 +8,7 @@ const base = {
   campaign: { name: "Energy", topic: "Energy research" },
   headline: {
     engine: "chatgpt",
-    runner: "api_search" as const,
+    runner: "ui_provider" as const,
     won: 17,
     prompts: 30,
     rate: 0.57,
@@ -20,7 +20,7 @@ const base = {
   engines: [
     {
       engine: "chatgpt",
-      runner: "api_search",
+      runner: "ui_provider",
       won: 17,
       prompts: 30,
       rate: 0.57,
